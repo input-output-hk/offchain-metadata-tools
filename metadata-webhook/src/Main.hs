@@ -55,4 +55,10 @@ app key
   = serveWithContext
     (Proxy :: Proxy MetadataWebhookAPI)
     (key :. EmptyContext)
-    singleEndpoint
+    metadataWebhook
+
+-- TODO Take "write" and "read" functions as arguments to a function, expose that function
+-- Allows users of this library to easily choose their DB backend
+-- We'll use psql database backend here.
+
+-- TODO Ensure file size < 400kb

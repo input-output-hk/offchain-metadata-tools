@@ -10,7 +10,9 @@ extra-source-files:  ../CHANGELOG.md
 library
   hs-source-dirs:      src
 
-  exposed-modules:     Cardano.Metadata
+  exposed-modules:     Cardano.Metadata.Server
+                       Cardano.Metadata.Server.Types
+                       Cardano.Metadata.Server.API
 
   build-depends:       base
                      , aeson
@@ -48,5 +50,5 @@ test-suite unit-tests
                       , HUnit
                       , containers
 
-  other-modules:        Test.Cardano.Metadata
+  other-modules:        Test.Cardano.Metadata.Server.Types
                         Test.Generators

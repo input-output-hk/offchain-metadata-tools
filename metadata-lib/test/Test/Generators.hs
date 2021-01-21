@@ -12,6 +12,38 @@ import           Test.Tasty (TestTree, testGroup)
 import           Test.Tasty.Hedgehog
 import qualified Data.Aeson as Aeson
 
+import Metadata.Server.Types
+
+hashFn :: Gen HashFn
+hashFn = Gen.choice [ pure Blake2b256
+                    , pure Blacke2b224
+                    , pure SHA256
+                    ]
+
+publicKey :: Gen Text
+publicKey = Gen.text (Range.linear 0 64) Gen.hexit
+
+sig :: Gen Text
+sig = Gen.text (Range.linear 0 128) Gen.hexit
+
+annotatedSignature :: Gen AnnotatedSignature
+annotatedSignature = AnnotatedSignature <$> publicKey <*> sig
+
+metadataValue :: Gen Text
+metadataValue = Gen.text (Range.linear 0 maxBound) Gen.unicodeAll
+
+metadataProperty :: Gen Property
+metadataProperty = Property <$> metadataValue <*> Gen.list (Range.linear 0 25) annotatedSignature
+
+preImage :: Gen PreImage
+preImage = PreImage <$> metadataValue <*> hashFn
+
+owner :: Gen Owner
+owner = Owner <$> publicKey <*> sig
+
+entry :: Gen Entry
+entry = Entry <$> metadataValue <*> owner <*> metadataValue <*> metadataValue <*> preImage
+
 -- -- | Generate random contributions.
 -- --
 -- -- Word8 was chosen because it is large enough to give us a decent
