@@ -1,0 +1,39 @@
+cabal-version:       >=1.10
+name:                metadata-server
+version:             0.1.0.0
+license-file:        ../LICENSE
+author:              Samuel Evans-Powell
+maintainer:          mail@sevanspowell.net
+build-type:          Simple
+extra-source-files:  ../CHANGELOG.md
+
+executable metadata-server
+  hs-source-dirs:      src
+  main-is:             Main.hs
+  build-depends:       base
+                     , aeson
+                     , bytestring
+                     , lens-aeson
+                     , containers
+                     , directory
+                     , lens
+                     , mtl
+                     , safe-exceptions
+                     , scientific
+                     , text
+                     , github-webhooks
+                     , persistent
+                     , esqueleto
+                     , servant
+
+  ghc-options:          -Wall
+                        -Wcompat
+                        -fwarn-redundant-constraints
+                        -fwarn-incomplete-patterns
+                        -fwarn-unused-imports
+                        -Wincomplete-record-updates
+                        -Wincomplete-uni-patterns
+                        -Wno-unsafe
+                        -threaded
+
+  other-modules:        Paths_metadata_server

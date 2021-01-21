@@ -1,0 +1,22 @@
+index-state: 2021-01-10T00:00:00Z
+
+packages:
+  ./metadata-lib
+  ./metadata-server
+  ./metadata-webhook
+
+package metadata-lib
+  tests: True
+
+package metadata-server
+  tests: True
+
+package metadata-webhook
+  tests: True
+
+-- ---------------------------------------------------------
+-- Disable all tests belonging to dependencies
+
+tests: False
+
+test-show-details: direct

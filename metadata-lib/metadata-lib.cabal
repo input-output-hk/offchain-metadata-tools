@@ -1,0 +1,52 @@
+cabal-version:       >=1.10
+name:                metadata-lib
+version:             0.1.0.0
+license-file:        ../LICENSE
+author:              Samuel Evans-Powell
+maintainer:          mail@sevanspowell.net
+build-type:          Simple
+extra-source-files:  ../CHANGELOG.md
+
+library
+  hs-source-dirs:      src
+
+  exposed-modules:     Cardano.Metadata
+
+  build-depends:       base
+                     , aeson
+                     , bytestring
+                     , lens-aeson
+                     , containers
+                     , directory
+                     , lens
+                     , mtl
+                     , safe-exceptions
+                     , scientific
+                     , text
+                     , github-webhooks
+                     , persistent
+                     , esqueleto
+
+test-suite unit-tests
+  hs-source-dirs:       test
+  main-is:              Main.hs
+  type:                 exitcode-stdio-1.0
+
+  build-depends:
+                        base >=4.12 && <5
+                      , metadata-lib
+                      , aeson
+                      , hspec
+                      , hedgehog
+                      , QuickCheck
+                      , tasty
+                      , mtl
+                      , tasty-hedgehog
+                      , tasty-quickcheck
+                      , tasty-hspec
+                      , tasty-hunit
+                      , HUnit
+                      , containers
+
+  other-modules:        Test.Cardano.Metadata
+                        Test.Generators
