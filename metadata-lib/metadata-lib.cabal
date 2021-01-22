@@ -40,20 +40,25 @@ test-suite unit-tests
   type:                 exitcode-stdio-1.0
 
   build-depends:
-                        base >=4.12 && <5
-                      , metadata-lib
-                      , aeson
-                      , hspec
-                      , hedgehog
-                      , QuickCheck
-                      , tasty
-                      , mtl
-                      , tasty-hedgehog
-                      , tasty-quickcheck
-                      , tasty-hspec
-                      , tasty-hunit
-                      , HUnit
-                      , containers
+                      base >=4.12 && <5
+                , HUnit
+                , QuickCheck
+                , aeson
+                , aeson-pretty
+                , containers
+                , hedgehog
+                , hspec
+                , metadata-lib
+                , mtl
+                , tasty
+                , tasty-hedgehog
+                , bytestring
+                , raw-strings-qq
+                , tasty-hspec
+                , tasty-hunit
+                , tasty-quickcheck
+                , text
+                , unordered-containers
 
   other-modules:        Test.Cardano.Metadata.Server.Types
                         Test.Generators

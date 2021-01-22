@@ -1,18 +1,24 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Cardano.Metadata.Server.Types where
 
 import Data.Text (Text)
 import qualified Data.Text as T
-import Text.Read (Read(readPrec))
+import Text.Read (Read(readPrec), readEither)
 import qualified Text.Read as Read (lift)
 import Text.ParserCombinators.ReadP (choice, string)
-import Data.Aeson (ToJSON, FromJSON)
+import Data.Aeson (ToJSON, FromJSON, (.:))
+import Control.Applicative (some)
+import qualified Data.Aeson.Types as Aeson
 import qualified Data.Aeson as Aeson
 import Data.Aeson.TH
+import Data.Set (Set)
+import qualified Data.Set as Set
 import qualified Data.HashMap.Strict as HM
 import Text.Casing 
+import qualified Data.List.NonEmpty as NE
 
 -- | More loosely-typed metadata property useful in looser-typed
 -- contexts.
@@ -21,20 +27,37 @@ import Text.Casing
 -- property, we might return a preimage, or a subject, or an owner, or
 -- some other generic property. We need a type to represent this.
 data AnyProperty = PropertyPreImage PreImage
-                 | PropertySubject  Subject
                  | PropertyOwner    Owner
                  | PropertyGeneric  Text Property
   deriving (Eq, Show)
 
 anyPropertyJSONKey :: AnyProperty -> Text
 anyPropertyJSONKey (PropertyPreImage _)  = "preImage"
-anyPropertyJSONKey (PropertySubject _)   = "subject"
 anyPropertyJSONKey (PropertyOwner _)     = "owner"
 anyPropertyJSONKey (PropertyGeneric k _) = k
 
+anyPropertyToJSONObject :: AnyProperty -> HM.HashMap Text Aeson.Value
+anyPropertyToJSONObject (PropertyGeneric k p)         = HM.singleton k (Aeson.toJSON p)
+anyPropertyToJSONObject p@(PropertyPreImage preImage) = HM.singleton (anyPropertyJSONKey p) (Aeson.toJSON preImage)
+anyPropertyToJSONObject p@(PropertyOwner own)         = HM.singleton (anyPropertyJSONKey p) (Aeson.toJSON own)
+
 instance ToJSON AnyProperty where
-  toJSON (PropertyGeneric _ p) = Aeson.toJSON p
-  toJSON p                     = Aeson.toJSON p
+  toJSON = Aeson.Object . anyPropertyToJSONObject
+
+instance FromJSON AnyProperty where
+  parseJSON = Aeson.withObject "AnyProperty" $ \obj -> do
+    let keys = HM.keys obj
+
+    case keys of
+      (k:[]) ->
+        case HM.lookup k obj of
+          Nothing  -> Aeson.parseFail $ "Object has no value for key '" <> show k <> "'."
+          Just val ->
+            case k of
+              "preImage" -> PropertyPreImage     <$> Aeson.parseJSON val
+              "owner"    -> PropertyOwner        <$> Aeson.parseJSON val
+              name       -> PropertyGeneric name <$> Aeson.parseJSON val
+      otherwise       -> Aeson.parseFail $ "Object should only have one key but instead has: " <> show keys
 
 -- | More loosely-typed metadata entry useful in looser-typed contexts.
 --
@@ -45,17 +68,22 @@ instance ToJSON AnyProperty where
 -- represent part of a 'Entry', hence 'PartialEntry'.
 data PartialEntry
   = PartialEntry { peSubject    :: Subject
-                 , peProperties :: [AnyProperty]
+                 , peProperties :: HM.HashMap Text AnyProperty
                  }
   deriving (Eq, Show)
 
 instance ToJSON PartialEntry where
   toJSON (PartialEntry subj props) = (Aeson.Object $ HM.fromList
-    [("subject", Aeson.String subj)] <> foldMap toObj props)
+    [("subject", Aeson.String subj)] <> fmap Aeson.toJSON props)
 
-    where
-      toObj :: AnyProperty -> HM.HashMap Text Aeson.Value
-      toObj p = HM.singleton (anyPropertyJSONKey p) $ Aeson.toJSON p
+instance FromJSON PartialEntry where
+  parseJSON = Aeson.withObject "PartialEntry" $ \obj ->
+    PartialEntry
+      <$> (obj .: "subject")
+      <*> (fmap HM.fromList $ sequence (fmap
+                    (\(k, v) -> (k,) <$> Aeson.parseJSON v)
+                    (filter ((/= "subject") . fst) $ HM.toList obj)
+                   ))
 
 -- | Represents the content of a batch request to the metadata system.
 --
@@ -63,8 +91,8 @@ instance ToJSON PartialEntry where
 -- represent a request for the "preimage" and "name" properties of both
 -- subject "a" and "b".
 data BatchRequest
-  = BatchRequest { bReqSubjects      :: [Subject]
-                 , bReqPropertyNames :: [Text]
+  = BatchRequest { bReqSubjects   :: [Subject]
+                 , bReqProperties :: [Text]
                  }
   deriving (Eq, Show)
 
@@ -72,9 +100,6 @@ data BatchRequest
 data BatchResponse
   = BatchResponse { bRespSubjects :: [PartialEntry] }
   deriving (Eq, Show)
-
-instance ToJSON BatchResponse where
-  toJSON (BatchResponse subjects) = Aeson.Object $ HM.fromList [("subjects", Aeson.toJSON subjects)]
 
 -- | An entry in the metadata system.
 data Entry
@@ -97,8 +122,8 @@ type Subject = Text
 -- | Public key and signature attesting to ownership of the metadata
 -- entry in this registry.
 data Owner
-  = Owner { ownPublicKey :: Text
-          , ownSignature :: Text
+  = Owner { ownSignature :: Text
+          , ownPublicKey :: Text
           }
   deriving (Eq, Show)
 
@@ -117,11 +142,6 @@ data PreImage
              }
   deriving (Eq, Show)
 
-instance ToJSON PreImage where
-  toJSON (PreImage val hashFn) = Aeson.Object $ HM.fromList
-    [ ("value", Aeson.String val)
-    , ("hashFn", Aeson.String $ T.pack . show $ hashFn)]
-
 -- | A pair of the value, and a list of annotated signatures.
 data Property
   = Property { propValue        :: Text
@@ -129,31 +149,25 @@ data Property
              }
   deriving (Eq, Show)
 
-instance ToJSON Property where
-  toJSON (Property val anSigs) = Aeson.Object $ HM.fromList
-    [ ("value", Aeson.toJSON val)
-    , ("anSignatures", Aeson.toJSON anSigs)
-    ]
-
 -- | A pair of a public key, and a signature of the metadata entry by
 -- that public key.
 data AnnotatedSignature =
-  AnnotatedSignature { asPublicKey :: Text
-                     , asSignature :: Text
+  AnnotatedSignature { asSignature :: Text
+                     , asPublicKey :: Text
                      }
   deriving (Eq, Show)
-
-instance ToJSON AnnotatedSignature where
-  toJSON (AnnotatedSignature pubKey sig) = Aeson.Object $ HM.fromList $
-    [ ("signature", Aeson.String sig)
-    , ("publicKey", Aeson.String pubKey)
-    ]
 
 -- | Hash functions supported by 'PreImage'.
 data HashFn = Blake2b256
             | Blake2b224
             | SHA256
   deriving (Eq)
+
+instance ToJSON HashFn where
+  toJSON = Aeson.String . T.pack .show
+
+instance FromJSON HashFn where
+  parseJSON = Aeson.withText "HashFn" (either Aeson.parseFail pure . readEither . T.unpack)
 
 instance Show HashFn where
   show Blake2b256 = "blake2b-256"
@@ -166,6 +180,10 @@ instance Read HashFn where
                                 , SHA256     <$ string "sha256"
                                 ]
 
-$(deriveJSON defaultOptions{Aeson.fieldLabelModifier = drop 2, Aeson.constructorTagModifier = toCamel . fromHumps } ''Entry)
-$(deriveJSON defaultOptions{Aeson.fieldLabelModifier = drop 3, Aeson.constructorTagModifier = toCamel . fromHumps } ''Owner)
-$(deriveJSON defaultOptions{Aeson.fieldLabelModifier = drop 2, Aeson.constructorTagModifier = toCamel . fromHumps } ''Owner)
+$(deriveJSON defaultOptions{ Aeson.fieldLabelModifier = toCamel . fromHumps . drop 2 } ''Entry)
+$(deriveJSON defaultOptions{ Aeson.fieldLabelModifier = toCamel . fromHumps . drop 3 } ''Owner)
+$(deriveJSON defaultOptions{ Aeson.fieldLabelModifier = toCamel . fromHumps . drop 2 } ''AnnotatedSignature)
+$(deriveJSON defaultOptions{ Aeson.fieldLabelModifier = toCamel . fromHumps . drop 4 } ''Property)
+$(deriveJSON defaultOptions{ Aeson.fieldLabelModifier = toCamel . fromHumps . drop 2 } ''PreImage)
+$(deriveJSON defaultOptions{ Aeson.fieldLabelModifier = toCamel . fromHumps . drop 4 } ''BatchRequest)
+$(deriveJSON defaultOptions{ Aeson.fieldLabelModifier = toCamel . fromHumps . drop 5 } ''BatchResponse)
