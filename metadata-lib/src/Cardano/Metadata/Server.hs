@@ -1,17 +1,23 @@
 
-module Metadata.Server
+module Cardano.Metadata.Server
   ( ReadFns(..)
   , metadataServer
   , webApp
   ) where
 
-import Metadata.Server.Types
-import Metadata.Server.API
+import Data.Text (Text)
+import Control.Monad.IO.Class (liftIO)
+import           Network.Wai                  ( Application )
+import Data.Proxy (Proxy)
+import Servant
+
+import Cardano.Metadata.Server.Types
+import Cardano.Metadata.Server.API
 
 -- | A set of functions that allows the user of this library to
 -- determine how metadata entries are retrieved. E.g. with postgres or
 -- with dynamo-db.
-newtype ReadFns = { readEntry    :: Subject -> IO Entry
+data ReadFns = ReadFns { readEntry    :: Subject -> IO Entry
                   -- ^ Given a subject, return an Entry
                   , readProperty :: Subject -> Text -> IO AnyProperty
                   -- ^ Return the given property for the given subject
@@ -27,9 +33,10 @@ webApp :: ReadFns -> Application
 webApp fns = serve (Proxy :: Proxy MetadataServerAPI) (metadataServer fns)
 
 metadataServer :: ReadFns -> Server MetadataServerAPI
-metadataServer fns = subjectHandler  (readEntry fns)
+metadataServer fns = subjectHandler (readEntry fns)
+                :<|> subjectHandler (readEntry fns)
                 :<|> propertyHandler (readProperty fns)
-                :<|> batchHandle     (readProperty fns)
+                :<|> batchHandler (readBatch fns)
 
 subjectHandler
   :: (Subject -> IO Entry)

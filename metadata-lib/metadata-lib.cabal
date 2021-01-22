@@ -14,20 +14,25 @@ library
                        Cardano.Metadata.Server.Types
                        Cardano.Metadata.Server.API
 
-  build-depends:       base
-                     , aeson
+  build-depends:       aeson
+                     , base
                      , bytestring
-                     , lens-aeson
+                     , casing
                      , containers
                      , directory
+                     , esqueleto
+                     , github-webhooks
                      , lens
+                     , lens-aeson
                      , mtl
+                     , persistent
                      , safe-exceptions
                      , scientific
+                     , servant
+                     , servant-server
                      , text
-                     , github-webhooks
-                     , persistent
-                     , esqueleto
+                     , unordered-containers
+                     , wai
 
 test-suite unit-tests
   hs-source-dirs:       test

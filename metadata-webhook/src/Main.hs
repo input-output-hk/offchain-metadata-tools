@@ -1,3 +1,5 @@
+{-# LANGUAGE RankNTypes #-}
+
 module Main where
 
 import           Control.Monad.IO.Class       ( liftIO )

@@ -15,7 +15,7 @@
 }:
 let
   src = haskell-nix.haskellLib.cleanGit {
-    name = "voting-tools";
+    name = "metadata-server";
     src = ../.;
   };
 

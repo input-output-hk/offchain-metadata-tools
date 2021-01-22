@@ -1,4 +1,6 @@
 packages:
-  ./.
+  ./metadata-lib
+  ./metadata-server
+  ./metadata-webhook
 tests: True
 benchmarks: True
