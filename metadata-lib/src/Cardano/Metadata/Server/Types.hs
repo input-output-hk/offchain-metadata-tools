@@ -40,7 +40,13 @@ data BatchRequest
 -- | Represents the response of a batch request.
 data BatchResponse
   = BatchResponse { bRespSubjects :: [PartialEntry] }
-  deriving (Eq, Show, Semigroup, Monoid)
+  deriving (Eq, Show)
+
+instance Semigroup BatchResponse where
+  (BatchResponse xs) <> (BatchResponse ys) = BatchResponse $ xs <> ys
+
+instance Monoid BatchResponse where
+  mempty = BatchResponse mempty
 
 -- | An entry in the metadata system.
 data EntryF f
@@ -80,6 +86,15 @@ newtype Entry = Entry (EntryF Identity)
 
 newtype PartialEntry = PartialEntry (EntryF Maybe)
   deriving (Eq, Show)
+
+availablePropertyNames :: [Text]
+availablePropertyNames = 
+  [ "subject"
+  ,  "owner"
+  ,  "name"
+  ,  "description"
+  ,  "preImage"
+  ]
 
 instance ToJSON PartialEntry where
   toJSON (PartialEntry (EntryF subj owner name desc preImage)) =

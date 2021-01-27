@@ -13,6 +13,7 @@ library
   exposed-modules:     Cardano.Metadata.Server
                        Cardano.Metadata.Server.Types
                        Cardano.Metadata.Server.API
+                       Cardano.Metadata.Store.KeyValue.Map
 
   build-depends:       aeson
                      , base

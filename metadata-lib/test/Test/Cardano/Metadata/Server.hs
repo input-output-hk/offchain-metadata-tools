@@ -5,6 +5,7 @@
 
 module Test.Cardano.Metadata.Server
   ( tests
+  , testsFns
   ) where
 
 import           Data.List (delete, find, sort)
@@ -14,6 +15,7 @@ import           Data.Traversable
 import           Data.Functor.Identity (Identity(Identity))
 import           Data.Proxy (Proxy(Proxy))
 import           Data.Text (Text)
+import           Data.Word
 import qualified Data.ByteString.Lazy.Char8 as BLC
 import qualified Data.Text as T
 import qualified Data.Aeson as Aeson
@@ -42,6 +44,7 @@ import qualified Test.Generators as Gen
 
 import Cardano.Metadata.Server
 import Cardano.Metadata.Server.Types 
+import Cardano.Metadata.Store.KeyValue.Map
 
 withMetadataServerApp :: ReadFns -> (Warp.Port -> IO ()) -> IO ()
 withMetadataServerApp readFns action =
@@ -49,84 +52,73 @@ withMetadataServerApp readFns action =
   -- started and is being properly shutdown.
   Warp.testWithApplication (pure $ webApp readFns) action
 
-tests :: IO TestTree
-tests = do
-  eg <- liftIO $ testSpec "eg" spec_eg
-  pure $
-    testGroup "Servant server tests"
-    [ eg
+-- tests :: IO TestTree
+-- tests = do
+--   eg <- liftIO $ testSpec "eg" spec_eg
+--   pure $
+--     testGroup "Servant server tests"
+--     [ eg
+--     ]
+
+-- spec_eg :: Spec
+-- spec_eg = do
+--   let
+--     testData = M.fromList
+--       [ ("3", Entry $ EntryF "3" (Identity $ Owner mempty mempty) (Identity $ Property "n" []) (Identity $ Property "d" []) (Identity $ PreImage "x" SHA256))
+--       ]
+        
+--   around (withMetadataServerApp (readFnsSimple testData)) $ do
+--     let getSubject :<|> getSubjectProperties :<|> getProperty :<|> getBatch = client (Proxy :: Proxy MetadataServerAPI)
+--     baseUrl <- runIO $ parseBaseUrl "http://localhost"
+--     manager <- runIO $ newManager defaultManagerSettings
+--     let clientEnv port = mkClientEnv manager (baseUrl { baseUrlPort = port })
+
+--     describe "GET /subject/{subject}" $ do
+--       it "should return the subject" $ \port -> do
+--         result <- runClientM (getSubject "3") (clientEnv port)
+--         result `shouldBe` (Right $ Entry $ EntryF "3" (Identity $ Owner mempty mempty) (Identity $ Property "n" []) (Identity $ Property "d" []) (Identity $ PreImage "x" SHA256))
+--     describe "GET /subject/{subject}/properties" $ do
+--       it "should return the subject" $ \port -> do
+--         result <- runClientM (getSubject "3") (clientEnv port)
+--         result `shouldBe` (Right $ Entry $ EntryF "3" (Identity $ Owner mempty mempty) (Identity $ Property "n" []) (Identity $ Property "d" []) (Identity $ PreImage "x" SHA256))
+--     describe "GET /subject/{subject}/property/{property}" $ do
+--       it "should return the subject's property" $ \port -> do
+--         result <- runClientM (getProperty "3" "owner") (clientEnv port)
+--         result `shouldBe` (Right $ PartialEntry $ EntryF "3" (Just $ Owner mempty mempty) Nothing Nothing Nothing)
+--     describe "GET /query" $ do
+--       it "should return empty response if subject not found" $ \port -> do
+--         result <- runClientM (getBatch $ BatchRequest ["3"] ["owner"]) (clientEnv port)
+--         result `shouldBe` (Right $ BatchResponse [])
+--       it "should return empty response if subject found but property not" $ \port -> do
+--         result <- runClientM (getBatch $ BatchRequest ["3"] ["owner"]) (clientEnv port)
+--         result `shouldBe` (Right $ BatchResponse [])
+--       it "should ignore properties not found, returning properties that were found" $ \port -> do
+--         result <- runClientM (getBatch $ BatchRequest ["3"] ["owner"]) (clientEnv port)
+--         result `shouldBe` (Right $ BatchResponse [])
+--       it "should return a batch response" $ \port -> do
+--         result <- runClientM (getBatch $ BatchRequest ["3"] ["owner"]) (clientEnv port)
+--         result `shouldBe` (Right $ BatchResponse [])
+
+testsFns :: Gen (KeyValue Word8 Word8) -> TestTree
+testsFns genKvs = do
+  testGroup "Data store property tests"
+    [ testProperty "x" (prop_x genKvs)
     ]
 
-spec_eg :: Spec
-spec_eg = do
+prop_x :: Gen (KeyValue Word8 Word8) -> H.Property
+prop_x genKvs = property $ do
+  kvs  <- forAll $ genKvs
+
   let
-    testData = M.fromList
-      [ ("3", Entry $ EntryF "3" (Identity $ Owner mempty mempty) (Identity $ Property "n" []) (Identity $ Property "d" []) (Identity $ PreImage "x" SHA256))
-      ]
-        
-  around (withMetadataServerApp (readFnsSimple testData)) $ do
-    let getSubject :<|> getSubjectProperties :<|> getProperty :<|> getBatch = client (Proxy :: Proxy MetadataServerAPI)
-    baseUrl <- runIO $ parseBaseUrl "http://localhost"
-    manager <- runIO $ newManager defaultManagerSettings
-    let clientEnv port = mkClientEnv manager (baseUrl { baseUrlPort = port })
+    newKey = 1
+    newValue = 12
+  
+  kvs' <- liftIO $ write newKey newValue kvs
+  original <- liftIO $ toList kvs
 
-    describe "GET /subject/{subject}" $ do
-      it "should return the subject" $ \port -> do
-        result <- runClientM (getSubject "3") (clientEnv port)
-        result `shouldBe` (Right $ Entry $ EntryF "3" (Identity $ Owner mempty mempty) (Identity $ Property "n" []) (Identity $ Property "d" []) (Identity $ PreImage "x" SHA256))
-    describe "GET /subject/{subject}/properties" $ do
-      it "should return the subject" $ \port -> do
-        result <- runClientM (getSubject "3") (clientEnv port)
-        result `shouldBe` (Right $ Entry $ EntryF "3" (Identity $ Owner mempty mempty) (Identity $ Property "n" []) (Identity $ Property "d" []) (Identity $ PreImage "x" SHA256))
-    describe "GET /subject/{subject}/property/{property}" $ do
-      it "should return the subject's property" $ \port -> do
-        result <- runClientM (getProperty "3" "owner") (clientEnv port)
-        result `shouldBe` (Right $ PartialEntry $ EntryF "3" (Just $ Owner mempty mempty) Nothing Nothing Nothing)
-    describe "GET /query" $ do
-      it "should return empty response if subject not found" $ \port -> do
-        result <- runClientM (getBatch $ BatchRequest ["3"] ["owner"]) (clientEnv port)
-        result `shouldBe` (Right $ BatchResponse [])
-      it "should return empty response if subject found but property not" $ \port -> do
-        result <- runClientM (getBatch $ BatchRequest ["3"] ["owner"]) (clientEnv port)
-        result `shouldBe` (Right $ BatchResponse [])
-      it "should ignore properties not found, returning properties that were found" $ \port -> do
-        result <- runClientM (getBatch $ BatchRequest ["3"] ["owner"]) (clientEnv port)
-        result `shouldBe` (Right $ BatchResponse [])
-      it "should return a batch response" $ \port -> do
-        result <- runClientM (getBatch $ BatchRequest ["3"] ["owner"]) (clientEnv port)
-        result `shouldBe` (Right $ BatchResponse [])
+  toList kvs' === M.toList (M.insert newKey newValue (M.fromList (toList kvs)))
 
-readFnsSimple :: Map Subject Entry -> ReadFns
-readFnsSimple dat = ReadFns
-  (pure . getEntryForSubject)
-  (\subj -> pure . getPartialEntryForProperty subj)
-  (pure . getBatch)
 
-  where
-    getEntryForSubject :: Subject -> Either ReadError Entry
-    getEntryForSubject subj = case M.lookup subj dat of
-      Nothing -> Left $ NoSubject subj
-      Just e  -> Right e
 
-    getPartialEntryForProperty :: Subject -> Text -> Either ReadError PartialEntry
-    getPartialEntryForProperty subj prop = do
-      entry <- getEntryForSubject subj
-      getProperty subj prop entry
-
-    getProperty :: Subject -> Text -> Entry -> Either ReadError PartialEntry
-    getProperty subj prop entry =
-      case Aeson.toJSON entry of
-        (Aeson.Object obj) -> case HM.lookup prop obj of
-          Nothing -> Left $ NoProperty subj prop
-          Just p  -> case Aeson.fromJSON (Aeson.Object $ HM.fromList [("subject", Aeson.String subj), (prop, p)]) of
-            Aeson.Error str -> error $ "JSON parsing error: " <> str
-            Aeson.Success x -> Right x
-        otherwise          -> error "Entry isn't a JSON Object but should be."
-
-    getBatch :: BatchRequest -> BatchResponse
-    getBatch (BatchRequest subjs props) = BatchResponse $
-      either (const []) mconcat $
-        forM subjs $ \subj ->
-          forM props $ \prop ->
-            case getPartialEntryForProperty subj prop of
-              _ -> 
+  
+  

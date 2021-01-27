@@ -69,11 +69,11 @@ batchRequest =
     <$> Gen.list (Range.linear 0 20) subject
     <*> Gen.list (Range.linear 0 10) name
 
--- anyProperty :: Gen AnyProperty
--- anyProperty = Gen.choice [ PropertyPreImage <$> preImage
---                          , PropertyOwner <$> owner
---                          , PropertyGeneric <$> name <*> metadataProperty
---                          ]
+batchRequestFor :: [Subject] -> Gen BatchRequest
+batchRequestFor subjects = do
+  subjs <- Gen.list (Range.linear 1 (length subjects)) $ Gen.choice (pure <$> subjects)
+  props <- Gen.list (Range.linear 0 (length availablePropertyNames)) $ Gen.choice (pure <$> availablePropertyNames)
+  pure $ BatchRequest subjs props
 
 partialEntry :: Gen PartialEntry
 partialEntry = do
@@ -85,11 +85,6 @@ partialEntry = do
     <*> Gen.maybe metadataProperty
     <*> Gen.maybe preImage
     )
-
--- anyPropertyWithKey :: Gen (Text, AnyProperty)
--- anyPropertyWithKey = do
---   prop <- anyProperty
---   pure (anyPropertyJSONKey prop, prop)
 
 batchResponse :: Gen BatchResponse
 batchResponse = BatchResponse <$> Gen.list (Range.linear 0 20) partialEntry

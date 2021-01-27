@@ -20,22 +20,8 @@ import Servant
 import Control.Exception.Safe (catchAny)
 
 import Cardano.Metadata.Server.Types
+import Cardano.Metadata.Store.Types
 import Cardano.Metadata.Server.API
-
--- | A set of functions that allows the user of this library to
--- determine how metadata entries are retrieved. E.g. with postgres or
--- with dynamo-db.
-data ReadFns
-  = ReadFns { readEntry    :: Subject -> IO (Either ReadError Entry)
-            -- ^ Given a subject, return an Entry
-            , readProperty :: Subject -> Text -> IO (Either ReadError PartialEntry)
-            -- ^ Return the given property for the given subject
-            , readBatch    :: BatchRequest -> IO BatchResponse
-            -- ^ Service a batch request
-            }
-
-data ReadError = NoSubject Subject
-               | NoProperty Subject Text
 
 -- | 'Network.Wai.Application' of the metadata server.
 --
@@ -54,14 +40,14 @@ subjectHandler
   :: (Subject -> IO (Either ReadError Entry))
   -> Subject
   -> Handler Entry
-subjectHandler f subject = catchExceptions $ handleErrors =<< (liftIO $ f subject)
+subjectHandler f subject = catchExceptions $ handleErrors =<< liftIO (f subject)
 
 propertyHandler
   :: (Subject -> Text -> IO (Either ReadError PartialEntry))
   -> Subject
   -> Text
   -> Handler PartialEntry
-propertyHandler f subject property = catchExceptions $ handleErrors =<< (liftIO $ f subject property)
+propertyHandler f subject property = catchExceptions $ handleErrors =<< liftIO (f subject property)
 
 batchHandler
   :: (BatchRequest -> IO BatchResponse)
