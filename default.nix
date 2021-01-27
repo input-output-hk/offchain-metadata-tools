@@ -50,6 +50,6 @@ let
       withHoogle = true;
     };
 
-    integration-tests = import ./test/integration/vm.nix { inherit pkgs; };
+    # integration-tests = import ./test/integration/vm.nix { inherit pkgs; };
   };
 in self
