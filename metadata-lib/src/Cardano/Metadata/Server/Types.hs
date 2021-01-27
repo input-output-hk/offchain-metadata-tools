@@ -1,15 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Cardano.Metadata.Server.Types where
 
 import Data.Text (Text)
+import GHC.Generics
 import qualified Data.Text as T
+import Data.Functor.Identity (Identity)
 import Text.Read (Read(readPrec), readEither)
 import qualified Text.Read as Read (lift)
 import Text.ParserCombinators.ReadP (choice, string)
-import Data.Aeson (ToJSON, FromJSON, (.:))
+import Data.Aeson (ToJSON, FromJSON, (.:), (.:?))
 import Control.Applicative (some)
 import qualified Data.Aeson.Types as Aeson
 import qualified Data.Aeson as Aeson
@@ -17,47 +21,48 @@ import Data.Aeson.TH
 import Data.Set (Set)
 import qualified Data.Set as Set
 import qualified Data.HashMap.Strict as HM
-import Text.Casing 
+import Text.Casing
 import qualified Data.List.NonEmpty as NE
+import GHC.Show (showSpace)
 
 -- | More loosely-typed metadata property useful in looser-typed
 -- contexts.
--- 
+--
 -- For example, when the user queries the metadata server for a
 -- property, we might return a preimage, or a subject, or an owner, or
 -- some other generic property. We need a type to represent this.
-data AnyProperty = PropertyPreImage PreImage
-                 | PropertyOwner    Owner
-                 | PropertyGeneric  Text Property
-  deriving (Eq, Show)
+-- data AnyProperty = PropertyPreImage PreImage
+--                  | PropertyOwner    Owner
+--                  | PropertyGeneric  Text Property
+--   deriving (Eq, Show)
 
-anyPropertyJSONKey :: AnyProperty -> Text
-anyPropertyJSONKey (PropertyPreImage _)  = "preImage"
-anyPropertyJSONKey (PropertyOwner _)     = "owner"
-anyPropertyJSONKey (PropertyGeneric k _) = k
+-- anyPropertyJSONKey :: AnyProperty -> Text
+-- anyPropertyJSONKey (PropertyPreImage _)  = "preImage"
+-- anyPropertyJSONKey (PropertyOwner _)     = "owner"
+-- anyPropertyJSONKey (PropertyGeneric k _) = k
 
-anyPropertyToJSONObject :: AnyProperty -> HM.HashMap Text Aeson.Value
-anyPropertyToJSONObject (PropertyGeneric k p)         = HM.singleton k (Aeson.toJSON p)
-anyPropertyToJSONObject p@(PropertyPreImage preImage) = HM.singleton (anyPropertyJSONKey p) (Aeson.toJSON preImage)
-anyPropertyToJSONObject p@(PropertyOwner own)         = HM.singleton (anyPropertyJSONKey p) (Aeson.toJSON own)
+-- anyPropertyToJSONObject :: AnyProperty -> HM.HashMap Text Aeson.Value
+-- anyPropertyToJSONObject (PropertyGeneric k p)         = HM.singleton k (Aeson.toJSON p)
+-- anyPropertyToJSONObject p@(PropertyPreImage preImage) = HM.singleton (anyPropertyJSONKey p) (Aeson.toJSON preImage)
+-- anyPropertyToJSONObject p@(PropertyOwner own)         = HM.singleton (anyPropertyJSONKey p) (Aeson.toJSON own)
 
-instance ToJSON AnyProperty where
-  toJSON = Aeson.Object . anyPropertyToJSONObject
+-- instance ToJSON AnyProperty where
+--   toJSON = Aeson.Object . anyPropertyToJSONObject
 
-instance FromJSON AnyProperty where
-  parseJSON = Aeson.withObject "AnyProperty" $ \obj -> do
-    let keys = HM.keys obj
+-- instance FromJSON AnyProperty where
+--   parseJSON = Aeson.withObject "AnyProperty" $ \obj -> do
+--     let keys = HM.keys obj
 
-    case keys of
-      (k:[]) ->
-        case HM.lookup k obj of
-          Nothing  -> Aeson.parseFail $ "Object has no value for key '" <> show k <> "'."
-          Just val ->
-            case k of
-              "preImage" -> PropertyPreImage     <$> Aeson.parseJSON val
-              "owner"    -> PropertyOwner        <$> Aeson.parseJSON val
-              name       -> PropertyGeneric name <$> Aeson.parseJSON val
-      otherwise       -> Aeson.parseFail $ "Object should only have one key but instead has: " <> show keys
+--     case keys of
+--       (k:[]) ->
+--         case HM.lookup k obj of
+--           Nothing  -> Aeson.parseFail $ "Object has no value for key '" <> show k <> "'."
+--           Just val ->
+--             case k of
+--               "preImage" -> PropertyPreImage     <$> Aeson.parseJSON val
+--               "owner"    -> PropertyOwner        <$> Aeson.parseJSON val
+--               name       -> PropertyGeneric name <$> Aeson.parseJSON val
+--       otherwise       -> Aeson.parseFail $ "Object should only have one key but instead has: " <> show keys
 
 -- | More loosely-typed metadata entry useful in looser-typed contexts.
 --
@@ -66,24 +71,24 @@ instance FromJSON AnyProperty where
 -- them a 'Entry' because we only have the "description" and
 -- "owner" properties, therefore, we need a type which allows us to
 -- represent part of a 'Entry', hence 'PartialEntry'.
-data PartialEntry
-  = PartialEntry { peSubject    :: Subject
-                 , peProperties :: HM.HashMap Text AnyProperty
-                 }
-  deriving (Eq, Show)
+-- data PartialEntry
+--   = PartialEntry { peSubject    :: Subject
+--                  , peProperties :: HM.HashMap Text AnyProperty
+--                  }
+--   deriving (Eq, Show)
 
-instance ToJSON PartialEntry where
-  toJSON (PartialEntry subj props) = (Aeson.Object $ HM.fromList
-    [("subject", Aeson.String subj)] <> fmap Aeson.toJSON props)
+-- instance ToJSON PartialEntry where
+--   toJSON (PartialEntry subj props) = (Aeson.Object $ HM.fromList
+--     [("subject", Aeson.String subj)] <> foldMap anyPropertyToJSONObject props)
 
-instance FromJSON PartialEntry where
-  parseJSON = Aeson.withObject "PartialEntry" $ \obj ->
-    PartialEntry
-      <$> (obj .: "subject")
-      <*> (fmap HM.fromList $ sequence (fmap
-                    (\(k, v) -> (k,) <$> Aeson.parseJSON v)
-                    (filter ((/= "subject") . fst) $ HM.toList obj)
-                   ))
+-- instance FromJSON PartialEntry where
+--   parseJSON = Aeson.withObject "PartialEntry" $ \obj ->
+--     PartialEntry
+--       <$> (obj .: "subject")
+--       <*> (fmap HM.fromList $ sequence (fmap
+--                     (\(k, v) -> (k,) <$> Aeson.parseJSON v)
+--                     (filter ((/= "subject") . fst) $ HM.toList obj)
+--                    ))
 
 -- | Represents the content of a batch request to the metadata system.
 --
@@ -102,19 +107,85 @@ data BatchResponse
   deriving (Eq, Show)
 
 -- | An entry in the metadata system.
-data Entry
-  = Entry { enSubject     :: Subject
-          -- ^ The metadata subject, the on-chain identifier
-          , enOwner       :: Owner
-          -- ^ Public key and signature attesting to ownership of the metadata entry in this registry.
-          , enName        :: Name
-          -- ^ A human-readable name for the metadata subject, suitable for use in an interface
-          , enDescription :: Description
-          -- ^ A human-readable description for the metadata subject, suitable for use in an interface
-          , enPreImage    :: PreImage
-          -- ^ A pair of a hash function identifier and a bytestring, such that the bytestring is the preimage of the metadata subject under that hash function
-          }
+data EntryF f
+  = EntryF { enSubject     :: Subject
+           -- ^ The metadata subject, the on-chain identifier
+           , enOwner       :: f Owner
+           -- ^ Public key and signature attesting to ownership of the metadata entry in this registry.
+           , enName        :: f Name
+           -- ^ A human-readable name for the metadata subject, suitable for use in an interface
+           , enDescription :: f Description
+           -- ^ A human-readable description for the metadata subject, suitable for use in an interface
+           , enPreImage    :: f PreImage
+           -- ^ A pair of a hash function identifier and a bytestring, such that the bytestring is the preimage of the metadata subject under that hash function
+           }
+  deriving (Generic)
+
+instance (Show (f Owner), Show (f Name), Show (f Description), Show (f PreImage), Functor f) => Show (EntryF f) where
+  -- show (EntryF a b c d e) = "(EntryF (" <> show a <> ") (" <> show b <> ") (" <> show c <> ") (" <> show d <> "))"
+  showsPrec n (EntryF a b c d e)
+      = showParen (n >= 11) $
+             showString "EntryF "
+           . showsPrec 11 a
+           . showSpace
+           . showsPrec 11 b
+           . showSpace
+           . showsPrec 11 c
+           . showSpace
+           . showsPrec 11 d
+           . showSpace
+           . showsPrec 11 e
+
+instance (Eq (f Owner), Eq (f Name), Eq (f Description), Eq (f PreImage), Functor f) => Eq (EntryF f) where
+  (EntryF a1 a2 a3 a4 a5) == (EntryF b1 b2 b3 b4 b5) = a1 == b1 && a2 == b2 && a3 == b3 && a4 == b4 && a5 == b5
+
+newtype Entry = Entry (EntryF Identity)
   deriving (Eq, Show)
+
+newtype PartialEntry = PartialEntry (EntryF Maybe)
+  deriving (Eq, Show)
+
+instance ToJSON PartialEntry where
+  toJSON (PartialEntry (EntryF subj owner name desc preImage)) =
+    Aeson.Object . HM.fromList $
+      [ ("subject", Aeson.toJSON subj) ]
+      <> optionalKey "owner" owner
+      <> optionalKey "name" name
+      <> optionalKey "description" desc
+      <> optionalKey "preImage" preImage
+
+    where
+      optionalKey :: ToJSON a => Text -> Maybe a -> [(Text, Aeson.Value)]
+      optionalKey _ Nothing    = []
+      optionalKey key (Just a) = [(key, Aeson.toJSON a)]
+
+instance FromJSON PartialEntry where
+  parseJSON = Aeson.withObject "PartialEntry" $ \obj -> fmap PartialEntry $
+     EntryF
+       <$> obj .: "subject"
+       <*> obj .:? "owner"
+       <*> obj .:? "name"
+       <*> obj .:? "description"
+       <*> obj .:? "preImage"
+
+instance ToJSON Entry where
+  toJSON (Entry (EntryF subj owner name desc preImage)) =
+    Aeson.Object . HM.fromList $
+      [ ("subject"     , Aeson.toJSON subj)
+      , ("owner"       , Aeson.toJSON owner)
+      , ("name"        , Aeson.toJSON name)
+      , ("description" , Aeson.toJSON desc)
+      , ("preImage"    , Aeson.toJSON preImage)
+      ]
+
+instance FromJSON Entry where
+  parseJSON = Aeson.withObject "Entry" $ \obj -> fmap Entry $
+    EntryF
+     <$> obj .: "subject"
+     <*> obj .: "owner"
+     <*> obj .: "name"
+     <*> obj .: "description"
+     <*> obj .: "preImage"
 
 -- | The metadata subject, the on-chain identifier
 type Subject = Text
@@ -180,7 +251,6 @@ instance Read HashFn where
                                 , SHA256     <$ string "sha256"
                                 ]
 
-$(deriveJSON defaultOptions{ Aeson.fieldLabelModifier = toCamel . fromHumps . drop 2 } ''Entry)
 $(deriveJSON defaultOptions{ Aeson.fieldLabelModifier = toCamel . fromHumps . drop 3 } ''Owner)
 $(deriveJSON defaultOptions{ Aeson.fieldLabelModifier = toCamel . fromHumps . drop 2 } ''AnnotatedSignature)
 $(deriveJSON defaultOptions{ Aeson.fieldLabelModifier = toCamel . fromHumps . drop 4 } ''Property)

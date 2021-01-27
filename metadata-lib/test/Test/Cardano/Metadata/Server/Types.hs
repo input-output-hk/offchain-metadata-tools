@@ -8,6 +8,7 @@ module Test.Cardano.Metadata.Server.Types
   ) where
 
 import           Data.List (delete, find, sort)
+import           Data.Functor.Identity (Identity(Identity))
 import           Data.Monoid (Sum (Sum), getSum)
 import           Data.Ratio (Ratio, (%))
 import           Data.Word (Word8)
@@ -54,15 +55,14 @@ tests = testGroup "Metadata type tests"
 
       , testProperty "Entry/json/roundtrips" (prop_json_roundtrips Gen.entry)
       , testProperty "Entry/json/matches-spec-keys" (prop_json_only_has_keys Gen.entry ["subject", "owner", "name", "description", "preImage"])
-      , testCase "Entry/json/matches-spec" unit_entry_json_spec
+      , testCase     "Entry/json/matches-spec" unit_entry_json_spec
+      , testProperty "PartialEntry/json/roundtrips" (prop_json_roundtrips Gen.partialEntry)
 
       , testProperty "BatchRequest/json/roundtrips" (prop_json_roundtrips Gen.batchRequest)
       , testProperty "BatchRequest/json/matches-spec-keys" (prop_json_only_has_keys Gen.batchRequest ["subjects", "properties"])
 
-      , testProperty "AnyProperty/json/roundtrips" (prop_json_roundtrips Gen.anyProperty)
-      , testProperty "PartialEntry/json/roundtrips" (prop_json_roundtrips Gen.partialEntry)
       , testProperty "BatchResponse/json/roundtrips" (prop_json_roundtrips Gen.batchResponse)
-      , testCase "BatchResponse/json/matches-spec" unit_batch_response_json_spec
+      , testCase     "BatchResponse/json/matches-spec" unit_batch_response_json_spec
       ]
   ]
 
@@ -146,13 +146,13 @@ unit_entry_json_spec = do
   }
   |]
   (Aeson.eitherDecode json :: Either String Entry)
-    @?= Right ( Entry
+    @?= Right ( Entry $ EntryF
                   "7f71940915ea5fe85e840f843c929eba467e6f050475bad1f10b9c274d1888c0"
-                  ( Owner
+                  ( Identity $ Owner
                      "62e800b8c540b218396174f9c42fc253ab461961e20a4cc8ed4ba8b3fdff760cf8422e80d2504829a1d84458093880f02629524416f895b802cb9211f5145808"
                      "25912b3081c20782aaa576af51ef3b17d7370d9fdf6641fec28012678ac1d179"
                   )
-                  ( Property
+                  ( Identity $ Property
                       "SteveToken" 
                       [ (AnnotatedSignature "7ef6ed44ba9456737ef8d2e31596fdafb66d5775ac1a254086a553b666516e5895bb0c6b7ba8bef1f6b4d9bd9253b4449d1354de2f9e043ea4eb43fd42f87108" "0ee262f062528667964782777917cd7139e19e8eb2c591767629e4200070c661")
                       , (AnnotatedSignature "c95cf87b74d1e4d3b413c927c65de836f0905ba2cd176c7cbff83d8b886b30fe1560c542c1f77bb88280dff55c2d267c9840fe36560fb13ba4a78b6429e51500" "7c3bfe2a11290a9b6ea054b4d0932678f88130511cfbfe3f634ee77d71edebe7")
@@ -160,7 +160,7 @@ unit_entry_json_spec = do
                       , (AnnotatedSignature "c2b30fa5f2c09323d81e5050af681c023089d832d0b85d05f60f4278fba3011ab03e6bd9bd2b8649080a368ecfe51573cd232efe8f1e7ca69ff8334ced7b6801" "d40688a3eeda1f229c64efc56dd53b363ff981f71a7462f78c8cc444117a03db")
                       ]
                   )
-                  ( Property
+                  ( Identity $ Property
                       "A sample description"
                       [ (AnnotatedSignature "83ef5c04882e43e5f1c8e9bc386bd51cdda163f5cbd1996d1d066238de063d4b79b1648b48aec63dddff05649911ca116579842c8e9a08a3bc7ae1a0ec7ef000" "1446c9d327b0f07aa691014c08578867674f3a88b36f2017a58c37a8a7799058")
                       , (AnnotatedSignature "4e29a00feaeb24b25315f0eac28bbfc550dabfb847bf6a06cb8086120201f90c64fab778037d0ef009ab4669121a38fe9b8c0a6aec99c68366c5187c0889520a" "1910312a9a6998c7e4f585dc138f85a90f50a28397b8ea05eb23355fb8ea4fa0")
@@ -169,7 +169,7 @@ unit_entry_json_spec = do
                       , (AnnotatedSignature "e13c9ba5b084dc126d34f3f1120fff75495b64a41a98a69071b5c5ed01bb9d273f51d570cf4fdaa42969fa2c775c12ec05c496cd8f61323d343970136781f60e" "8cc8963b65ddd0a49f7ce1acc2915d8baff505bbc4f8727a22bd1d28f8ad6632")
                       ]
                   )
-                  ( PreImage
+                  ( Identity $ PreImage
                       "f026b38d5bfdd8d8d838df4c4cc5d6aa4e"
                       Blake2b256
                   )
@@ -178,55 +178,56 @@ unit_entry_json_spec = do
 unit_batch_response_json_spec :: Assertion
 unit_batch_response_json_spec = do
   let
-    expected = [r|{
-    "subjects": [
-        {
-            "subject": "44b57ee30cdb55829d0a5d4f046baef078f1e97a7f21b62d75f8e96ea139c35f",
-            "name": {
-                "value": "Wallet #6",
-                "anSignatures": [
-                    {
-                        "signature": "2e27065e365d38bef19b7bec139206f99b00effc8a2ad05bd22259aa939dd5083f25da91c4cb764eb1bfbce243ec32cce112be9762e1da7a38e975ebb0cc0b08",
-                        "publicKey": "44b57ee30cdb55829d0a5d4f046baef078f1e97a7f21b62d75f8e96ea139c35f"
-                    }
-                ]
+    expected = [r|
+      {
+        "subjects": [
+            {
+                "subject": "44b57ee30cdb55829d0a5d4f046baef078f1e97a7f21b62d75f8e96ea139c35f",
+                "name": {
+                    "value": "Wallet #6",
+                    "anSignatures": [
+                        {
+                            "signature": "2e27065e365d38bef19b7bec139206f99b00effc8a2ad05bd22259aa939dd5083f25da91c4cb764eb1bfbce243ec32cce112be9762e1da7a38e975ebb0cc0b08",
+                            "publicKey": "44b57ee30cdb55829d0a5d4f046baef078f1e97a7f21b62d75f8e96ea139c35f"
+                        }
+                    ]
+                }
+            },
+            {
+                "subject": "7f71940915ea5fe85e840f843c929eba467e6f050475bad1f10b9c274d1888c0",
+                "description": {
+                    "value": "rex",
+                    "anSignatures": [
+                        {
+                            "signature": "7ef6ed44ba9456737ef8d2e31596fdafb66d5775ac1a254086a553b666516e5895bb0c6b7ba8bef1f6b4d9bd9253b4449d1354de2f9e043ea4eb43fd42f87108",
+                            "publicKey": "0ee262f062528667964782777917cd7139e19e8eb2c591767629e4200070c661"
+                        }
+                    ]
+                }
             }
-        },
-        {
-            "subject": "7f71940915ea5fe85e840f843c929eba467e6f050475bad1f10b9c274d1888c0",
-            "description": {
-                "value": "rex",
-                "anSignatures": [
-                    {
-                        "signature": "7ef6ed44ba9456737ef8d2e31596fdafb66d5775ac1a254086a553b666516e5895bb0c6b7ba8bef1f6b4d9bd9253b4449d1354de2f9e043ea4eb43fd42f87108",
-                        "publicKey": "0ee262f062528667964782777917cd7139e19e8eb2c591767629e4200070c661"
-                    },
-                ]
-            }
-        }
-    ]
-}|]
+        ]
+      }
+  |]
 
   (Aeson.eitherDecode expected :: Either String BatchResponse)
-    @?= (Right $ BatchResponse [])
-    
-    -- (BatchResponse
-    --   [ ( PartialEntry
-    --         "44b57ee30cdb55829d0a5d4f046baef078f1e97a7f21b62d75f8e96ea139c35f"
-    --         (HM.singleton
-    --            "name"
-    --            (PropertyGeneric "name" (Property "Wallet #6" [AnnotatedSignature "2e27065e365d38bef19b7bec139206f99b00effc8a2ad05bd22259aa939dd5083f25da91c4cb764eb1bfbce243ec32cce112be9762e1da7a38e975ebb0cc0b08" "44b57ee30cdb55829d0a5d4f046baef078f1e97a7f21b62d75f8e96ea139c35f"])))
-    --     )
-    --   , ( PartialEntry
-    --         "7f71940915ea5fe85e840f843c929eba467e6f050475bad1f10b9c274d1888c0"
-    --         (HM.singleton
-    --           "description"
-    --           (PropertyGeneric "description" (Property "rex" [AnnotatedSignature "7ef6ed44ba9456737ef8d2e31596fdafb66d5775ac1a254086a553b666516e5895bb0c6b7ba8bef1f6b4d9bd9253b4449d1354de2f9e043ea4eb43fd42f87108" "0ee262f062528667964782777917cd7139e19e8eb2c591767629e4200070c661"]))
-    --         )
-    --     )
-    --   ]
-    -- )
-    -- @?= expected
+    @?= 
+    (Right $ BatchResponse
+      [ ( PartialEntry $ EntryF
+            "44b57ee30cdb55829d0a5d4f046baef078f1e97a7f21b62d75f8e96ea139c35f"
+            Nothing
+            (Just $ Property "Wallet #6" [AnnotatedSignature "2e27065e365d38bef19b7bec139206f99b00effc8a2ad05bd22259aa939dd5083f25da91c4cb764eb1bfbce243ec32cce112be9762e1da7a38e975ebb0cc0b08" "44b57ee30cdb55829d0a5d4f046baef078f1e97a7f21b62d75f8e96ea139c35f"]) 
+            Nothing
+            Nothing
+        )
+      , ( PartialEntry $ EntryF
+            "7f71940915ea5fe85e840f843c929eba467e6f050475bad1f10b9c274d1888c0"
+            Nothing
+            Nothing
+            (Just $ Property "rex" [AnnotatedSignature "7ef6ed44ba9456737ef8d2e31596fdafb66d5775ac1a254086a553b666516e5895bb0c6b7ba8bef1f6b4d9bd9253b4449d1354de2f9e043ea4eb43fd42f87108" "0ee262f062528667964782777917cd7139e19e8eb2c591767629e4200070c661"])
+            Nothing
+        )
+      ]
+    )
 
 -- The from/to JSON instances should simply match the show/read
 -- instances.

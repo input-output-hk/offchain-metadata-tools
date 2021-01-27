@@ -17,13 +17,14 @@ import Cardano.Metadata.Server.API
 -- | A set of functions that allows the user of this library to
 -- determine how metadata entries are retrieved. E.g. with postgres or
 -- with dynamo-db.
-data ReadFns = ReadFns { readEntry    :: Subject -> IO Entry
-                  -- ^ Given a subject, return an Entry
-                  , readProperty :: Subject -> Text -> IO AnyProperty
-                  -- ^ Return the given property for the given subject
-                  , readBatch    :: BatchRequest -> IO BatchResponse
-                  -- ^ Service a batch request
-                  }
+data ReadFns
+  = ReadFns { readEntry    :: Subject -> IO Entry
+            -- ^ Given a subject, return an Entry
+            , readProperty :: Subject -> Text -> IO PartialEntry
+            -- ^ Return the given property for the given subject
+            , readBatch    :: BatchRequest -> IO BatchResponse
+            -- ^ Service a batch request
+            }
 
 -- | 'Network.Wai.Application' of the metadata server.
 --
@@ -45,10 +46,10 @@ subjectHandler
 subjectHandler f subject = liftIO $ f subject
 
 propertyHandler
-  :: (Subject -> Text -> IO AnyProperty)
+  :: (Subject -> Text -> IO PartialEntry)
   -> Subject
   -> Text
-  -> Handler AnyProperty
+  -> Handler PartialEntry
 propertyHandler f subject property = liftIO $ f subject property
 
 batchHandler

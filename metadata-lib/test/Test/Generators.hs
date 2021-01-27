@@ -4,6 +4,7 @@ module Test.Generators where
 
 import           Control.Monad.Except
 import           Control.Monad.IO.Class
+import           Data.Functor.Identity
 import qualified Data.Map.Strict as M
 import qualified Data.HashMap.Strict as HM
 import           Data.Word
@@ -54,7 +55,13 @@ owner :: Gen Owner
 owner = Owner <$> publicKey <*> sig
 
 entry :: Gen Entry
-entry = Entry <$> subject <*> owner <*> metadataProperty <*> metadataProperty <*> preImage
+entry = Entry
+  <$> (EntryF
+        <$> subject
+        <*> (Identity <$> owner)
+        <*> (Identity <$> metadataProperty)
+        <*> (Identity <$> metadataProperty)
+        <*> (Identity <$> preImage))
 
 batchRequest :: Gen BatchRequest
 batchRequest =
@@ -62,22 +69,27 @@ batchRequest =
     <$> Gen.list (Range.linear 0 20) subject
     <*> Gen.list (Range.linear 0 10) name
 
-anyProperty :: Gen AnyProperty
-anyProperty = Gen.choice [ PropertyPreImage <$> preImage
-                         , PropertyOwner <$> owner
-                         , PropertyGeneric <$> name <*> metadataProperty
-                         ]
+-- anyProperty :: Gen AnyProperty
+-- anyProperty = Gen.choice [ PropertyPreImage <$> preImage
+--                          , PropertyOwner <$> owner
+--                          , PropertyGeneric <$> name <*> metadataProperty
+--                          ]
 
 partialEntry :: Gen PartialEntry
 partialEntry = do
-  PartialEntry
+  PartialEntry <$>
+    (EntryF
     <$> subject
-    <*> (HM.fromList <$> Gen.list (Range.linear 0 10) anyPropertyWithKey)
+    <*> Gen.maybe owner
+    <*> Gen.maybe metadataProperty
+    <*> Gen.maybe metadataProperty
+    <*> Gen.maybe preImage
+    )
 
-anyPropertyWithKey :: Gen (Text, AnyProperty)
-anyPropertyWithKey = do
-  prop <- anyProperty
-  pure (anyPropertyJSONKey prop, prop)
+-- anyPropertyWithKey :: Gen (Text, AnyProperty)
+-- anyPropertyWithKey = do
+--   prop <- anyProperty
+--   pure (anyPropertyJSONKey prop, prop)
 
 batchResponse :: Gen BatchResponse
 batchResponse = BatchResponse <$> Gen.list (Range.linear 0 20) partialEntry
