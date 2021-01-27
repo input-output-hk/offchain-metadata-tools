@@ -1,15 +1,23 @@
+{-# LANGUAGE OverloadedStrings #-}
 
 module Cardano.Metadata.Server
   ( ReadFns(..)
+  , ReadError(..)
   , metadataServer
   , webApp
+  , MetadataServerAPI
   ) where
 
 import Data.Text (Text)
+import qualified Data.Text.Lazy.Encoding as TLE
+import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString.Lazy.Char8 as BLC
+import qualified Data.Text.Lazy as TL
 import Control.Monad.IO.Class (liftIO)
 import           Network.Wai                  ( Application )
 import Data.Proxy (Proxy)
 import Servant
+import Control.Exception.Safe (catchAny)
 
 import Cardano.Metadata.Server.Types
 import Cardano.Metadata.Server.API
@@ -18,13 +26,16 @@ import Cardano.Metadata.Server.API
 -- determine how metadata entries are retrieved. E.g. with postgres or
 -- with dynamo-db.
 data ReadFns
-  = ReadFns { readEntry    :: Subject -> IO Entry
+  = ReadFns { readEntry    :: Subject -> IO (Either ReadError Entry)
             -- ^ Given a subject, return an Entry
-            , readProperty :: Subject -> Text -> IO PartialEntry
+            , readProperty :: Subject -> Text -> IO (Either ReadError PartialEntry)
             -- ^ Return the given property for the given subject
             , readBatch    :: BatchRequest -> IO BatchResponse
             -- ^ Service a batch request
             }
+
+data ReadError = NoSubject Subject
+               | NoProperty Subject Text
 
 -- | 'Network.Wai.Application' of the metadata server.
 --
@@ -40,20 +51,37 @@ metadataServer fns = subjectHandler (readEntry fns)
                 :<|> batchHandler (readBatch fns)
 
 subjectHandler
-  :: (Subject -> IO Entry)
+  :: (Subject -> IO (Either ReadError Entry))
   -> Subject
   -> Handler Entry
-subjectHandler f subject = liftIO $ f subject
+subjectHandler f subject = catchExceptions $ handleErrors =<< (liftIO $ f subject)
 
 propertyHandler
-  :: (Subject -> Text -> IO PartialEntry)
+  :: (Subject -> Text -> IO (Either ReadError PartialEntry))
   -> Subject
   -> Text
   -> Handler PartialEntry
-propertyHandler f subject property = liftIO $ f subject property
+propertyHandler f subject property = catchExceptions $ handleErrors =<< (liftIO $ f subject property)
 
 batchHandler
   :: (BatchRequest -> IO BatchResponse)
   -> BatchRequest
   -> Handler BatchResponse
-batchHandler f req = liftIO $ f req
+batchHandler f req = catchExceptions $ liftIO $ f req
+
+handleErrors :: Either ReadError a -> Handler a
+handleErrors r =
+  case r of
+    (Left (NoSubject subj))       -> throwError $ err404 { errBody = "Requested subject '" <> c subj <> "' not found" }
+    (Left (NoProperty subj prop)) -> throwError $ err404 { errBody = "Requested subject '" <> c subj <> "' does not have the property '" <> c prop <> "'" }
+    (Right x)                     -> pure x
+    
+  where
+    c :: Text -> BL.ByteString
+    c = TLE.encodeUtf8 . TL.fromStrict
+
+catchExceptions :: Handler a -> Handler a
+catchExceptions action =
+  action
+    `catchAny`
+      (\e -> throwError $ err500 { errBody = "Exception occurred while handling request: " <> BLC.pack (show e) <> "." } )

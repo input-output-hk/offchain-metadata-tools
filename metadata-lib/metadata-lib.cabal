@@ -39,8 +39,7 @@ test-suite unit-tests
   main-is:              Main.hs
   type:                 exitcode-stdio-1.0
 
-  build-depends:
-                      base >=4.12 && <5
+  build-depends:  base >=4.12 && <5
                 , HUnit
                 , QuickCheck
                 , aeson
@@ -55,10 +54,15 @@ test-suite unit-tests
                 , bytestring
                 , raw-strings-qq
                 , tasty-hspec
+                , http-client
                 , tasty-hunit
                 , tasty-quickcheck
                 , text
+                , servant
+                , servant-client
+                , warp
                 , unordered-containers
 
   other-modules:        Test.Cardano.Metadata.Server.Types
+                        Test.Cardano.Metadata.Server
                         Test.Generators

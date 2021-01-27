@@ -3,6 +3,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module Cardano.Metadata.Server.Types where
 
@@ -25,71 +26,6 @@ import Text.Casing
 import qualified Data.List.NonEmpty as NE
 import GHC.Show (showSpace)
 
--- | More loosely-typed metadata property useful in looser-typed
--- contexts.
---
--- For example, when the user queries the metadata server for a
--- property, we might return a preimage, or a subject, or an owner, or
--- some other generic property. We need a type to represent this.
--- data AnyProperty = PropertyPreImage PreImage
---                  | PropertyOwner    Owner
---                  | PropertyGeneric  Text Property
---   deriving (Eq, Show)
-
--- anyPropertyJSONKey :: AnyProperty -> Text
--- anyPropertyJSONKey (PropertyPreImage _)  = "preImage"
--- anyPropertyJSONKey (PropertyOwner _)     = "owner"
--- anyPropertyJSONKey (PropertyGeneric k _) = k
-
--- anyPropertyToJSONObject :: AnyProperty -> HM.HashMap Text Aeson.Value
--- anyPropertyToJSONObject (PropertyGeneric k p)         = HM.singleton k (Aeson.toJSON p)
--- anyPropertyToJSONObject p@(PropertyPreImage preImage) = HM.singleton (anyPropertyJSONKey p) (Aeson.toJSON preImage)
--- anyPropertyToJSONObject p@(PropertyOwner own)         = HM.singleton (anyPropertyJSONKey p) (Aeson.toJSON own)
-
--- instance ToJSON AnyProperty where
---   toJSON = Aeson.Object . anyPropertyToJSONObject
-
--- instance FromJSON AnyProperty where
---   parseJSON = Aeson.withObject "AnyProperty" $ \obj -> do
---     let keys = HM.keys obj
-
---     case keys of
---       (k:[]) ->
---         case HM.lookup k obj of
---           Nothing  -> Aeson.parseFail $ "Object has no value for key '" <> show k <> "'."
---           Just val ->
---             case k of
---               "preImage" -> PropertyPreImage     <$> Aeson.parseJSON val
---               "owner"    -> PropertyOwner        <$> Aeson.parseJSON val
---               name       -> PropertyGeneric name <$> Aeson.parseJSON val
---       otherwise       -> Aeson.parseFail $ "Object should only have one key but instead has: " <> show keys
-
--- | More loosely-typed metadata entry useful in looser-typed contexts.
---
--- For example, when the user queries with a batch request, they may
--- ask for the "description" and "owner" properties. We can't return
--- them a 'Entry' because we only have the "description" and
--- "owner" properties, therefore, we need a type which allows us to
--- represent part of a 'Entry', hence 'PartialEntry'.
--- data PartialEntry
---   = PartialEntry { peSubject    :: Subject
---                  , peProperties :: HM.HashMap Text AnyProperty
---                  }
---   deriving (Eq, Show)
-
--- instance ToJSON PartialEntry where
---   toJSON (PartialEntry subj props) = (Aeson.Object $ HM.fromList
---     [("subject", Aeson.String subj)] <> foldMap anyPropertyToJSONObject props)
-
--- instance FromJSON PartialEntry where
---   parseJSON = Aeson.withObject "PartialEntry" $ \obj ->
---     PartialEntry
---       <$> (obj .: "subject")
---       <*> (fmap HM.fromList $ sequence (fmap
---                     (\(k, v) -> (k,) <$> Aeson.parseJSON v)
---                     (filter ((/= "subject") . fst) $ HM.toList obj)
---                    ))
-
 -- | Represents the content of a batch request to the metadata system.
 --
 -- For example, @BatchRequest ["a", "b"] ["preimage", "name"]@ would
@@ -104,7 +40,7 @@ data BatchRequest
 -- | Represents the response of a batch request.
 data BatchResponse
   = BatchResponse { bRespSubjects :: [PartialEntry] }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Semigroup, Monoid)
 
 -- | An entry in the metadata system.
 data EntryF f
