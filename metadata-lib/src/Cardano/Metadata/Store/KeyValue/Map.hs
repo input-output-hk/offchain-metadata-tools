@@ -1,4 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
+
 module Cardano.Metadata.Store.KeyValue.Map where
 
 import Data.Map.Strict (Map)
@@ -23,12 +24,13 @@ write k v = modifyKeyValue (Map.insert k v)
 delete :: Ord k => k -> KeyValue k v -> IO (KeyValue k v)
 delete k = modifyKeyValue (Map.delete k)
 
+update :: Ord k => (v -> Maybe v) -> k -> KeyValue k v -> IO (KeyValue k v)
+update fv k = modifyKeyValue (Map.update fv k)
+
 toList :: KeyValue k v -> IO [(k, v)]
 toList (KeyValue mVar) = do
   m <- readMVar mVar
   pure $ Map.toList m
-
--- update :: k -> (v -> v) -> KeyValue k v -> IO (KeyValue k v)
 
 modifyKeyValue :: (Map k v -> Map k v) -> KeyValue k v -> IO (KeyValue k v)
 modifyKeyValue f (KeyValue mVar) = do

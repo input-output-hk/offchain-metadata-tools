@@ -14,6 +14,7 @@ library
                        Cardano.Metadata.Server.Types
                        Cardano.Metadata.Server.API
                        Cardano.Metadata.Store.KeyValue.Map
+                       Cardano.Metadata.Store.Types
 
   build-depends:       aeson
                      , base

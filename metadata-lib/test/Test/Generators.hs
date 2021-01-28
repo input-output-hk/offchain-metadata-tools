@@ -8,7 +8,7 @@ import           Data.Functor.Identity
 import qualified Data.Map.Strict as M
 import qualified Data.HashMap.Strict as HM
 import           Data.Word
-import           Hedgehog (Gen) 
+import           Hedgehog (Gen, MonadGen) 
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 import           Test.Tasty (TestTree, testGroup)
@@ -17,44 +17,45 @@ import           Data.Text (Text)
 import qualified Data.Aeson as Aeson
 
 import Cardano.Metadata.Server.Types
+import Cardano.Metadata.Store.Types
 
-hashFn :: Gen HashFn
+hashFn :: MonadGen m => m HashFn
 hashFn = Gen.choice [ pure Blake2b256
                     , pure Blake2b224
                     , pure SHA256
                     ]
 
-publicKey :: Gen Text
+publicKey :: MonadGen m => m Text
 publicKey = Gen.text (Range.linear 0 64) Gen.hexit
 
-sig :: Gen Text
+sig :: MonadGen m => m Text
 sig = Gen.text (Range.linear 0 128) Gen.hexit
 
-annotatedSignature :: Gen AnnotatedSignature
+annotatedSignature :: MonadGen m => m AnnotatedSignature
 annotatedSignature = AnnotatedSignature <$> publicKey <*> sig
 
-name :: Gen Text
+name :: MonadGen m => m Text
 name = Gen.choice [ pure "description"
                   , pure "name"
                   , Gen.text (Range.linear 0 128) Gen.unicodeAll
                   ]
 
-subject :: Gen Subject
+subject :: MonadGen m => m Subject
 subject = Gen.text (Range.linear 0 128) Gen.unicodeAll
 
-metadataValue :: Gen Text
+metadataValue :: MonadGen m => m Text
 metadataValue = Gen.text (Range.linear 0 128) Gen.unicodeAll
 
-metadataProperty :: Gen Property
+metadataProperty :: MonadGen m => m Property
 metadataProperty = Property <$> metadataValue <*> Gen.list (Range.linear 0 25) annotatedSignature
 
-preImage :: Gen PreImage
+preImage :: MonadGen m => m PreImage
 preImage = PreImage <$> metadataValue <*> hashFn
 
-owner :: Gen Owner
+owner :: MonadGen m => m Owner
 owner = Owner <$> publicKey <*> sig
 
-entry :: Gen Entry
+entry :: MonadGen m => m Entry
 entry = Entry
   <$> (EntryF
         <$> subject
@@ -63,7 +64,7 @@ entry = Entry
         <*> (Identity <$> metadataProperty)
         <*> (Identity <$> preImage))
 
-batchRequest :: Gen BatchRequest
+batchRequest :: MonadGen m => m BatchRequest
 batchRequest =
   BatchRequest
     <$> Gen.list (Range.linear 0 20) subject
@@ -75,7 +76,7 @@ batchRequestFor subjects = do
   props <- Gen.list (Range.linear 0 (length availablePropertyNames)) $ Gen.choice (pure <$> availablePropertyNames)
   pure $ BatchRequest subjs props
 
-partialEntry :: Gen PartialEntry
+partialEntry :: MonadGen m => m PartialEntry
 partialEntry = do
   PartialEntry <$>
     (EntryF
@@ -86,5 +87,19 @@ partialEntry = do
     <*> Gen.maybe preImage
     )
 
-batchResponse :: Gen BatchResponse
+batchResponse :: MonadGen m => m BatchResponse
 batchResponse = BatchResponse <$> Gen.list (Range.linear 0 20) partialEntry
+
+key :: MonadGen m => m Word8
+key = Gen.word8 (Range.linear 0 maxBound)
+
+val :: MonadGen m => m Word8
+val = Gen.word8 (Range.linear 0 maxBound)
+
+store :: (MonadGen m, MonadIO m) => StoreInterface Word8 Word8 -> m ()
+store (StoreInterface _ write delete _ _) = do
+  k <- key
+  v <- val
+
+  liftIO $ write k v
+  
