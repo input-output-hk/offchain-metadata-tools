@@ -50,9 +50,7 @@ import Test.SmallCheck.Series
 import qualified Test.Generators as Gen
 import Cardano.Metadata.Server
 import Cardano.Metadata.Server.Types 
-import Cardano.Metadata.Store.KeyValue.Map
-import Cardano.Metadata.Store.KeyValue.Map as Simple
-import Cardano.Metadata.Store.Types
+import Cardano.Metadata.Store.Simple (simpleStore)
 
 withMetadataServerApp :: ReadFns -> (Warp.Port -> IO ()) -> IO ()
 withMetadataServerApp readFns action =
@@ -109,23 +107,16 @@ withMetadataServerApp readFns action =
 
 tests :: IO TestTree
 tests = do
-  (kvs :: KeyValue Word8 Word8) <- liftIO $ Simple.init mempty
-  let
-    f = StoreInterface (\k   -> Simple.read k kvs)
-                       (\k v -> void $ Simple.write k v kvs)
-                       (\k   -> void $ Simple.delete k kvs)
-                       (\f k -> void $ Simple.update f k kvs)
-                       (Simple.toList kvs)
-                       (void $ Simple.empty kvs)
+  simpleIntf <- simpleStore
   pure $ testGroup "Data store implementations"
     [
-      testGroup "Simple implementation" [testsFns f]
+      testGroup "Simple implementation" [testStoreInterface simpleIntf]
     ]
 
 -- Presumes tests are done sequentially, and that the tests are the
 -- only ones modifying the key-value store.
-testsFns :: StoreInterface Word8 Word8 -> TestTree
-testsFns f = do
+testStoreInterface :: StoreInterface Word8 Word8 -> TestTree
+testStoreInterface f = do
   testGroup "Data store property tests"
     [ testProperty "write/denotation"  (prop_write_denotation f)
     , testProperty "write/last-wins"   (prop_write_last_wins f)

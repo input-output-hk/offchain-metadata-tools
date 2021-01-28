@@ -13,8 +13,9 @@ library
   exposed-modules:     Cardano.Metadata.Server
                        Cardano.Metadata.Server.Types
                        Cardano.Metadata.Server.API
-                       Cardano.Metadata.Store.KeyValue.Map
                        Cardano.Metadata.Store.Types
+                       Cardano.Metadata.Store.Simple
+                       Cardano.Metadata.Store.Postgres
 
   build-depends:       aeson
                      , base
@@ -27,7 +28,11 @@ library
                      , lens
                      , lens-aeson
                      , mtl
+                     , monad-logger
                      , persistent
+                     , persistent-postgresql
+                     , persistent-template
+                     , resource-pool
                      , safe-exceptions
                      , scientific
                      , servant
