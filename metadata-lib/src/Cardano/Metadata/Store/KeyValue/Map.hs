@@ -32,6 +32,9 @@ toList (KeyValue mVar) = do
   m <- readMVar mVar
   pure $ Map.toList m
 
+empty :: Ord k => KeyValue k v -> IO (KeyValue k v)
+empty = modifyKeyValue (const mempty)
+
 modifyKeyValue :: (Map k v -> Map k v) -> KeyValue k v -> IO (KeyValue k v)
 modifyKeyValue f (KeyValue mVar) = do
   -- Take the MVar, then place an unevaluated thunk inside of it, so

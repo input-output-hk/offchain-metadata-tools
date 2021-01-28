@@ -96,10 +96,20 @@ key = Gen.word8 (Range.linear 0 maxBound)
 val :: MonadGen m => m Word8
 val = Gen.word8 (Range.linear 0 maxBound)
 
-store :: (MonadGen m, MonadIO m) => StoreInterface Word8 Word8 -> m ()
-store (StoreInterface _ write delete _ _) = do
-  k <- key
-  v <- val
+-- store :: MonadGen m => StoreInterface Word8 Word8 kvs -> m (kvs -> IO kvs)
+-- store (StoreInterface _ write delete _ _) = do
+--   k <- key
+--   v <- val
 
-  liftIO $ write k v
+--   pure $ write k v
   
+-- storeWrites :: MonadGen m => m [StoreOperation Word8 Word8 ()]
+-- storeWrites = do
+--   k <- key
+--   v <- val
+
+--   pure [StoreWrite k v]
+
+keyVals :: MonadGen m => m [(Word8, Word8)]
+keyVals = do
+  Gen.list (Range.linear 0 20) ((,) <$> key <*> val)

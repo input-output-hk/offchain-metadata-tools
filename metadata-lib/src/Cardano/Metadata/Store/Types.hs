@@ -1,3 +1,6 @@
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE RankNTypes #-}
+
 module Cardano.Metadata.Store.Types where
 
 import Data.Text (Text)
@@ -49,4 +52,6 @@ data StoreInterface k v
                    , storeToList :: IO [(k, v)]
                    -- ^ toList: Convert a data store to a list of
                    -- key-value pairs.
+                   , storeEmpty  :: IO ()
+                   -- ^ empty: Delete all entries in the key-value store
                    }
