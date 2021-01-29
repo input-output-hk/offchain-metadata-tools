@@ -1,5 +1,5 @@
 cabal-version:       >=1.10
-name:                metadata-lib
+name:                metadata-store-postgres
 version:             0.1.0.0
 license-file:        ../LICENSE
 author:              Samuel Evans-Powell
@@ -10,11 +10,7 @@ extra-source-files:  ../CHANGELOG.md
 library
   hs-source-dirs:      src
 
-  exposed-modules:     Cardano.Metadata.Server
-                       Cardano.Metadata.Server.Types
-                       Cardano.Metadata.Server.API
-                       Cardano.Metadata.Store.Types
-                       Cardano.Metadata.Store.Simple
+  exposed-modules:     Cardano.Metadata.Store.Postgres
 
   build-depends:       aeson
                      , base
@@ -22,11 +18,17 @@ library
                      , casing
                      , containers
                      , directory
+                     , esqueleto
                      , github-webhooks
                      , lens
                      , lens-aeson
+                     , metadata-lib
                      , mtl
                      , monad-logger
+                     , persistent
+                     , persistent-postgresql
+                     , persistent-template
+                     , resource-pool
                      , safe-exceptions
                      , scientific
                      , servant
@@ -35,7 +37,7 @@ library
                      , unordered-containers
                      , wai
 
-test-suite unit-tests
+test-suite integration-tests 
   hs-source-dirs:       test
   main-is:              Main.hs
   type:                 exitcode-stdio-1.0
@@ -49,6 +51,7 @@ test-suite unit-tests
                 , hedgehog
                 , hspec
                 , metadata-lib
+                , metadata-store-postgres
                 , mtl
                 , tasty
                 , tasty-hedgehog
@@ -65,6 +68,4 @@ test-suite unit-tests
                 , warp
                 , unordered-containers
 
-  other-modules:        Test.Cardano.Metadata.Server.Types
-                        Test.Cardano.Metadata.Server
-                        Test.Generators
+  other-modules:    Test.Cardano.Metadata.Store.Postgres
