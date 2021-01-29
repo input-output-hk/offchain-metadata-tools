@@ -2,5 +2,6 @@ packages:
   ./metadata-lib
   ./metadata-server
   ./metadata-webhook
+  ./metadata-store-postgres
 tests: True
 benchmarks: True

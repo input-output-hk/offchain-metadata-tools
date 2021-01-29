@@ -1,8 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
-module Test.Generators where
+module Test.Cardano.Metadata.Generators where
 
 import           Control.Monad.Except
+import Data.Aeson.TH
 import           Control.Monad.IO.Class
 import           Data.Functor.Identity
 import qualified Data.Map.Strict as M
@@ -18,6 +20,25 @@ import qualified Data.Aeson as Aeson
 
 import Cardano.Metadata.Server.Types
 import Cardano.Metadata.Store.Types
+
+data ComplexType = ComplexType { _ctArr :: [Int]
+                               , _ctMap :: M.Map Word8 Word8
+                               }
+  deriving (Eq, Show)
+
+type ComplexKey = Text
+
+complexType :: MonadGen m => m ComplexType
+complexType =
+  ComplexType
+  <$> Gen.list (Range.linear 0 20) (Gen.int (Range.linear 0 maxBound))
+  <*> Gen.map (Range.linear 0 20) ((,) <$> key <*> val)
+
+complexKey :: MonadGen m => m ComplexKey
+complexKey = subject
+
+complexKeyVals :: MonadGen m => m [(ComplexKey, ComplexType)]
+complexKeyVals = Gen.list (Range.linear 0 20) ((,) <$> complexKey <*> complexType)
 
 hashFn :: MonadGen m => m HashFn
 hashFn = Gen.choice [ pure Blake2b256
@@ -113,3 +134,5 @@ val = Gen.word8 (Range.linear 0 maxBound)
 keyVals :: MonadGen m => m [(Word8, Word8)]
 keyVals = do
   Gen.list (Range.linear 0 20) ((,) <$> key <*> val)
+
+$(deriveJSON defaultOptions ''ComplexType)

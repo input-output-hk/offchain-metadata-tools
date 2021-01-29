@@ -27,7 +27,6 @@ library
                      , monad-logger
                      , persistent
                      , persistent-postgresql
-                     , persistent-template
                      , resource-pool
                      , safe-exceptions
                      , scientific
@@ -47,25 +46,40 @@ test-suite integration-tests
                 , QuickCheck
                 , aeson
                 , aeson-pretty
+                , base
+                , bytestring
+                , casing
                 , containers
+                , directory
+                , esqueleto
+                , github-webhooks
                 , hedgehog
                 , hspec
+                , http-client
+                , lens
+                , lens-aeson
                 , metadata-lib
                 , metadata-store-postgres
+                , monad-logger
+                , persistent-postgresql
                 , mtl
+                , raw-strings-qq
+                , resource-pool
+                , safe-exceptions
+                , scientific
+                , servant
+                , servant-client
+                , servant-server
+                , smallcheck
+                , tagged
                 , tasty
                 , tasty-hedgehog
-                , bytestring
-                , raw-strings-qq
                 , tasty-hspec
-                , http-client
                 , tasty-hunit
                 , tasty-quickcheck
                 , text
-                , servant
-                , servant-client
-                , smallcheck
-                , warp
                 , unordered-containers
+                , wai
+                , warp
 
-  other-modules:    Test.Cardano.Metadata.Store.Postgres
+  -- other-modules:    Test.Cardano.Metadata.Store.Postgres

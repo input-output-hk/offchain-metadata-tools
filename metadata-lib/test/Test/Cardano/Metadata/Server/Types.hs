@@ -29,7 +29,7 @@ import           Test.Tasty (TestTree, testGroup)
 import           Test.Tasty.Hedgehog
 import           Test.Tasty.HUnit (Assertion, assertEqual, testCase, (@?=))
 
-import qualified Test.Generators as Gen
+import qualified Test.Cardano.Metadata.Generators as Gen
 
 import Cardano.Metadata.Server.Types 
 

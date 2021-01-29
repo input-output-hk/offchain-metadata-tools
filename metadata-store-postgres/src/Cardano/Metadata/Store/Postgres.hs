@@ -1,37 +1,33 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE EmptyDataDecls             #-}
-{-# LANGUAGE FlexibleContexts           #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GADTs                      #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE QuasiQuotes                #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE DeriveAnyClass      #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell            #-}
-{-# LANGUAGE TypeFamilies               #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE FlexibleContexts #-}
 
-module Cardano.Metadata.Store.Postgres where
+module Cardano.Metadata.Store.Postgres
+  ( read
+  , write
+  , update
+  , delete
+  , empty
+  , toList
+  , init
+  , postgresStore
+  , PostgresKeyValueException(..)
+  ) where
 
 import           Prelude hiding (init, read)
 import           Control.Monad.IO.Class  (liftIO)
 import           Control.Exception.Safe
 import           Data.Coerce (coerce)
-import           Database.Persist hiding (delete)
+import           Database.Persist hiding (update, delete)
 import           Data.Traversable (for)
 import           Control.Monad.Reader
 import          Data.Text (Text)
 import           Database.Persist.Sql (SqlBackend, ConnectionPool, Single(Single))
 import qualified Database.Persist.Sql as Sql
 import qualified Database.Persist.Postgresql as Postgresql
-import           Database.Persist.TH
 import           Control.Monad.Logger (logInfoN, runNoLoggingT, runStderrLoggingT,
                      runStdoutLoggingT)
-
 import Cardano.Metadata.Store.Types 
 import Data.Pool
 import Data.Word
@@ -72,25 +68,39 @@ init
   -- ^ Database connection pool
   -> Text
   -- ^ Database table name
-  -> Map k v
-  -- ^ Initial entries to insert
   -> IO (KeyValue k v)
   -- ^ Resulting key-value store
-init pool tableName state = do
-  kvs <- withBackendFromPool pool $ do
+init pool tableName =
+  withBackendFromPool pool $ do
     createTable tableName
 
     pure $ KeyValue pool tableName
 
-  traverse_ (\(k,v) -> write k v kvs) (M.toList state)
-
-  pure kvs
+postgresStore
+  :: ( ToJSONKey k
+     , ToJSON v
+     , FromJSONKey k
+     , FromJSON v
+     )
+  => ConnectionPool
+  -- ^ Database connection pool
+  -> Text
+  -- ^ Database table name
+  -> IO (StoreInterface k v)
+postgresStore pool tableName = do
+  kvs <- init pool tableName 
+  pure $ StoreInterface (\k   -> read k kvs)
+                        (\k v -> write k v kvs)
+                        (\k   -> delete k kvs)
+                        (\f k -> update f k kvs)
+                        (toList kvs)
+                        (empty kvs)
 
 m :: IO (KeyValue Word8 Aeson.Value)
 m =
   runStdoutLoggingT $
     Postgresql.withPostgresqlPool "host=/run/postgresql dbname=cexplorer user=cardano-node" 1 $ \pool -> liftIO $ do
-      kvs <- init pool "record" (M.singleton 1 (Aeson.Object $ HM.fromList [("name", Aeson.Number 8)]) :: Map Word8 Aeson.Value)
+      kvs <- init pool "record"
       result <- read 1 kvs
       write 2 (Aeson.Object $ HM.fromList [("name", Aeson.Number 3)]) kvs
       xs <- toList kvs

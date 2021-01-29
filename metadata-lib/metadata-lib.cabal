@@ -15,25 +15,42 @@ library
                        Cardano.Metadata.Server.API
                        Cardano.Metadata.Store.Types
                        Cardano.Metadata.Store.Simple
+                       Test.Cardano.Metadata.Store
+                       Test.Cardano.Metadata.Generators
 
   build-depends:       aeson
+                     , HUnit
+                     , QuickCheck
+                     , aeson-pretty
                      , base
                      , bytestring
                      , casing
                      , containers
                      , directory
                      , github-webhooks
+                     , hedgehog
+                     , hspec
+                     , http-client
                      , lens
                      , lens-aeson
-                     , mtl
                      , monad-logger
+                     , mtl
+                     , raw-strings-qq
                      , safe-exceptions
                      , scientific
                      , servant
+                     , servant-client
                      , servant-server
+                     , smallcheck
+                     , tasty
+                     , tasty-hedgehog
+                     , tasty-hspec
+                     , tasty-hunit
+                     , tasty-quickcheck
                      , text
                      , unordered-containers
                      , wai
+                     , warp
 
 test-suite unit-tests
   hs-source-dirs:       test
@@ -67,4 +84,3 @@ test-suite unit-tests
 
   other-modules:        Test.Cardano.Metadata.Server.Types
                         Test.Cardano.Metadata.Server
-                        Test.Generators
