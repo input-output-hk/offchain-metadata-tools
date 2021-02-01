@@ -53,13 +53,13 @@ main =
        )
        : defaultIngredients
       )
-      x
+      testsWithPosgresConn
 
-x :: TestTree
-x =
+testsWithPosgresConn :: TestTree
+testsWithPosgresConn =
   askOption $ \(DbHost dbHost) ->
-  askOption $ \(DbHost dbName) ->
-  askOption $ \(DbHost dbUser) ->
+  askOption $ \(DbName dbName) ->
+  askOption $ \(DbUser dbUser) ->
     withResource
       (runNoLoggingT $ do
          pool <- Postgresql.createPostgresqlPool (TE.encodeUtf8 $ "host=" <> dbHost <> " dbname=" <> dbName <> " user=" <> dbUser) 1

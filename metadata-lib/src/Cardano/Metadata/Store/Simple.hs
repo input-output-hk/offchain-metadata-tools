@@ -30,16 +30,6 @@ import Cardano.Metadata.Store.Types
 --   entry <- getEntryForSubject subj
 --   getProperty subj prop entry
 
--- getProperty :: Subject -> Text -> Entry -> Either ReadError PartialEntry
--- getProperty subj prop entry =
---   case Aeson.toJSON entry of
---     (Aeson.Object obj) -> case HM.lookup prop obj of
---       Nothing -> Left $ NoProperty subj prop
---       Just p  -> case Aeson.fromJSON (Aeson.Object $ HM.fromList [("subject", Aeson.String subj), (prop, p)]) of
---         Aeson.Error str -> error $ "JSON parsing error: " <> str
---         Aeson.Success x -> Right x
---     otherwise          -> error "Entry isn't a JSON Object but should be."
-
 -- getBatch :: BatchRequest -> BatchResponse
 -- getBatch (BatchRequest subjs props) =
 --   BatchResponse $
