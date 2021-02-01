@@ -35,7 +35,7 @@ in {
       };
       user = lib.mkOption {
         type = lib.types.str;
-        default = "metadata-server";
+        default = "metadata_server";
         description = "the user to run as";
       };
       port = lib.mkOption {
@@ -44,15 +44,6 @@ in {
         description = "the port the metadata server runs on";
       };
       postgres = {
-        generatePGPASS = lib.mkOption {
-          type = lib.types.bool;
-          default = true;
-          description = "generate pgpass";
-        };
-        pgpass = lib.mkOption {
-          type = lib.types.path;
-          default = builtins.toFile "pgpass" "${cfg.postgres.socketdir}:${toString cfg.postgres.port}:${cfg.postgres.database}:${cfg.postgres.user}:*";
-        };
         socketdir = lib.mkOption {
           type = lib.types.str;
           default = "/run/postgresql";
@@ -65,6 +56,7 @@ in {
         };
         database = lib.mkOption {
           type = lib.types.str;
+          default = "metadata_server";
           description = "the postgresql database to use";
         };
         table = lib.mkOption {
@@ -87,21 +79,23 @@ in {
   };
   config = lib.mkIf cfg.enable {
     services.metadata-server.script = let
+      exec = "metadata-server";
+      cmd = builtins.filter (x: x != "") [
+          "${cfg.package}/bin/${exec}"
+          "--db ${config.services.metadata-server.postgres.database}"
+          "--db-user ${config.services.metadata-server.postgres.user}"
+          "--db-host ${config.services.metadata-server.postgres.socketdir}"
+          "--db-table ${config.services.metadata-server.postgres.table}"
+          "--db-conns ${toString config.services.metadata-server.postgres.numConnections}"
+          "--port ${toString config.services.metadata-server.port}"
+      ];
     in pkgs.writeShellScript "metadata-server" ''
       set -euo pipefail
-      RUNTIME_DIRECTORY=''${RUNTIME_DIRECTORY:-$(pwd)}
-      ${lib.optionalString cfg.postgres.generatePGPASS ''
-      cp ${cfg.postgres.pgpass} /$RUNTIME_DIRECTORY/pgpass
-      chmod 0600 $RUNTIME_DIRECTORY/pgpass
-      export PGPASSFILE=/$RUNTIME_DIRECTORY/pgpass
-      ''}
-      exec ${cfg.package}/bin/metadata-server \
-        --db-name  ${config.services.metadata-server.postgres.database}
-        --db-user  ${config.services.metadata-server.postgres.user}
-        --db-host  ${config.services.metadata-server.postgres.socketdir}
-        --db-table ${config.services.metadata-server.postgres.table}
-        --db-conns ${toString config.services.metadata-server.postgres.numConnections}
-        --port     ${toString config.services.metadata-server.port}
+      choice() { i=$1; shift; eval "echo \''${$((i + 1))}"; }
+      echo "Starting ${exec}: ${lib.concatStringsSep "\"\n   echo \"" cmd}"
+      echo "..or, once again, in a single line:"
+      echo "${toString cmd}"
+      exec ${toString cmd}
     '';
     environment.systemPackages = [ cfg.package config.services.postgresql.package ];
     systemd.services.metadata-server = {

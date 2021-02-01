@@ -23,18 +23,15 @@ let
   haskellPackagesMusl64 = recRecurseIntoAttrs
     # the Haskell.nix package set, reduced to local packages.
     (selectProjectPackages pkgs.pkgsCross.musl64.metadataServerHaskellPackages);
-  #voterRegistrationTarball = pkgs.runCommandNoCC "voter-registration-tarball" { buildInputs = [ pkgs.gnutar gzip ]; } ''
-  #  cp ${haskellPackagesMusl64.voter-registration.components.exes.voter-registration}/bin/voter-registration ./
-  #  mkdir -p $out
-  #  tar -czvf $out/voter-registration.tar.gz voter-registration
-  #'';
 
   self = {
-    #inherit metadataServerHaskellPackages voterRegistrationTarball;
     inherit metadataServerHaskellPackages;
     inherit haskellPackages hydraEvalErrors;
 
     inherit (pkgs.iohkNix) checkCabalProject;
+
+    inherit (haskellPackages.metadata-server.identifier) version;
+    inherit (haskellPackages.metadata-server.components.exes) metadata-server;
 
     # `tests` are the test suites which have been built.
     tests = collectComponents' "tests" haskellPackages;
@@ -50,7 +47,5 @@ let
       inherit pkgs;
       withHoogle = true;
     };
-
-    # integration-tests = import ./test/integration/vm.nix { inherit pkgs; };
   };
 in self
