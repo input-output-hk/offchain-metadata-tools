@@ -54,9 +54,8 @@ let
   } // (mkRequiredJob (
       collectTests jobs.native.checks.tests ++
       collectTests jobs.native.benchmarks ++
-      # TODO: Add your project executables to this list
       [
-        # jobs.native.metadata-server.x86_64-linux
+        jobs.native.metadata-server.x86_64-linux
       ]
     ))
   # Build the shell derivation in Hydra so that all its dependencies

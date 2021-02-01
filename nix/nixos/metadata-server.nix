@@ -4,10 +4,6 @@ let
   # to avoid confusion with other similarly named services like `cardano-metadata-submitter`
   cfg = config.services.metadata-server;
   inherit (cfg.metadataServerPkgs) metadataServerHaskellPackages metadataServerTestingHaskellPackages iohkNix;
-  metadataServerConfig = cfg.explorerConfig // {
-    inherit (cfg.nodeConfig) ByronGenesisFile ShelleyGenesisFile ByronGenesisHash ShelleyGenesisHash Protocol RequiresNetworkMagic;
-  };
-  configFile = __toFile "config.json" (__toJSON (metadataServerConfig // cfg.logConfig));
 in {
 
   options = {
@@ -37,34 +33,15 @@ in {
           then metadataServerTestingHaskellPackages.metadata-server.components.exes.metadata-server
           else metadataServerHaskellPackages.metadata-server.components.exes.metadata-server;
       };
-      explorerConfig = lib.mkOption {
-        type = lib.types.attrs;
-        default = cfg.environment.explorerConfig;
-      };
-      nodeConfig = lib.mkOption {
-        type = lib.types.attrs;
-        default = cfg.environment.nodeConfig;
-      };
-      environment = lib.mkOption {
-        type = lib.types.nullOr lib.types.attrs;
-        default = iohkNix.cardanoLib.environments.${cfg.environmentName};
-      };
-      logConfig = lib.mkOption {
-        type = lib.types.attrs;
-        default = iohkNix.cardanoLib.defaultExplorerLogConfig;
-      };
-      environmentName = lib.mkOption {
-        type = lib.types.str;
-        description = "environment name";
-      };
-      socketPath = lib.mkOption {
-        type = lib.types.nullOr lib.types.path;
-        default = null;
-      };
       user = lib.mkOption {
         type = lib.types.str;
         default = "metadata-server";
         description = "the user to run as";
+      };
+      port = lib.mkOption {
+        type = lib.types.int;
+        default = 8080;
+        description = "the port the metadata server runs on";
       };
       postgres = {
         generatePGPASS = lib.mkOption {
@@ -91,10 +68,20 @@ in {
           default = cfg.postgres.user;
           description = "the postgresql database to use";
         };
+        table = lib.mkOption {
+          type = lib.types.str;
+          default = "metadata";
+          description = "the postgresql database table to use";
+        };
         user = lib.mkOption {
           type = lib.types.str;
           default = cfg.user;
           description = "the postgresql user to use";
+        };
+        numConnections = lib.mkOption {
+          type = lib.types.int;
+          default = 1;
+          description = "the number of connections to open to the postgresql database";
         };
       };
     };
@@ -104,23 +91,18 @@ in {
     in pkgs.writeShellScript "metadata-server" ''
       set -euo pipefail
       RUNTIME_DIRECTORY=''${RUNTIME_DIRECTORY:-$(pwd)}
-      ${if (cfg.socketPath == null) then ''if [ -z ''${CARDANO_NODE_SOCKET_PATH:-} ]
-      then
-        echo "You must set \$CARDANO_NODE_SOCKET_PATH"
-        exit 1
-      fi'' else "export CARDANO_NODE_SOCKET_PATH=\"${cfg.socketPath}\""}
       ${lib.optionalString cfg.postgres.generatePGPASS ''
       cp ${cfg.postgres.pgpass} /$RUNTIME_DIRECTORY/pgpass
       chmod 0600 $RUNTIME_DIRECTORY/pgpass
       export PGPASSFILE=/$RUNTIME_DIRECTORY/pgpass
       ''}
-      #${cfg.package}/bin/metadata-server run-migrations --config ${configFile} --mdir ''${../../schema}
-      ${cfg.package}/bin/metadata-server run-migrations --config ${configFile}
-      exec ${cfg.package}/bin/metadata-server run-app-with-db-sync \
-        --config ${configFile} \
-        --socket-path "$CARDANO_NODE_SOCKET_PATH" \
-        #--schema-dir ''${../../schema} \
-        --state-dir $STATE_DIRECTORY
+      exec ${cfg.package}/bin/metadata-server \
+        --db-name  ${config.services.metadata-server.postgres.database}
+        --db-user  ${config.services.metadata-server.postgres.user}
+        --db-host  ${config.services.metadata-server.postgres.socketdir}
+        --db-table ${config.services.metadata-server.postgres.table}
+        --db-conns ${toString config.services.metadata-server.postgres.numConnections}
+        --port     ${toString config.services.metadata-server.port}
     '';
     environment.systemPackages = [ cfg.package config.services.postgresql.package ];
     systemd.services.metadata-server = {
@@ -141,7 +123,7 @@ in {
       };
 
       wantedBy = [ "multi-user.target" ];
-      after = [ "postgres.service" "cardano-node.service" ];
+      after = [ "postgres.service" ];
       requires = [ "postgresql.service" ];
     };
   };
