@@ -35,7 +35,7 @@ in {
       };
       user = lib.mkOption {
         type = lib.types.str;
-        default = "metadata_server";
+        default = "metadata-server";
         description = "the user to run as";
       };
       port = lib.mkOption {
@@ -91,7 +91,6 @@ in {
       ];
     in pkgs.writeShellScript "metadata-server" ''
       set -euo pipefail
-      choice() { i=$1; shift; eval "echo \''${$((i + 1))}"; }
       echo "Starting ${exec}: ${lib.concatStringsSep "\"\n   echo \"" cmd}"
       echo "..or, once again, in a single line:"
       echo "${toString cmd}"
