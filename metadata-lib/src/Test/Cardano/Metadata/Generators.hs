@@ -90,12 +90,12 @@ batchRequest :: MonadGen m => m BatchRequest
 batchRequest =
   BatchRequest
     <$> Gen.list (Range.linear 0 20) subject
-    <*> Gen.list (Range.linear 0 10) propName
+    <*> Gen.maybe (Gen.list (Range.linear 0 10) propName)
 
 batchRequestFor :: [Subject] -> Gen BatchRequest
 batchRequestFor subjects = do
   subjs <- Gen.list (Range.linear 1 (length subjects)) $ Gen.choice (pure <$> subjects)
-  props <- Gen.list (Range.linear 0 20) propName
+  props <- Gen.maybe $ Gen.list (Range.linear 0 20) propName
   pure $ BatchRequest subjs props
 
 partialEntry :: MonadGen m => m PartialEntry

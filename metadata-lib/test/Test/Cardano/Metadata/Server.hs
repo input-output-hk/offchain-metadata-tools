@@ -106,25 +106,28 @@ spec_server intf@(StoreInterface { storeWrite = write }) = do
         get "/metadata/3/properties/preImage" `shouldRespondWith` (matchingJSON $ (PartialEntry' "3" $ PartialEntry $ mempty { enPreImage = First $ Just $ PreImage "x" SHA256 })) { matchStatus = 200 }
     describe "GET /metadata/query" $ do
       it "should return empty response if subject not found" $ do
-        request methodPost "/metadata/query" [(hContentType, "application/json")] (Aeson.encode $ BatchRequest ["bad"] [])
+        request methodPost "/metadata/query" [(hContentType, "application/json")] (Aeson.encode $ BatchRequest ["bad"] (Just []))
           `shouldRespondWith` (matchingJSON $ BatchResponse [])
-        request methodPost "/metadata/query" [(hContentType, "application/json")] (Aeson.encode $ BatchRequest ["bad"] ["owner"])
+        request methodPost "/metadata/query" [(hContentType, "application/json")] (Aeson.encode $ BatchRequest ["bad"] (Just ["owner"]))
           `shouldRespondWith` (matchingJSON $ BatchResponse [])
       it "should ignore subjects not found, returning subjects that were found" $ 
-        request methodPost "/metadata/query" [(hContentType, "application/json")] (Aeson.encode $ BatchRequest ["3", "bad"] [])
+        request methodPost "/metadata/query" [(hContentType, "application/json")] (Aeson.encode $ BatchRequest ["3", "bad"] (Just []))
           `shouldRespondWith` (matchingJSON $ BatchResponse [PartialEntry' "3" mempty])
       it "should return partial response if subject found but property not" $
-        request methodPost "/metadata/query" [(hContentType, "application/json")] (Aeson.encode $ BatchRequest ["3"] ["bad"])
+        request methodPost "/metadata/query" [(hContentType, "application/json")] (Aeson.encode $ BatchRequest ["3"] (Just ["bad"]))
           `shouldRespondWith` (matchingJSON $ BatchResponse [PartialEntry' "3" mempty])
       it "should ignore properties not found, returning properties that were found" $ 
-        request methodPost "/metadata/query" [(hContentType, "application/json")] (Aeson.encode $ BatchRequest ["3"] ["owner", "bad"])
+        request methodPost "/metadata/query" [(hContentType, "application/json")] (Aeson.encode $ BatchRequest ["3"] (Just ["owner", "bad"]))
           `shouldRespondWith` (matchingJSON $ BatchResponse [PartialEntry' "3" $ PartialEntry $ mempty { enOwner = First $ Just $ Owner "me" mempty }])
       it "should return a batch response" $ do
-        request methodPost "/metadata/query" [(hContentType, "application/json")] (Aeson.encode $ BatchRequest ["3"] ["owner", "subject", "preImage"])
+        request methodPost "/metadata/query" [(hContentType, "application/json")] (Aeson.encode $ BatchRequest ["3"] (Just ["owner", "subject", "preImage"]))
           `shouldRespondWith` (matchingJSON $ BatchResponse [PartialEntry' "3" $ PartialEntry $ mempty { enOwner = First $ Just $ Owner "me" mempty, enPreImage = First $ Just $ PreImage "x" SHA256 }])
-        request methodPost "/metadata/query" [(hContentType, "application/json")] (Aeson.encode $ BatchRequest ["3","4"] ["owner", "subject", "preImage"])
+        request methodPost "/metadata/query" [(hContentType, "application/json")] (Aeson.encode $ BatchRequest ["3","4"] (Just ["owner", "subject", "preImage"]))
           `shouldRespondWith`
             (matchingJSON $ BatchResponse
               [ PartialEntry' "3" $ PartialEntry $ mempty { enOwner = First $ Just $ Owner "me" mempty, enPreImage = First $ Just $ PreImage "x" SHA256 }
               , PartialEntry' "4" $ PartialEntry $ mempty { enOwner = First $ Just $ Owner "you" mempty, enPreImage = First $ Just $ PreImage "y" Blake2b256 }
               ])
+      it "should return all properties if key 'properties' not present in JSON request" $
+        request methodPost "/metadata/query" [(hContentType, "application/json")] (Aeson.encode $ BatchRequest ["3"] Nothing) 
+          `shouldRespondWith` (matchingJSON $ BatchResponse [PartialEntry' "3" $ PartialEntry $ EntryF { enName = First $ Just $ GenericProperty "n" mempty, enDescription = First $ Just $ GenericProperty "d" mempty, enOwner = First $ Just $ Owner "me" mempty, enPreImage = First $ Just $ PreImage "x" SHA256 }])

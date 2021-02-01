@@ -13,6 +13,7 @@ module Cardano.Metadata.Server
 import Data.Text (Text)
 import Data.Monoid(First(First))
 import Data.Traversable (forM)
+import Data.Functor.Identity (Identity(Identity))
 import qualified Data.Text.Lazy.Encoding as TLE
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Char8 as BLC
@@ -69,17 +70,21 @@ batchHandler
   :: StoreInterface Subject Entry'
   -> BatchRequest
   -> Handler BatchResponse
-batchHandler (StoreInterface { storeReadBatch = readBatch }) (BatchRequest subjects propNames) =
+batchHandler (StoreInterface { storeReadBatch = readBatch }) (BatchRequest subjects mPropNames) =
   catchExceptions . liftIO $ do
     entries <- readBatch subjects
 
     pure $ BatchResponse $ 
-      flip foldMap entries $ \entry@(Entry' subject _) ->
-        let
-          partialEntry = flip foldMap propNames $ \propName ->
-            getPropertyLenient subject propName entry
-        in
-          [PartialEntry' subject partialEntry]
+      flip foldMap entries $ \entry@(Entry' subject (Entry (EntryF (Identity owner) (Identity name) (Identity desc) (Identity preImage)))) ->
+        case mPropNames of
+          Nothing        ->
+            [PartialEntry' subject (PartialEntry $ EntryF (pure owner) (pure name) (pure desc) (pure preImage))]
+          Just propNames ->
+            let
+              partialEntry = flip foldMap propNames $ \propName ->
+                getPropertyLenient subject propName entry
+            in
+              [PartialEntry' subject partialEntry]
 
 handleErrors :: Either ReadError a -> Handler a
 handleErrors r =

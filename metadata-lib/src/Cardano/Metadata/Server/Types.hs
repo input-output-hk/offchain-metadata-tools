@@ -41,9 +41,21 @@ import GHC.Show (showSpace)
 -- subject "a" and "b".
 data BatchRequest
   = BatchRequest { bReqSubjects   :: [Subject]
-                 , bReqProperties :: [PropertyName]
+                 , bReqProperties :: Maybe [PropertyName]
                  }
   deriving (Eq, Show)
+
+instance ToJSON BatchRequest where
+  toJSON (BatchRequest subjs propNames) = Aeson.Object . HM.fromList $
+    [ ("subjects", Aeson.toJSON subjs)
+    , ("properties", Aeson.toJSON propNames)
+    ]
+
+instance FromJSON BatchRequest where
+  parseJSON = Aeson.withObject "BatchRequest" $ \obj ->
+    BatchRequest
+      <$> obj .:  "subjects"
+      <*> obj .:? "properties"
 
 -- | Represents the response of a batch request.
 data BatchResponse
@@ -329,5 +341,4 @@ $(deriveJSON defaultOptions{ Aeson.fieldLabelModifier = toCamel . fromHumps . dr
 $(deriveJSON defaultOptions{ Aeson.fieldLabelModifier = toCamel . fromHumps . drop 2 } ''AnnotatedSignature)
 $(deriveJSON defaultOptions{ Aeson.fieldLabelModifier = toCamel . fromHumps . drop 4 } ''GenericProperty)
 $(deriveJSON defaultOptions{ Aeson.fieldLabelModifier = toCamel . fromHumps . drop 2 } ''PreImage)
-$(deriveJSON defaultOptions{ Aeson.fieldLabelModifier = toCamel . fromHumps . drop 4 } ''BatchRequest)
 $(deriveJSON defaultOptions{ Aeson.fieldLabelModifier = toCamel . fromHumps . drop 5 } ''BatchResponse)

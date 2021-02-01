@@ -60,6 +60,7 @@ tests = testGroup "Metadata type tests"
 
       , testProperty "BatchRequest/json/roundtrips" (prop_json_roundtrips Gen.batchRequest)
       , testProperty "BatchRequest/json/matches-spec-keys" (prop_json_only_has_keys Gen.batchRequest ["subjects", "properties"])
+      , testCase     "BatchRequest/json/matches-spec" unit_batchRequest_json_spec
 
       , testProperty "BatchResponse/json/roundtrips" (prop_json_roundtrips Gen.batchResponse)
       , testCase     "BatchResponse/json/matches-spec" unit_batch_response_json_spec
@@ -83,6 +84,47 @@ unit_hashfn_show_spec = do
   show Blake2b256 @?= "blake2b-256"
   show Blake2b224 @?= "blake2b-224"
   show SHA256     @?= "sha256"
+
+unit_batchRequest_json_spec :: Assertion
+unit_batchRequest_json_spec = do
+  let jsonNoProperties = [r|
+  {
+    "subjects": [
+      "7f71940915ea5fe85e840f843c929eba467e6f050475bad1f10b9c274d1888c0"
+    ]
+  }
+  |]
+
+  Aeson.eitherDecode jsonNoProperties
+    @?= (Right $ BatchRequest ["7f71940915ea5fe85e840f843c929eba467e6f050475bad1f10b9c274d1888c0"] Nothing)
+
+  let jsonProperties = [r|
+  {
+    "subjects": [
+      "7f71940915ea5fe85e840f843c929eba467e6f050475bad1f10b9c274d1888c0"
+    ],
+    "properties": [
+      "owner",
+      "description",
+      "bad"
+    ]
+  }
+  |]
+
+  Aeson.eitherDecode jsonProperties
+    @?= (Right $ BatchRequest ["7f71940915ea5fe85e840f843c929eba467e6f050475bad1f10b9c274d1888c0"] (Just ["owner", "description", "bad"]))
+
+  let jsonPropertiesEmpty = [r|
+  {
+    "subjects": [
+      "7f71940915ea5fe85e840f843c929eba467e6f050475bad1f10b9c274d1888c0"
+    ],
+    "properties": []
+  }
+  |]
+
+  Aeson.eitherDecode jsonPropertiesEmpty
+    @?= (Right $ BatchRequest ["7f71940915ea5fe85e840f843c929eba467e6f050475bad1f10b9c274d1888c0"] (Just []))
 
 unit_entry_json_spec :: Assertion
 unit_entry_json_spec = do
