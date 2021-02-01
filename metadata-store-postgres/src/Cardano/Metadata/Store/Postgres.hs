@@ -1,7 +1,17 @@
+{-# LANGUAGE IncoherentInstances #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE DeriveAnyClass      #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE QuasiQuotes                #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE OverloadedStrings          #-}
 
 module Cardano.Metadata.Store.Postgres
   ( read
@@ -24,6 +34,7 @@ import           Data.Traversable (for)
 import           Control.Monad.Reader
 import          Data.Text (Text)
 import           Database.Persist.Sql (SqlBackend, ConnectionPool, Single(Single))
+import           Database.Persist.TH
 import qualified Database.Persist.Sql as Sql
 import qualified Database.Persist.Postgresql as Postgresql
 import           Control.Monad.Logger (logInfoN, runNoLoggingT, runStderrLoggingT,
@@ -49,6 +60,14 @@ data PostgresKeyValueException = UniqueKeyConstraintViolated
 data KeyValue k v = KeyValue { _kvConnPool    :: Pool SqlBackend
                              , _kvDbTableName :: Text
                              }
+
+-- share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
+-- Record v
+--   key  Text
+--   UniqueName key
+--   deriving Eq Read Show
+-- |]
+
 
 createTable
   :: ( BackendCompatible SqlBackend backend
@@ -90,25 +109,12 @@ postgresStore
 postgresStore pool tableName = do
   kvs <- init pool tableName 
   pure $ StoreInterface (\k   -> read k kvs)
+                        (\ks  -> readBatch ks kvs)
                         (\k v -> write k v kvs)
                         (\k   -> delete k kvs)
                         (\f k -> update f k kvs)
                         (toList kvs)
                         (empty kvs)
-
-m :: IO (KeyValue Word8 Aeson.Value)
-m =
-  runStdoutLoggingT $
-    Postgresql.withPostgresqlPool "host=/run/postgresql dbname=cexplorer user=cardano-node" 1 $ \pool -> liftIO $ do
-      kvs <- init pool "record"
-      result <- read 1 kvs
-      write 2 (Aeson.Object $ HM.fromList [("name", Aeson.Number 3)]) kvs
-      xs <- toList kvs
-      traverse_ (putStrLn . show) xs
-      empty kvs
-      ys <- toList kvs
-      putStrLn $ show ys
-      pure kvs
 
 withBackendFromPool :: Pool r -> ReaderT r IO b -> IO b
 withBackendFromPool pool action = withResource pool (runReaderT action)
@@ -123,6 +129,40 @@ read k (KeyValue pool tableName) = do
     []            -> pure Nothing
     (Single x):[] -> handleJSONDecodeError x $ decodeJSONValue x
     xs            -> throw UniqueKeyConstraintViolated
+
+readBatch :: (ToJSONKey k, FromJSON v) => [k] -> KeyValue k v -> IO [v]
+readBatch [] (KeyValue pool tableName) = pure []
+readBatch ks (KeyValue pool tableName) = do
+  results <- fmap (fmap (\(k, v) -> (Sql.unSingle k, Sql.unSingle v))) $  withBackendFromPool pool $
+    Sql.rawSql
+      ("SELECT key, value FROM " <> tableName <> " WHERE \"key\" IN " <> toSqlList ks)
+      []
+  resultMap <- flip foldMap results $ \(k, v) -> do
+    v' <- handleJSONDecodeError v $ decodeJSONValue v
+    pure $ M.singleton k v'
+
+  pure $ flip foldMap ks $ \k ->
+    case M.lookup (toJSONKeyText k) resultMap of
+      Nothing -> []
+      Just v  -> [v]
+
+  where
+    toSqlList []     = "()"
+    toSqlList (x:xs) = foldr (\x' acc -> acc <> ", " <> toSqlKey x') ("(" <> toSqlKey x) xs <> ")"
+
+    toSqlKey x = "'" <> toJSONKeyText x <> "'"
+
+m :: IO (KeyValue Word8 Aeson.Value)
+m =
+  runStdoutLoggingT $
+    Postgresql.withPostgresqlPool "host=/run/postgresql dbname=cexplorer user=cardano-node" 1 $ \pool -> liftIO $ do
+      kvs <- init pool "record"
+      write 2 (Aeson.Object $ HM.fromList [("name", Aeson.Number 3)]) kvs
+      write 1 (Aeson.Object $ HM.fromList [("name", Aeson.Number 5)]) kvs
+      result <- readBatch [1, 1] kvs
+      putStrLn $ show result
+      pure kvs
+
 
 write :: (ToJSONKey k, ToJSON v) => k -> v -> KeyValue k v -> IO ()
 write k v (KeyValue pool tableName) = withBackendFromPool pool $ do
@@ -178,11 +218,10 @@ handleJSONDecodeError :: Text -> Either String a -> IO a
 handleJSONDecodeError t = either (\err -> throw $ FailedToDecodeJSONValue err t) pure
       
 toPersistValueJSONKey :: ToJSONKey k => k -> PersistValue
-toPersistValueJSONKey k =
-  let
-    k' =
-      case Aeson.toJSONKey of
-        Aeson.ToJSONKeyText  f _ -> f k
-        Aeson.ToJSONKeyValue _ f -> TL.toStrict $ TLE.decodeUtf8 $ Aeson.encodingToLazyByteString $ f k
-  in
-    toPersistValue k'
+toPersistValueJSONKey = toPersistValue . toJSONKeyText
+
+toJSONKeyText :: ToJSONKey k => k -> Text
+toJSONKeyText k = 
+  case Aeson.toJSONKey of
+    Aeson.ToJSONKeyText  f _ -> f k
+    Aeson.ToJSONKeyValue _ f -> TL.toStrict $ TLE.decodeUtf8 $ Aeson.encodingToLazyByteString $ f k

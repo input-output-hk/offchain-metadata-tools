@@ -51,11 +51,11 @@ import Cardano.Metadata.Server.Types
 import Cardano.Metadata.Store.Types
 import Cardano.Metadata.Store.Simple (simpleStore)
 
-withMetadataServerApp :: ReadFns -> (Warp.Port -> IO ()) -> IO ()
-withMetadataServerApp readFns action =
+withMetadataServerApp :: StoreInterface Subject Entry' -> (Warp.Port -> IO ()) -> IO ()
+withMetadataServerApp intf action =
   -- testWithApplication makes sure the action is executed after the server has
   -- started and is being properly shutdown.
-  Warp.testWithApplication (pure $ webApp readFns) action
+  Warp.testWithApplication (pure $ webApp intf) action
 
 -- tests :: IO TestTree
 -- tests = do

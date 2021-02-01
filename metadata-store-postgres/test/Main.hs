@@ -25,7 +25,7 @@ newtype DbName = DbName { _dbName :: Text }
 newtype DbUser = DbUser { _dbUser :: Text }
 
 instance IsOption DbHost where
-  defaultValue   = error $ "'" <> unTagged (optionName :: Tagged DbHost String) <> "' is required."
+  defaultValue   = DbHost "/run/postgresql"
   parseValue str = Just $ DbHost (T.pack str)
   optionName     = pure "db-host"
   optionHelp     = pure $ "Postgres server hostname or, for UNIX domain sockets, the socket filename."

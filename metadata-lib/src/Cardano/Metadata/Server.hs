@@ -4,8 +4,7 @@
 {-# LANGUAGE GADTs #-}
 
 module Cardano.Metadata.Server
-  ( ReadFns(..)
-  , ReadError(..)
+  ( ReadError(..)
   , metadataServer
   , webApp
   , MetadataServerAPI
@@ -34,20 +33,20 @@ import Cardano.Metadata.Server.API
 --
 -- The function takes a set of functions as an argument, that
 -- determine how the application will service requests.
-webApp :: StoreInterface Subject Entry -> Application
+webApp :: StoreInterface Subject Entry' -> Application
 webApp intf = serve (Proxy :: Proxy MetadataServerAPI) (metadataServer intf)
 
-metadataServer :: StoreInterface Subject Entry -> Server MetadataServerAPI
+metadataServer :: StoreInterface Subject Entry' -> Server MetadataServerAPI
 metadataServer intf = subjectHandler intf
-                :<|> subjectHandler intf
-                :<|> propertyHandler intf
-                :<|> batchHandler intf
+                 :<|> subjectHandler intf
+                 :<|> propertyHandler intf
+                 :<|> batchHandler intf
 
 subjectHandler
   :: StoreInterface Subject Entry'
   -> Subject
   -> Handler Entry'
-subjectHandler (StoreInterface read _ _ _ _ _) subject =
+subjectHandler (StoreInterface { storeRead = read }) subject =
   catchExceptions . handleErrors =<< liftIO (do
     mEntry <- read subject
     pure $ case mEntry of
@@ -58,25 +57,31 @@ subjectHandler (StoreInterface read _ _ _ _ _) subject =
 propertyHandler
   :: StoreInterface Subject Entry'
   -> Subject
-  -> Text
+  -> PropertyName
   -> Handler PartialEntry'
-propertyHandler f subject property = do
+propertyHandler f subject propName = do
   entry <- subjectHandler f subject
-  catchExceptions . handleErrors $
-    getProperty subject property entry
+  catchExceptions . handleErrors $ do
+    partialEntry <- getProperty subject propName entry
+    pure $ PartialEntry' subject partialEntry
 
 batchHandler
-  :: StoreInterface Subject Entry
+  :: StoreInterface Subject Entry'
   -> BatchRequest
   -> Handler BatchResponse
-batchHandler (StoreInterface _ _ _ _ _ _) (BatchRequest subjects props) = do
-  entries <- readBatch subjects
-  catchExceptions . handleErrors $
-    forM entries $ \entry@(Entry (EntryF owner name desc preImage)) ->
-      flip foldMap props $ \property ->
-        case getProperty subject property entry of
-          Left err -> mempty
-          Right pe -> pe
+batchHandler (StoreInterface { storeReadBatch = readBatch }) (BatchRequest subjects propNames) =
+  catchExceptions . liftIO $ do
+    entries <- readBatch subjects
+
+    pure $ BatchResponse $ 
+      flip foldMap entries $ \entry@(Entry' subject _) ->
+        let
+          partialEntry = flip foldMap propNames $ \propName ->
+            getPropertyLenient subject propName entry
+        in
+          if partialEntry == mempty
+          then []
+          else [PartialEntry' subject partialEntry]
 
 handleErrors :: Either ReadError a -> Handler a
 handleErrors r =

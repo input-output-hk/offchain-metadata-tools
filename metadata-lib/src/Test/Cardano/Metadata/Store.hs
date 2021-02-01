@@ -13,6 +13,7 @@ module Test.Cardano.Metadata.Store
 
 import Data.Word
 import Data.List (sort)
+import Data.Maybe (catMaybes)
 import Test.Tasty
 import           Hedgehog (Gen, MonadTest, annotate, forAll, property, tripping, (===), footnote, failure, evalIO, diff)
 import qualified Hedgehog as H (Property)
@@ -42,6 +43,7 @@ testKeyValueImplementation f = do
     , testProperty "delete/idempotent" (prop_delete_idempotent f)
     , testProperty "read/denotation"   (prop_read_denotation f)
     , testProperty "read/observation"  (prop_read_observation f)
+    , testProperty "readBatch/denotation"   (prop_readBatch_denotation f)
     , testProperty "update/denotation" (prop_update_denotation f)
     ]
 
@@ -57,7 +59,7 @@ testKeyValueComplexTypeImplementation f = do
 
 prop_complex_write_read :: IO (StoreInterface Gen.ComplexKey Gen.ComplexType) -> H.Property
 prop_complex_write_read getIntf = property $ do
-  (f@(StoreInterface read write _ _ _ _)) <- evalIO getIntf
+  (f@(StoreInterface { storeRead = read, storeWrite = write })) <- evalIO getIntf
   k   <- forAll Gen.complexKey
   v   <- forAll Gen.complexType
   kvs <- forAll Gen.complexKeyVals
@@ -71,7 +73,7 @@ prop_complex_write_read getIntf = property $ do
 
 prop_complex_delete :: IO (StoreInterface Gen.ComplexKey Gen.ComplexType) -> H.Property
 prop_complex_delete getIntf = property $ do
-  (f@(StoreInterface read write delete _ _ _)) <- evalIO getIntf
+  (f@(StoreInterface { storeRead = read, storeWrite = write, storeDelete = delete })) <- evalIO getIntf
   k   <- forAll Gen.complexKey
   v   <- forAll Gen.complexType
   kvs <- forAll Gen.complexKeyVals
@@ -87,7 +89,7 @@ prop_complex_delete getIntf = property $ do
 
 prop_complex_update :: IO (StoreInterface Gen.ComplexKey Gen.ComplexType) -> H.Property
 prop_complex_update getIntf = property $ do
-  (f@(StoreInterface read write delete update _ _)) <- evalIO getIntf
+  (f@(StoreInterface { storeRead = read, storeWrite = write, storeDelete = delete, storeUpdate = update })) <- evalIO getIntf
   k   <- forAll Gen.complexKey
   v   <- forAll Gen.complexType
   kvs <- forAll Gen.complexKeyVals
@@ -104,13 +106,13 @@ prop_complex_update getIntf = property $ do
       result === fun v
 
 reset :: StoreInterface k v -> [(k, v)] -> IO ()
-reset (StoreInterface _ write _ _ _ empty) kvs = void $ empty >> traverse (uncurry write) kvs
+reset (StoreInterface { storeWrite = write, storeEmpty = empty }) kvs = void $ empty >> traverse (uncurry write) kvs
 
 -- Write follows the semantics of a Map insert.
 -- ∀k v. (write k v >> toList) = M.toList . M.insert k v . M.fromList <$> toList
 prop_write_denotation :: IO (StoreInterface Word8 Word8) -> H.Property
 prop_write_denotation getIntf = property $ do
-  (f@(StoreInterface _ write _ _ toList _)) <- evalIO getIntf
+  (f@(StoreInterface { storeWrite = write, storeToList = toList })) <- evalIO getIntf
   k        <- forAll Gen.key
   v        <- forAll Gen.val
   kvs      <- forAll Gen.keyVals
@@ -128,7 +130,7 @@ prop_write_denotation getIntf = property $ do
 -- ∀k. delete k >> toList = M.toList . M.delete k . M.fromList <$> toList
 prop_delete_denotation :: IO (StoreInterface Word8 Word8) -> H.Property
 prop_delete_denotation getIntf = property $ do
-  (f@(StoreInterface _ _ delete _ toList _)) <- evalIO getIntf
+  (f@(StoreInterface { storeDelete = delete, storeToList = toList })) <- evalIO getIntf
   k   <- forAll Gen.key
   v   <- forAll Gen.val
   kvs <- forAll Gen.keyVals
@@ -147,7 +149,7 @@ prop_delete_denotation getIntf = property $ do
 -- ∀k v. write k v >> delete k >> toList = delete k >> toList
 prop_delete_cancels_write :: IO (StoreInterface Word8 Word8) -> H.Property
 prop_delete_cancels_write getIntf = property $ do
-  (f@(StoreInterface _ write delete _ toList _)) <- evalIO getIntf
+  (f@(StoreInterface { storeWrite = write, storeDelete = delete, storeToList = toList })) <- evalIO getIntf
   k   <- forAll Gen.key
   v   <- forAll Gen.val
   kvs <- forAll Gen.keyVals
@@ -167,7 +169,7 @@ prop_delete_cancels_write getIntf = property $ do
 -- ∀k v. member k       => read k = Just v
 prop_read_denotation :: IO (StoreInterface Word8 Word8) -> H.Property
 prop_read_denotation getIntf = property $ do
-  (f@(StoreInterface read write delete _ _ _)) <- evalIO getIntf
+  (f@(StoreInterface { storeRead = read, storeWrite = write, storeDelete = delete })) <- evalIO getIntf
   k   <- forAll Gen.key
   v   <- forAll Gen.val
   kvs <- forAll Gen.keyVals
@@ -189,12 +191,28 @@ prop_read_denotation getIntf = property $ do
       read1 === Nothing
       read2 === Just v
 
+prop_readBatch_denotation :: IO (StoreInterface Word8 Word8) -> H.Property
+prop_readBatch_denotation getIntf = property $ do
+  (f@(StoreInterface { storeRead = read, storeReadBatch = readBatch })) <- evalIO getIntf
+  ks  <- forAll $ Gen.list (Range.linear 0 20) Gen.key
+  kvs <- forAll Gen.keyVals
+
+  join $ evalIO $ do
+    reset f kvs
+    result <- readBatch ks
+
+    reset f kvs
+    expected <- traverse read ks >>= (pure . catMaybes)
+
+    pure $ do
+      result === expected
+
 -- Read, as an observation, should be derivable from the algebra's
 -- canonical observation (denotation) "toList".
 -- ∀k. read k = M.lookup k . M.fromList <$> toList
 prop_read_observation :: IO (StoreInterface Word8 Word8) -> H.Property
 prop_read_observation getIntf = property $ do
-  (f@(StoreInterface read _ _ _ toList _)) <- evalIO getIntf
+  (f@(StoreInterface { storeRead = read, storeToList = toList })) <- evalIO getIntf
   k <- forAll Gen.key
   kvs <- forAll Gen.keyVals
 
@@ -212,7 +230,7 @@ prop_read_observation getIntf = property $ do
 -- ∀k v1 v2 . write k v1 >> write k v2 = write k v2
 prop_write_last_wins :: IO (StoreInterface Word8 Word8) -> H.Property
 prop_write_last_wins getIntf = property $ do
-  (f@(StoreInterface _ write _ _ toList _)) <- evalIO getIntf
+  (f@(StoreInterface { storeWrite = write, storeToList = toList })) <- evalIO getIntf
 
   k   <- forAll Gen.key
   v1  <- forAll Gen.val
@@ -234,7 +252,7 @@ prop_write_last_wins getIntf = property $ do
 -- ∀k. delete k >> delete k = delete k
 prop_delete_idempotent :: IO (StoreInterface Word8 Word8) -> H.Property
 prop_delete_idempotent getIntf = property $ do
-  (f@(StoreInterface _ write delete _ toList _)) <- evalIO getIntf
+  (f@(StoreInterface { storeWrite = write, storeDelete = delete, storeToList = toList })) <- evalIO getIntf
 
   k   <- forAll Gen.key
   v   <- forAll Gen.val
@@ -255,7 +273,7 @@ prop_delete_idempotent getIntf = property $ do
 -- ∀k v kvs. update fv k kvs = read k kvs >>= (\case (Nothing -> pure kvs) (Just _  -> case mv of (Nothing -> delete k kvs) (Just v  -> write k v kvs)))
 prop_update_denotation :: IO (StoreInterface Word8 Word8) -> H.Property
 prop_update_denotation getIntf = property $ do
-  (f@(StoreInterface read write delete update toList _)) <- evalIO getIntf
+  (f@(StoreInterface { storeRead = read, storeWrite = write, storeDelete = delete, storeUpdate = update, storeToList = toList })) <- evalIO getIntf
 
   k <- forAll Gen.key
   mv <- forAll $ Gen.maybe Gen.val

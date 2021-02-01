@@ -3,6 +3,7 @@ module Cardano.Metadata.Store.Simple where
 
 import Prelude hiding (read, init)
 import Control.Concurrent.MVar
+import Data.Maybe (catMaybes)
 import Data.Map.Strict (Map)
 import Data.Functor (void)
 import Data.Text (Text)
@@ -13,38 +14,13 @@ import qualified Data.Map.Strict as Map
 import Cardano.Metadata.Server.Types
 import Cardano.Metadata.Store.Types 
 
--- readFns :: ReadFns
--- readFns =
---   ReadFns
---     (pure . getEntryForSubject)
---     (\subj -> pure . getPartialEntryForProperty subj)
---     (pure . getBatch)
-
--- getEntryForSubject :: Subject -> Either ReadError Entry
--- getEntryForSubject subj = case Map.lookup subj dat of
---   Nothing -> Left $ NoSubject subj
---   Just e  -> Right e
-
--- getPartialEntryForProperty :: Subject -> Text -> Either ReadError PartialEntry
--- getPartialEntryForProperty subj prop = do
---   entry <- getEntryForSubject subj
---   getProperty subj prop entry
-
--- getBatch :: BatchRequest -> BatchResponse
--- getBatch (BatchRequest subjs props) =
---   BatchResponse $
---     flip foldMap subjs $ \subj ->
---       flip foldMap props $ \prop ->
---         case getPartialEntryForProperty subj prop of
---           Left _err -> []
---           Right x   -> [x]
-
 newtype KeyValue k v = KeyValue (MVar (Map k v))
 
 simpleStore :: Ord k => Map k v -> IO (StoreInterface k v)
 simpleStore state = do
   kvs <- init state
   pure $ StoreInterface (\k   -> read k kvs)
+                        (\ks  -> readBatch ks kvs)
                         (\k v -> void $ write k v kvs)
                         (\k   -> void $ delete k kvs)
                         (\f k -> void $ update f k kvs)
@@ -60,6 +36,11 @@ read :: Ord k => k -> KeyValue k v -> IO (Maybe v)
 read k (KeyValue mVar) = do
   m <- readMVar mVar
   pure $ Map.lookup k m
+
+readBatch :: Ord k => [k] -> KeyValue k v -> IO [v]
+readBatch ks (KeyValue mVar) = do
+  m <- readMVar mVar
+  pure . catMaybes . fmap (\k -> Map.lookup k m) $ ks 
 
 write :: Ord k => k -> v -> KeyValue k v -> IO (KeyValue k v)
 write k v = modifyKeyValue (Map.insert k v)

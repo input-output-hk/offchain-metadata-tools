@@ -18,9 +18,9 @@ library
                        Test.Cardano.Metadata.Store
                        Test.Cardano.Metadata.Generators
 
-  build-depends:       aeson
-                     , HUnit
+  build-depends:       HUnit
                      , QuickCheck
+                     , aeson
                      , aeson-pretty
                      , base
                      , bytestring
@@ -30,6 +30,7 @@ library
                      , github-webhooks
                      , hedgehog
                      , hspec
+                     , http-api-data
                      , http-client
                      , lens
                      , lens-aeson

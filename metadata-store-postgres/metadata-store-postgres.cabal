@@ -27,6 +27,7 @@ library
                      , monad-logger
                      , persistent
                      , persistent-postgresql
+                     , persistent-template
                      , resource-pool
                      , safe-exceptions
                      , scientific

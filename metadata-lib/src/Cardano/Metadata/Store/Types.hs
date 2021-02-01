@@ -16,8 +16,10 @@ data ReadError = NoSubject Subject
 -- their own store implementation should use these tests to ensure the
 -- data store has the correct semantics.
 data StoreInterface k v
-  = StoreInterface { storeRead   :: k -> IO (Maybe v)
+  = StoreInterface { storeRead      :: k -> IO (Maybe v)
                    -- ^ read: Read a value from the data store
+                   , storeReadBatch :: [k] -> IO [v]
+                   -- ^ readBatch: Read a series of values from the data store
                    , storeWrite  :: k -> v -> IO ()
                    -- ^ write: Write a value to the data store
                    , storeDelete :: k -> IO ()

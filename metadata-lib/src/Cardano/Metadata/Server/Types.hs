@@ -19,6 +19,7 @@ import GHC.Generics
 import qualified Data.Text as T
 import Data.Functor.Identity (Identity(Identity))
 import Text.Read (Read(readPrec), readEither)
+import Web.HttpApiData (FromHttpApiData, parseUrlPiece)
 import qualified Text.Read as Read (lift)
 import Text.ParserCombinators.ReadP (choice, string)
 import Data.Aeson (ToJSON, FromJSON, (.:), (.:?))
@@ -40,7 +41,7 @@ import GHC.Show (showSpace)
 -- subject "a" and "b".
 data BatchRequest
   = BatchRequest { bReqSubjects   :: [Subject]
-                 , bReqProperties :: [Text]
+                 , bReqProperties :: [PropertyName]
                  }
   deriving (Eq, Show)
 
@@ -134,21 +135,42 @@ data PropertyType t where
 newtype PropertyName = PropertyName { getPropertyName :: Text }
   deriving (Eq, Show)
 
+instance FromHttpApiData PropertyName where
+  parseUrlPiece = Right . PropertyName
+
+instance IsString PropertyName where
+  fromString = PropertyName . T.pack
+
+instance ToJSON PropertyName where
+  toJSON = Aeson.String . getPropertyName
+
+instance FromJSON PropertyName where
+  parseJSON = Aeson.withText "PropertyName" (pure . PropertyName)
+
 propertyName :: PropertyType r -> PropertyName
-propertyName PropTypeSubject = PropertyName "subject"
-propertyName PropTypeOwner   = PropertyName "owner"
+propertyName PropTypeSubject     = PropertyName "subject"
+propertyName PropTypeOwner       = PropertyName "owner"
+propertyName PropTypeName        = PropertyName "name"
+propertyName PropTypeDescription = PropertyName "description"
+propertyName PropTypePreImage    = PropertyName "preImage"
 
 propertyNameText :: PropertyType r -> Text
 propertyNameText = getPropertyName . propertyName
 
 nameToPropertyType :: (forall t. Maybe (PropertyType t) -> m) -> Text -> m
-nameToPropertyType f "subject" = f $ Just PropTypeSubject
-nameToPropertyType f "owner"   = f $ Just PropTypeOwner
-nameToPropertyType f _         = f Nothing
+nameToPropertyType f "subject"     = f $ Just PropTypeSubject
+nameToPropertyType f "owner"       = f $ Just PropTypeOwner
+nameToPropertyType f "name"        = f $ Just PropTypeName
+nameToPropertyType f "description" = f $ Just PropTypeDescription
+nameToPropertyType f "preImage"    = f $ Just PropTypePreImage
+nameToPropertyType f _             = f Nothing
 
 toJSONObject :: Property t -> HM.HashMap Text Aeson.Value
-toJSONObject (PropSubject t subj) = HM.singleton (propertyNameText t) (Aeson.toJSON subj)
-toJSONObject (PropOwner t owner)  = HM.singleton (propertyNameText t) (Aeson.toJSON owner)
+toJSONObject (PropSubject t subj)            = HM.singleton (propertyNameText t) (Aeson.toJSON subj)
+toJSONObject (PropOwner t owner)             = HM.singleton (propertyNameText t) (Aeson.toJSON owner)
+toJSONObject (PropName t name)               = HM.singleton (propertyNameText t) (Aeson.toJSON name)
+toJSONObject (PropDescription t description) = HM.singleton (propertyNameText t) (Aeson.toJSON description)
+toJSONObject (PropPreImage t preImage)       = HM.singleton (propertyNameText t) (Aeson.toJSON preImage)
 
 class HasProperties a where
   withProperties :: Monoid m => (forall t. Property t -> m) -> a -> m
@@ -216,6 +238,12 @@ instance (Show (f Owner), Show (f Name), Show (f Description), Show (f PreImage)
 
 instance (Eq (f Owner), Eq (f Name), Eq (f Description), Eq (f PreImage), Functor f) => Eq (EntryF f) where
   (EntryF a1 a2 a3 a4) == (EntryF b1 b2 b3 b4) = a1 == b1 && a2 == b2 && a3 == b3 && a4 == b4
+
+instance (Semigroup (f Owner), Semigroup (f Name), Semigroup (f Description), Semigroup (f PreImage)) => Semigroup (EntryF f) where
+  (EntryF a1 a2 a3 a4) <> (EntryF b1 b2 b3 b4) = EntryF (a1 <> b1) (a2 <> b2) (a3 <> b3) (a4 <> b4)
+
+instance (Monoid (f Owner), Monoid (f Name), Monoid (f Description), Monoid (f PreImage)) => Monoid (EntryF f) where
+  mempty = EntryF mempty mempty mempty mempty
 
 newtype Entry = Entry (EntryF Identity)
   deriving (Eq, Show)
