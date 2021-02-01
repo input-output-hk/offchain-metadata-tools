@@ -65,7 +65,6 @@ in {
         };
         database = lib.mkOption {
           type = lib.types.str;
-          default = cfg.postgres.user;
           description = "the postgresql database to use";
         };
         table = lib.mkOption {
