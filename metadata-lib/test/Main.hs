@@ -13,7 +13,7 @@ main = do
   serverSpec <- Test.Cardano.Metadata.Server.tests
   defaultMain $
     testGroup "Metadata server library tests"
-      [ serverSpec
-      , Test.Cardano.Metadata.Server.Types.tests
+      [ Test.Cardano.Metadata.Server.Types.tests
       , Test.Cardano.Metadata.Store.Simple.tests
+      , serverSpec
       ]

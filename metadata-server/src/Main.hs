@@ -9,12 +9,31 @@
 
 module Main where
 
-import Data.Text (Text)
+import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Logger (runStdoutLoggingT)
+import qualified Options.Applicative as Opt
+import qualified Database.Persist.Postgresql as Postgresql
+import qualified Network.Wai.Handler.Warp as Warp
+import qualified Data.ByteString.Char8 as BC
+import qualified Data.Text as T
+
+import Cardano.Metadata.Server (webApp)
+import qualified Cardano.Metadata.Store.Postgres as Store
+import Config
 
 main :: IO ()
-main = 
-  port <- maybe 8080 read <$> lookupEnv "METADATA_SERVER_PORT"
-  putStrLn $ "Server is starting on port " <> show port <> "."
-  run port (app Postgres.readFns)
+main = do
+  options@(Opts { optDbConnections = numDbConns
+                , optDbMetadataTableName = tableName
+                , optServerPort = port
+                }) <- Opt.execParser opts
 
-
+  let pgConnString = pgConnectionString options
+  putStrLn $ "Connecting to database using connection string: " <> BC.unpack pgConnString
+  runStdoutLoggingT $
+    Postgresql.withPostgresqlPool pgConnString numDbConns $ \pool -> liftIO $ do
+      putStrLn $ "Initializing table '" <> tableName <> "'."
+      intf <- Store.postgresStore pool (T.pack tableName)
+      
+      putStrLn $ "Metadata server is starting on port " <> show port <> "."
+      liftIO $ Warp.run port (webApp intf)

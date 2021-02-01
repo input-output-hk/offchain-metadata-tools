@@ -61,14 +61,6 @@ data KeyValue k v = KeyValue { _kvConnPool    :: Pool SqlBackend
                              , _kvDbTableName :: Text
                              }
 
--- share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
--- Record v
---   key  Text
---   UniqueName key
---   deriving Eq Read Show
--- |]
-
-
 createTable
   :: ( BackendCompatible SqlBackend backend
      , MonadIO m
