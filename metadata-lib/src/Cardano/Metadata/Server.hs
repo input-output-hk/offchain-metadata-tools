@@ -79,9 +79,7 @@ batchHandler (StoreInterface { storeReadBatch = readBatch }) (BatchRequest subje
           partialEntry = flip foldMap propNames $ \propName ->
             getPropertyLenient subject propName entry
         in
-          if partialEntry == mempty
-          then []
-          else [PartialEntry' subject partialEntry]
+          [PartialEntry' subject partialEntry]
 
 handleErrors :: Either ReadError a -> Handler a
 handleErrors r =
@@ -103,8 +101,10 @@ catchExceptions action =
 getProperty :: Subject -> PropertyName -> Entry' -> Either ReadError PartialEntry
 getProperty subj propName entry =
   case getPropertyLenient subj propName entry of
-    x | x == mempty -> Left $ NoProperty subj propName
-    x               -> Right x
+    x | x == mempty
+       && propName /= propertyName PropTypeSubject
+      -> Left $ NoProperty subj propName
+    x -> Right x
 
 getPropertyLenient :: Subject -> PropertyName -> Entry' -> PartialEntry
 getPropertyLenient subj propName = withProperties f

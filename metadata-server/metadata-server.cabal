@@ -25,6 +25,8 @@ executable metadata-server
                      , persistent
                      , esqueleto
                      , servant
+                     , metadata-lib
+                     , metadata-store-postgres
 
   ghc-options:          -Wall
                         -Wcompat

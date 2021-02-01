@@ -19,7 +19,7 @@ import GHC.Generics
 import qualified Data.Text as T
 import Data.Functor.Identity (Identity(Identity))
 import Text.Read (Read(readPrec), readEither)
-import Web.HttpApiData (FromHttpApiData, parseUrlPiece)
+import Web.HttpApiData (FromHttpApiData, parseUrlPiece, ToHttpApiData, toUrlPiece)
 import qualified Text.Read as Read (lift)
 import Text.ParserCombinators.ReadP (choice, string)
 import Data.Aeson (ToJSON, FromJSON, (.:), (.:?))
@@ -138,6 +138,9 @@ newtype PropertyName = PropertyName { getPropertyName :: Text }
 instance FromHttpApiData PropertyName where
   parseUrlPiece = Right . PropertyName
 
+instance ToHttpApiData PropertyName where
+  toUrlPiece = getPropertyName
+
 instance IsString PropertyName where
   fromString = PropertyName . T.pack
 
@@ -250,15 +253,6 @@ newtype Entry = Entry (EntryF Identity)
 
 newtype PartialEntry = PartialEntry (EntryF First)
   deriving (Eq, Show)
-
-availablePropertyNames :: [Text]
-availablePropertyNames = 
-  [ "subject"
-  ,  "owner"
-  ,  "name"
-  ,  "description"
-  ,  "preImage"
-  ]
 
 instance Monoid PartialEntry where
   mempty = PartialEntry $ EntryF mempty mempty mempty mempty

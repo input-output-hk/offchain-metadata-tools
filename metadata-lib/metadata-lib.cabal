@@ -66,6 +66,8 @@ test-suite unit-tests
                 , containers
                 , hedgehog
                 , hspec
+                , hspec-wai
+                , http-types
                 , metadata-lib
                 , mtl
                 , tasty
@@ -85,3 +87,4 @@ test-suite unit-tests
 
   other-modules:        Test.Cardano.Metadata.Server.Types
                         Test.Cardano.Metadata.Server
+                        Test.Cardano.Metadata.Store.Simple
