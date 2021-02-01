@@ -35,6 +35,7 @@ in {
       };
       user = lib.mkOption {
         type = lib.types.str;
+        # Linux OS user can have a hyphen (`-`) along with systemd service names as standard
         default = "metadata-server";
         description = "the user to run as";
       };
@@ -56,6 +57,7 @@ in {
         };
         database = lib.mkOption {
           type = lib.types.str;
+          # Postgresql cannot have a hyphen (`-`)
           default = "metadata_server";
           description = "the postgresql database to use";
         };
@@ -66,7 +68,8 @@ in {
         };
         user = lib.mkOption {
           type = lib.types.str;
-          default = cfg.user;
+          # Postgresql cannot have a hyphen (`-`)
+          default = "metadata_user";
           description = "the postgresql user to use";
         };
         numConnections = lib.mkOption {
