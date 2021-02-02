@@ -90,8 +90,6 @@ in {
     services.metadata-webhook.script = let
       exec = "metadata-webhook";
       cmd = builtins.filter (x: x != "") [
-          "METADATA_WEBHOOK_SECRET=${cfg.webHookSecret}"
-          "METADATA_GITHUB_TOKEN=${cfg.gitHubToken}"
           "${cfg.package}/bin/${exec}"
           "--db ${cfg.postgres.database}"
           "--db-user ${cfg.postgres.user}"
@@ -105,7 +103,7 @@ in {
       echo "Starting ${exec}: ${lib.concatStringsSep "\"\n   echo \"" cmd}"
       echo "..or, once again, in a single line:"
       echo "${toString cmd}"
-      exec ${toString cmd}
+      METADATA_WEBHOOK_SECRET=${cfg.webHookSecret} METADATA_GITHUB_TOKEN=${cfg.gitHubToken} exec ${toString cmd}
     '';
     environment.systemPackages = [ cfg.package config.services.postgresql.package ];
     systemd.services.metadata-webhook = {
