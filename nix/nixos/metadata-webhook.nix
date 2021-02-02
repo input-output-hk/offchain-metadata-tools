@@ -121,6 +121,7 @@ in {
         DynamicUser = true;
         RuntimeDirectory = "metadata-webhook";
         StateDirectory = "metadata-webhook";
+        StandardOutput = "journal";
       };
 
       wantedBy = [ "multi-user.target" ];
