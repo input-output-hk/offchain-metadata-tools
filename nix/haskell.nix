@@ -59,6 +59,10 @@ let
         packages.cardano-api.doHaddock = false;
         packages.esqueleto.doHaddock = false;
       }
+      {
+        # TODO This integration test needs to be run in a NixOS test environment
+        packages.metadata-store-postgres.components.tests.integration-tests.doCheck = false;
+      }
       ({ pkgs, ... }: lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
         # systemd can't be statically linked
         packages.cardano-config.flags.systemd = !pkgs.stdenv.hostPlatform.isMusl;

@@ -22,8 +22,12 @@ executable metadata-webhook
                      , lens
                      , lens-aeson
                      , metadata-lib
+                     , metadata-store-postgres
+                     , monad-logger
                      , mtl
+                     , optparse-applicative
                      , persistent
+                     , persistent-postgresql
                      , safe-exceptions
                      , scientific
                      , servant

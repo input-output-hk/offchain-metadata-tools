@@ -15,6 +15,9 @@ library
                        Cardano.Metadata.Server.API
                        Cardano.Metadata.Store.Types
                        Cardano.Metadata.Store.Simple
+                       Cardano.Metadata.Webhook.Types
+                       Cardano.Metadata.Webhook.API
+                       Cardano.Metadata.Webhook.Server
                        Test.Cardano.Metadata.Store
                        Test.Cardano.Metadata.Generators
 
@@ -32,6 +35,7 @@ library
                      , hspec
                      , http-api-data
                      , http-client
+                     , http-types
                      , lens
                      , lens-aeson
                      , monad-logger
@@ -41,6 +45,7 @@ library
                      , scientific
                      , servant
                      , servant-client
+                     , servant-github-webhook
                      , servant-server
                      , smallcheck
                      , tasty
@@ -52,6 +57,7 @@ library
                      , unordered-containers
                      , wai
                      , warp
+                     , wreq
 
 test-suite unit-tests
   hs-source-dirs:       test

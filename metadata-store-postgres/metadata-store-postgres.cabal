@@ -11,6 +11,7 @@ library
   hs-source-dirs:      src
 
   exposed-modules:     Cardano.Metadata.Store.Postgres
+                       Cardano.Metadata.Store.Postgres.Config
 
   build-depends:       aeson
                      , base
@@ -23,8 +24,9 @@ library
                      , lens
                      , lens-aeson
                      , metadata-lib
-                     , mtl
                      , monad-logger
+                     , mtl
+                     , optparse-applicative
                      , persistent
                      , persistent-postgresql
                      , persistent-template
@@ -36,6 +38,7 @@ library
                      , text
                      , unordered-containers
                      , wai
+                     , warp
 
 test-suite integration-tests 
   hs-source-dirs:       test

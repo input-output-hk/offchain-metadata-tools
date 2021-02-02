@@ -19,7 +19,8 @@ import qualified Data.Text as T
 
 import Cardano.Metadata.Server (webApp)
 import qualified Cardano.Metadata.Store.Postgres as Store
-import Config
+import Cardano.Metadata.Store.Postgres.Config (pgConnectionString, Opts(..))
+import Config (opts)
 
 main :: IO ()
 main = do

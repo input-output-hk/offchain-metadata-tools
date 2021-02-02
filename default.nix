@@ -34,7 +34,11 @@ let
     inherit (haskellPackages.metadata-server.components.exes) metadata-server;
 
     # `tests` are the test suites which have been built.
-    tests = collectComponents' "tests" haskellPackages;
+    tests =
+      # TODO We exclude the postgres integration-tests as they need to
+      # be run in a NixOS test environment.
+      lib.filterAttrs (n: v: n != "metadata-store-postgres")
+        (collectComponents' "tests" haskellPackages);
     # `benchmarks` (only built, not run).
     benchmarks = collectComponents' "benchmarks" haskellPackages;
 
