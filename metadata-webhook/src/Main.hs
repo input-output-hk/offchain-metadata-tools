@@ -54,9 +54,9 @@ main = do
   key         <- maybe mempty C8.pack <$> lookupEnv "METADATA_WEBHOOK_SECRET"
   githubToken <- GitHubToken <$> maybe "" read <$> lookupEnv "METADATA_GITHUB_TOKEN"
 
-  options@(Opts { optDbConnections = numDbConns
+  options@(Opts { optDbConnections       = numDbConns
                 , optDbMetadataTableName = tableName
-                , optServerPort = port
+                , optServerPort          = port
                 }) <- Opt.execParser opts
 
   let pgConnString = pgConnectionString options
