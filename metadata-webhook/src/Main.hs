@@ -52,15 +52,12 @@ import Config (opts)
 main :: IO ()
 main = do
   key         <- maybe mempty C8.pack <$> lookupEnv "METADATA_WEBHOOK_SECRET"
-  putStrLn "1"
-  githubToken <- GitHubToken <$> maybe "" read <$> lookupEnv "METADATA_GITHUB_TOKEN"
-  putStrLn "2"
+  githubToken <- GitHubToken <$> maybe "" T.pack <$> lookupEnv "METADATA_GITHUB_TOKEN"
 
   options@(Opts { optDbConnections       = numDbConns
                 , optDbMetadataTableName = tableName
                 , optServerPort          = port
                 }) <- Opt.execParser opts
-  putStrLn "3"
 
   let pgConnString = pgConnectionString options
   putStrLn $ "Connecting to database using connection string: " <> C8.unpack pgConnString
