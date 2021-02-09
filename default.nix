@@ -23,15 +23,19 @@ let
   haskellPackagesMusl64 = recRecurseIntoAttrs
     # the Haskell.nix package set, reduced to local packages.
     (selectProjectPackages pkgs.pkgsCross.musl64.metadataServerHaskellPackages);
+  nixosTests = recRecurseIntoAttrs (import ./nix/nixos/tests {
+    inherit pkgs;
+  });
 
   self = {
     inherit metadataServerHaskellPackages;
-    inherit haskellPackages hydraEvalErrors;
+    inherit haskellPackages hydraEvalErrors nixosTests;
 
     inherit (pkgs.iohkNix) checkCabalProject;
 
     inherit (haskellPackages.metadata-server.identifier) version;
     inherit (haskellPackages.metadata-server.components.exes) metadata-server;
+    inherit (haskellPackages.metadata-webhook.components.exes) metadata-webhook;
 
     # `tests` are the test suites which have been built.
     tests = collectComponents' "tests" haskellPackages;
