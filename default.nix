@@ -35,6 +35,7 @@ let
 
     inherit (haskellPackages.metadata-server.identifier) version;
     inherit (haskellPackages.metadata-server.components.exes) metadata-server;
+    inherit (haskellPackages.metadata-webhook.components.exes) metadata-webhook;
 
     # `tests` are the test suites which have been built.
     tests = collectComponents' "tests" haskellPackages;
