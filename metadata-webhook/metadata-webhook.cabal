@@ -10,22 +10,34 @@ extra-source-files:  ../CHANGELOG.md
 executable metadata-webhook
   hs-source-dirs:      src
   main-is:             Main.hs
-  build-depends:       base
-                     , aeson
+  build-depends:       aeson
+                     , base
                      , bytestring
-                     , lens-aeson
                      , containers
                      , directory
+                     , esqueleto
+                     , github-webhooks
+                     , http-client
+                     , http-types
                      , lens
+                     , lens-aeson
+                     , metadata-lib
+                     , metadata-store-postgres
+                     , monad-logger
                      , mtl
+                     , optparse-applicative
+                     , persistent
+                     , persistent-postgresql
                      , safe-exceptions
                      , scientific
-                     , text
-                     , github-webhooks
-                     , persistent
-                     , esqueleto
                      , servant
                      , servant-github-webhook
+                     , servant-server
+                     , text
+                     , unordered-containers
+                     , wai
+                     , warp
+                     , wreq
 
   ghc-options:          -Wall
                         -Wcompat

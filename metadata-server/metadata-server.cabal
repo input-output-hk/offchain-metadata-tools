@@ -13,18 +13,24 @@ executable metadata-server
   build-depends:       base
                      , aeson
                      , bytestring
-                     , lens-aeson
                      , containers
                      , directory
+                     , esqueleto
+                     , github-webhooks
                      , lens
+                     , lens-aeson
+                     , metadata-lib
+                     , metadata-store-postgres
+                     , monad-logger
                      , mtl
+                     , persistent-postgresql
+                     , optparse-applicative
+                     , persistent
                      , safe-exceptions
                      , scientific
-                     , text
-                     , github-webhooks
-                     , persistent
-                     , esqueleto
                      , servant
+                     , text
+                     , warp
 
   ghc-options:          -Wall
                         -Wcompat
@@ -37,3 +43,4 @@ executable metadata-server
                         -threaded
 
   other-modules:        Paths_metadata_server
+                        Config

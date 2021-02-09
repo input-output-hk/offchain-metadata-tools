@@ -10,43 +10,87 @@ extra-source-files:  ../CHANGELOG.md
 library
   hs-source-dirs:      src
 
-  exposed-modules:     Cardano.Metadata
+  exposed-modules:     Cardano.Metadata.Server
+                       Cardano.Metadata.Server.Types
+                       Cardano.Metadata.Server.API
+                       Cardano.Metadata.Store.Types
+                       Cardano.Metadata.Store.Simple
+                       Cardano.Metadata.Webhook.Types
+                       Cardano.Metadata.Webhook.API
+                       Cardano.Metadata.Webhook.Server
+                       Test.Cardano.Metadata.Store
+                       Test.Cardano.Metadata.Generators
 
-  build-depends:       base
+  build-depends:       HUnit
+                     , QuickCheck
                      , aeson
+                     , aeson-pretty
+                     , base
                      , bytestring
-                     , lens-aeson
+                     , casing
                      , containers
                      , directory
+                     , github-webhooks
+                     , hedgehog
+                     , hspec
+                     , http-api-data
+                     , http-client
+                     , http-types
                      , lens
+                     , lens-aeson
+                     , monad-logger
                      , mtl
+                     , raw-strings-qq
                      , safe-exceptions
                      , scientific
+                     , servant
+                     , servant-client
+                     , servant-github-webhook
+                     , servant-server
+                     , smallcheck
+                     , tasty
+                     , tasty-hedgehog
+                     , tasty-hspec
+                     , tasty-hunit
+                     , tasty-quickcheck
                      , text
-                     , github-webhooks
-                     , persistent
-                     , esqueleto
+                     , unordered-containers
+                     , wai
+                     , warp
+                     , wreq
 
 test-suite unit-tests
   hs-source-dirs:       test
   main-is:              Main.hs
   type:                 exitcode-stdio-1.0
 
-  build-depends:
-                        base >=4.12 && <5
-                      , metadata-lib
-                      , aeson
-                      , hspec
-                      , hedgehog
-                      , QuickCheck
-                      , tasty
-                      , mtl
-                      , tasty-hedgehog
-                      , tasty-quickcheck
-                      , tasty-hspec
-                      , tasty-hunit
-                      , HUnit
-                      , containers
+  build-depends:  base >=4.12 && <5
+                , HUnit
+                , QuickCheck
+                , aeson
+                , aeson-pretty
+                , containers
+                , hedgehog
+                , hspec
+                , hspec-wai
+                , http-types
+                , metadata-lib
+                , mtl
+                , tasty
+                , tasty-hedgehog
+                , bytestring
+                , raw-strings-qq
+                , tasty-hspec
+                , http-client
+                , tasty-hunit
+                , tasty-quickcheck
+                , text
+                , servant
+                , servant-client
+                , smallcheck
+                , warp
+                , unordered-containers
 
-  other-modules:        Test.Cardano.Metadata
-                        Test.Generators
+  other-modules:        Test.Cardano.Metadata.Server.Types
+                        Test.Cardano.Metadata.Server
+                        Test.Cardano.Metadata.Store.Simple

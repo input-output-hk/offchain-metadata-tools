@@ -15,7 +15,7 @@
 }:
 let
   src = haskell-nix.haskellLib.cleanGit {
-    name = "voting-tools";
+    name = "metadata-server";
     src = ../.;
   };
 
@@ -58,6 +58,10 @@ let
         # https://github.com/input-output-hk/cardano-node/pull/1934
         packages.cardano-api.doHaddock = false;
         packages.esqueleto.doHaddock = false;
+      }
+      {
+        # TODO This integration test needs to be run in a NixOS test environment
+        packages.metadata-store-postgres.components.tests.integration-tests.doCheck = false;
       }
       ({ pkgs, ... }: lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
         # systemd can't be statically linked
