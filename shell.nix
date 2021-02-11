@@ -23,8 +23,9 @@ let
     packages = ps: with ps; [
        ps.metadata-lib
        ps.metadata-server
-       ps.metadata-webhook
        ps.metadata-store-postgres
+       ps.metadata-validator
+       ps.metadata-webhook
     ];
     # packags = ps: pkgs.lib.attrValues (selectProjectPackages ps);
 

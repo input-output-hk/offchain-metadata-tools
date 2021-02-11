@@ -71,6 +71,7 @@ let
       [
         jobs.native.metadata-server.x86_64-linux
         jobs.native.metadata-webhook.x86_64-linux
+        jobs.native.metadata-validator.x86_64-linux
         jobs.native.haskellPackages.metadata-lib.components.library.x86_64-linux
         jobs.native.haskellPackages.metadata-store-postgres.components.library.x86_64-linux
       ]

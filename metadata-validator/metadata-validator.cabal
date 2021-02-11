@@ -1,0 +1,55 @@
+cabal-version:       >=1.10
+name:                metadata-validator
+version:             0.1.0.0
+license-file:        ../LICENSE
+author:              Samuel Evans-Powell
+maintainer:          mail@sevanspowell.net
+build-type:          Simple
+extra-source-files:  ../CHANGELOG.md
+
+executable metadata-validator
+  hs-source-dirs:      src
+  main-is:             Main.hs
+  build-depends:       aeson
+                     , base
+                     , bytestring
+                     , containers
+                     , base64-bytestring
+                     , directory
+                     , github
+                     , http-client
+                     , http-types
+                     , megaparsec
+                     , lens
+                     , lens-aeson
+                     , metadata-lib
+                     , metadata-store-postgres
+                     , vector
+                     , monad-logger
+                     , co-log
+                     , mtl
+                     , optparse-applicative
+                     , persistent
+                     , persistent-postgresql
+                     , safe-exceptions
+                     , scientific
+                     , servant
+                     , servant-github-webhook
+                     , servant-server
+                     , text
+                     , unordered-containers
+                     , wai
+                     , warp
+                     , wreq
+
+  ghc-options:          -Wall
+                        -Wcompat
+                        -fwarn-redundant-constraints
+                        -fwarn-incomplete-patterns
+                        -fwarn-unused-imports
+                        -Wincomplete-record-updates
+                        -Wincomplete-uni-patterns
+                        -Wno-unsafe
+                        -threaded
+
+  other-modules:        Paths_metadata_validator
