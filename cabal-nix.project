@@ -1,7 +1,8 @@
 packages:
   ./metadata-lib
   ./metadata-server
-  ./metadata-webhook
   ./metadata-store-postgres
+  ./metadata-validator
+  ./metadata-webhook
 tests: True
 benchmarks: True
