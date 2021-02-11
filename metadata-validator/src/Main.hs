@@ -14,26 +14,21 @@ module Main where
 import qualified GitHub as GitHub
 import qualified Data.Text as T
 import Data.Function ((&))
+import GHC.Int (Int64)
 import Data.Maybe (fromJust)
 import Data.Void (Void)
 import Data.Char (isHexDigit)
 import Data.Text (Text)
-import qualified GitHub.Auth as GitHub
 import qualified Data.Vector as Vector
-import qualified GitHub.Request as GitHub
 import qualified GitHub.Data.Name as GitHub
 import qualified Options.Applicative as Opt
 import qualified Data.ByteString.Base64 as Base64
 import Data.Aeson (FromJSON)
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson
-import qualified Data.Set as Set
-import qualified Data.List.NonEmpty as NE
 import qualified Data.Text.Encoding as TE
 import qualified Text.Megaparsec as P
 import qualified Text.Megaparsec.Char as P
-import qualified Text.Megaparsec.Error as P
-import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString.Lazy.Char8 as BSLC
 
@@ -51,7 +46,7 @@ pFileNameHex = do
     then fail $ "Expected 56-64 hex digits but found " <> show numDigits <> "."
     else pure ()
 
-  fileSuffix <- P.string ".json"
+  _fileSuffix <- P.string ".json"
   P.eof
   pure digits
 
@@ -86,7 +81,7 @@ main = do
     else pure ()
 
   case Vector.toList prFiles of
-    []   -> error $ "No files changed!"
+    []      -> error $ "No files changed!"
     file:[] -> do
       putStrLn $ show file
       let fileName = GitHub.fileFilename file
@@ -108,7 +103,7 @@ main = do
 
       if contentLength > metadataJSONMaxSize
         then error $ "File size in bytes (" <> show contentLength <> ") greater than maximum size of " <> show metadataJSONMaxSize <> " bytes."
-        else putStrLn $ "Good file size (< " <> show contentLength <> " bytes)"
+        else putStrLn $ "Good file size ( " <> show contentLength <> " < " <> show metadataJSONMaxSize <> " bytes)"
 
       case Aeson.eitherDecode content of
         Left err                   -> error $ "Content '" <> BSLC.unpack content <> "' is not a valid JSON value, decoding error was: '" <> show err <> "'."
@@ -118,7 +113,8 @@ main = do
             Right (entry :: Entry') -> do
               putStrLn $ "PR valid!"
               putStrLn $ "Decoded entry: " <> show entry
-    files   -> error $ "Too many files changed!"
+    _files  -> error $ "Too many files changed!"
 
 -- | Maximum size in bytes of a metadata entry.
+metadataJSONMaxSize :: Int64
 metadataJSONMaxSize = 380000
