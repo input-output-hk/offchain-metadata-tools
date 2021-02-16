@@ -26,9 +26,11 @@ library
                      , aeson
                      , aeson-pretty
                      , base
+                     , base64-bytestring
                      , bytestring
                      , casing
                      , containers
+                     , deepseq
                      , directory
                      , github-webhooks
                      , hedgehog
@@ -38,8 +40,10 @@ library
                      , http-types
                      , lens
                      , lens-aeson
+                     , memory
                      , monad-logger
                      , mtl
+                     , network-uri
                      , raw-strings-qq
                      , safe-exceptions
                      , scientific
@@ -69,13 +73,16 @@ test-suite unit-tests
                 , QuickCheck
                 , aeson
                 , aeson-pretty
+                , base64-bytestring
                 , containers
                 , hedgehog
                 , hspec
                 , hspec-wai
                 , http-types
+                , memory
                 , metadata-lib
                 , mtl
+                , network-uri
                 , tasty
                 , tasty-hedgehog
                 , bytestring

@@ -1,0 +1,169 @@
+{
+  "title": "Wallet will submit metadata in the following format",
+  "definitions": {
+    "annotatedSignature" {
+      "type": "object",
+      "required": ["publicKey", "signature"]
+      "properties": {
+        "publicKey": { "type": "string" },
+        "signature": { "type": "string" }
+      }
+    }
+  }
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "description",
+    "subject"
+  ],
+  "properties": {
+    "subject": {
+      "type": "string"
+      "minLength": 256,
+      "maxLength": 1
+    },
+    "name": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "anSignatures"
+      ],
+      "properties": {
+        "value": {
+          "type": "string",
+          "maxLength": 50,
+          "minLength": 1
+        },
+        "anSignatures": {
+          "type": "array",
+          "items": {
+            "anyOf": [{ "$ref": "#/definitions/annotatedSignature" }]
+          }
+        }
+      }
+    },
+    "acronym": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "anSignatures"
+      ],
+      "properties": {
+        "value": {
+          "type": "string",
+          "maxLength": 4,
+          "minLength": 2
+        },
+        "anSignatures": {
+          "type": "array",
+          "items": {
+            "anyOf": [{ "$ref": "#/definitions/annotatedSignature" }]
+          }
+        }
+      }
+    },
+    "unit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "anSignatures"
+      ],
+      "properties": {
+        "value": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "decimals",
+            "name"
+          ],
+          "properties": {
+            "decimals": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 19
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 30
+            }
+          }
+        },
+        "anSignatures": {
+          "type": "array",
+          "items": {
+            "anyOf": [{ "$ref": "#/definitions/annotatedSignature" }]
+          }
+        }
+      }
+    },
+    "url": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "anSignatures"
+      ],
+      "properties": {
+        "value": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "/^https:/",
+          "maxLength": 250
+        },
+        "anSignatures": {
+          "type": "array",
+          "items": {
+            "anyOf": [{ "$ref": "#/definitions/annotatedSignature" }]
+          }
+        }
+      }
+    },
+    "logo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "anSignature"
+      ],
+      "properties": {
+        "value": {
+          "type": "string",
+          "format": "base64",
+          "maxLength": 87400,
+          "description": "A `image/png` object which is 64KB in size at most."
+        },
+        "anSignatures": {
+          "type": "array",
+          "items": {
+            "anyOf": [{ "$ref": "#/definitions/annotatedSignature" }]
+          }
+        }
+      }
+    },
+    "description": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "anSignature"
+      ],
+      "properties": {
+        "value": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "anSignatures": {
+          "type": "array",
+          "items": {
+            "anyOf": [{ "$ref": "#/definitions/annotatedSignature" }]
+          }
+        }
+      }
+    }
+  }
+}

@@ -75,10 +75,10 @@ batchHandler (StoreInterface { storeReadBatch = readBatch }) (BatchRequest subje
     entries <- readBatch subjects
 
     pure $ BatchResponse $ 
-      flip foldMap entries $ \entry@(Entry' subject (Entry (EntryF (Identity owner) (Identity name) (Identity desc) (Identity preImage)))) ->
+      flip foldMap entries $ \entry@(Entry' subject (Entry name description owner acronym url logo unit)) ->
         case mPropNames of
           Nothing        ->
-            [PartialEntry' subject (PartialEntry $ EntryF (pure owner) (pure name) (pure desc) (pure preImage))]
+            [PartialEntry' subject (PartialEntry $ EntryF (First owner) (pure name) (pure description) (First acronym) (First url) (First logo) (First unit))]
           Just propNames ->
             let
               partialEntry = flip foldMap propNames $ \propName ->
@@ -118,5 +118,8 @@ getPropertyLenient subj propName = withProperties f
     f (PropOwner t owner)             | (propName == propertyName t) = PartialEntry $ mempty { enOwner = (First $ Just owner) }
     f (PropName t name)               | (propName == propertyName t) = PartialEntry $ mempty { enName = (First $ Just name) }
     f (PropDescription t description) | (propName == propertyName t) = PartialEntry $ mempty { enDescription = (First $ Just description) }
-    f (PropPreImage t preImage)       | (propName == propertyName t) = PartialEntry $ mempty { enPreImage = (First $ Just preImage) }
+    f (PropAcronym t acronym)         | (propName == propertyName t) = PartialEntry $ mempty { enAcronym = (First $ Just acronym) }
+    f (PropAssetURL t assetURL)       | (propName == propertyName t) = PartialEntry $ mempty { enURL = (First $ Just assetURL) }
+    f (PropAssetLogo t assetLogo)     | (propName == propertyName t) = PartialEntry $ mempty { enLogo = (First $ Just assetLogo) }
+    f (PropAssetUnit t assetUnit)     | (propName == propertyName t) = PartialEntry $ mempty { enUnit = (First $ Just assetUnit) }
     f otherwise                                                      = mempty
