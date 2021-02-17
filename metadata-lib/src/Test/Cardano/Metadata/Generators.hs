@@ -4,20 +4,27 @@
 module Test.Cardano.Metadata.Generators where
 
 import           Control.Monad.Except
-import Data.Aeson.TH
-import Data.Monoid (First(First))
 import           Control.Monad.IO.Class
 import           Data.Functor.Identity
-import qualified Data.Map.Strict as M
-import qualified Data.HashMap.Strict as HM
+import           Data.Text (Text)
 import           Data.Word
 import           Hedgehog (Gen, MonadGen) 
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
+import Data.ByteArray.Encoding
+    ( Base (Base16, Base64), convertFromBase, convertToBase )
+import           Network.URI (URI(URI), URIAuth(URIAuth))
 import           Test.Tasty (TestTree, testGroup)
 import           Test.Tasty.Hedgehog
-import           Data.Text (Text)
+import Data.Aeson.TH
+import Data.List (intersperse)
+import Data.Monoid (First(First))
 import qualified Data.Aeson as Aeson
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Base64 as Base64
+import qualified Data.HashMap.Strict as HM
+import qualified Data.Map.Strict as M
+import qualified Data.Text as T
+import qualified Hedgehog.Gen as Gen
+import qualified Hedgehog.Range as Range
 
 import Cardano.Metadata.Server.Types
 import Cardano.Metadata.Store.Types
@@ -69,8 +76,8 @@ subject = Gen.text (Range.linear 0 128) Gen.unicodeAll
 metadataValue :: MonadGen m => m Text
 metadataValue = Gen.text (Range.linear 0 128) Gen.unicodeAll
 
-metadataProperty :: MonadGen m => m GenericProperty
-metadataProperty = GenericProperty <$> metadataValue <*> Gen.list (Range.linear 0 25) annotatedSignature
+metadataProperty :: MonadGen m => m value -> m (GenericProperty value)
+metadataProperty genValue = GenericProperty <$> genValue <*> Gen.list (Range.linear 0 25) annotatedSignature
 
 preImage :: MonadGen m => m PreImage
 preImage = PreImage <$> metadataValue <*> hashFn
@@ -78,13 +85,49 @@ preImage = PreImage <$> metadataValue <*> hashFn
 owner :: MonadGen m => m Owner
 owner = Owner <$> publicKey <*> sig
 
+httpsURI :: MonadGen m => m URI
+httpsURI = (URI <$> pure "https:" <*> (Just <$> uriAuthority) <*> (T.unpack <$> uriPath) <*> pure mempty <*> pure mempty)
+
+uriPath :: MonadGen m => m Text
+uriPath = do
+  xs <- Gen.list (Range.linear 0 10) (Gen.text (Range.linear 0 10) Gen.alphaNum)
+  pure $ mconcat $ "/":(intersperse "/" xs)
+
+uriAuthority :: MonadGen m => m URIAuth
+uriAuthority = do
+  mid <- Gen.text (Range.linear 1 64) Gen.alphaNum
+  end <- Gen.choice [ pure ".org"
+                    , pure ".com"
+                    , pure ".net"
+                    , pure ".com.au"
+                    , pure ".io"
+                    , pure ".tld"
+                    ]
+  pure $ URIAuth mempty (T.unpack $ "www." <> mid <> end) mempty
+
+assetURL :: MonadGen m => m AssetURL
+assetURL = AssetURL <$> httpsURI
+
+acronym :: MonadGen m => m Acronym
+acronym = Gen.text (Range.linear 1 4) Gen.unicodeAll
+
+assetLogo :: MonadGen m => m AssetLogo
+assetLogo = AssetLogo . Encoded . convertToBase Base64 . BS.pack <$> Gen.list (Range.linear 0 256) (Gen.word8 Range.constantBounded)
+
+assetUnit :: MonadGen m => m AssetUnit
+assetUnit = AssetUnit
+  <$> Gen.text (Range.linear 1 30) Gen.unicodeAll
+  <*> Gen.integral (Range.linear 0 19)
+
 entry :: MonadGen m => m Entry
 entry = Entry
-  <$> (EntryF
-        <$> (Identity <$> owner)
-        <*> (Identity <$> metadataProperty)
-        <*> (Identity <$> metadataProperty)
-        <*> (Identity <$> preImage))
+  <$> metadataProperty metadataValue
+  <*> metadataProperty metadataValue
+  <*> Gen.maybe owner
+  <*> Gen.maybe (metadataProperty acronym)
+  <*> Gen.maybe (metadataProperty assetURL)
+  <*> Gen.maybe (metadataProperty assetLogo)
+  <*> Gen.maybe (metadataProperty assetUnit)
 
 batchRequest :: MonadGen m => m BatchRequest
 batchRequest =
@@ -103,9 +146,12 @@ partialEntry = do
   PartialEntry <$>
     (EntryF
     <$> (First <$> Gen.maybe owner)
-    <*> (First <$> Gen.maybe metadataProperty)
-    <*> (First <$> Gen.maybe metadataProperty)
-    <*> (First <$> Gen.maybe preImage)
+    <*> (First <$> Gen.maybe (metadataProperty metadataValue))
+    <*> (First <$> Gen.maybe (metadataProperty metadataValue))
+    <*> (First <$> Gen.maybe (metadataProperty acronym))
+    <*> (First <$> Gen.maybe (metadataProperty assetURL))
+    <*> (First <$> Gen.maybe (metadataProperty assetLogo))
+    <*> (First <$> Gen.maybe (metadataProperty assetUnit))
     )
 
 batchResponse :: MonadGen m => m BatchResponse

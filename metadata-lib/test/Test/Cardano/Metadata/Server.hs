@@ -16,6 +16,7 @@ import           Servant.API
 import           Data.Traversable
 import           Data.String (fromString)
 import           Data.Foldable
+import           Data.Maybe (fromJust)
 import           Data.Functor.Identity (Identity(Identity))
 import           Data.Functor (void)
 import           Data.Proxy (Proxy(Proxy))
@@ -48,6 +49,7 @@ import Data.Map.Strict (Map)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Map.Strict as M
 import Network.HTTP.Types 
+import Network.URI (parseURI)
 
 import Test.Cardano.Metadata.Store
 import Test.Cardano.Metadata.Generators (ComplexType)
@@ -73,8 +75,8 @@ matchingJSON = fromString . BLC.unpack . Aeson.encode
 spec_server :: StoreInterface Subject Entry' -> Spec
 spec_server intf@(StoreInterface { storeWrite = write }) = do
   let
-    entry1 = Entry' "3" $ Entry $ EntryF (Identity $ Owner "me" mempty) (Identity $ GenericProperty "n" []) (Identity $ GenericProperty "d" []) (Identity $ PreImage "x" SHA256)
-    entry2 = Entry' "4" $ Entry $ EntryF (Identity $ Owner "you" mempty) (Identity $ GenericProperty "aName" []) (Identity $ GenericProperty "aDescription" []) (Identity $ PreImage "y" Blake2b256)
+    entry1 = Entry' "3" $ Entry (GenericProperty "n" []) (GenericProperty "d" []) (Just $ Owner "me" mempty) (Just $ GenericProperty "ABCD" []) (Just $ GenericProperty (AssetURL $ fromJust $ parseURI "https://google.com") []) (Just $ GenericProperty (AssetLogo mempty) []) (Just $ GenericProperty (AssetUnit "dave" 10) [])
+    entry2 = Entry' "4" $ Entry (GenericProperty "aName" []) (GenericProperty "aDescription" []) (Just $ Owner "you" mempty) Nothing Nothing Nothing Nothing
     testData =
       [ (_eSubject entry1, entry1)
       , (_eSubject entry2, entry2)
@@ -103,7 +105,10 @@ spec_server intf@(StoreInterface { storeWrite = write }) = do
         get "/metadata/3/properties/subject" `shouldRespondWith` (matchingJSON $ PartialEntry' "3" mempty) { matchStatus = 200 }
         get "/metadata/3/properties/name" `shouldRespondWith` (matchingJSON $ (PartialEntry' "3" $ PartialEntry $ mempty { enName = First $ Just $ GenericProperty "n" mempty })) { matchStatus = 200 }
         get "/metadata/3/properties/description" `shouldRespondWith` (matchingJSON $ (PartialEntry' "3" $ PartialEntry $ mempty { enDescription = First $ Just $ GenericProperty "d" mempty })) { matchStatus = 200 }
-        get "/metadata/3/properties/preImage" `shouldRespondWith` (matchingJSON $ (PartialEntry' "3" $ PartialEntry $ mempty { enPreImage = First $ Just $ PreImage "x" SHA256 })) { matchStatus = 200 }
+        get "/metadata/3/properties/acronym" `shouldRespondWith` (matchingJSON $ (PartialEntry' "3" $ PartialEntry $ mempty { enAcronym = First $ Just $ GenericProperty "ABCD" [] })) { matchStatus = 200 }
+        get "/metadata/3/properties/unit" `shouldRespondWith` (matchingJSON $ (PartialEntry' "3" $ PartialEntry $ mempty { enUnit = First $ Just $ GenericProperty (AssetUnit "dave" 10) [] })) { matchStatus = 200 }
+        get "/metadata/3/properties/url" `shouldRespondWith` (matchingJSON $ (PartialEntry' "3" $ PartialEntry $ mempty { enURL = First $ Just $ GenericProperty (AssetURL $ fromJust $ parseURI "https://google.com") [] })) { matchStatus = 200 }
+        get "/metadata/3/properties/logo" `shouldRespondWith` (matchingJSON $ (PartialEntry' "3" $ PartialEntry $ mempty { enLogo = First $ Just $ GenericProperty (AssetLogo mempty) [] })) { matchStatus = 200 }
     describe "GET /metadata/query" $ do
       it "should return empty response if subject not found" $ do
         request methodPost "/metadata/query" [(hContentType, "application/json")] (Aeson.encode $ BatchRequest ["bad"] (Just []))
@@ -120,14 +125,14 @@ spec_server intf@(StoreInterface { storeWrite = write }) = do
         request methodPost "/metadata/query" [(hContentType, "application/json")] (Aeson.encode $ BatchRequest ["3"] (Just ["owner", "bad"]))
           `shouldRespondWith` (matchingJSON $ BatchResponse [PartialEntry' "3" $ PartialEntry $ mempty { enOwner = First $ Just $ Owner "me" mempty }])
       it "should return a batch response" $ do
-        request methodPost "/metadata/query" [(hContentType, "application/json")] (Aeson.encode $ BatchRequest ["3"] (Just ["owner", "subject", "preImage"]))
-          `shouldRespondWith` (matchingJSON $ BatchResponse [PartialEntry' "3" $ PartialEntry $ mempty { enOwner = First $ Just $ Owner "me" mempty, enPreImage = First $ Just $ PreImage "x" SHA256 }])
-        request methodPost "/metadata/query" [(hContentType, "application/json")] (Aeson.encode $ BatchRequest ["3","4"] (Just ["owner", "subject", "preImage"]))
+        request methodPost "/metadata/query" [(hContentType, "application/json")] (Aeson.encode $ BatchRequest ["3"] (Just ["owner", "subject"]))
+          `shouldRespondWith` (matchingJSON $ BatchResponse [PartialEntry' "3" $ PartialEntry $ mempty { enOwner = First $ Just $ Owner "me" mempty }])
+        request methodPost "/metadata/query" [(hContentType, "application/json")] (Aeson.encode $ BatchRequest ["3","4"] (Just ["owner", "subject"]))
           `shouldRespondWith`
             (matchingJSON $ BatchResponse
-              [ PartialEntry' "3" $ PartialEntry $ mempty { enOwner = First $ Just $ Owner "me" mempty, enPreImage = First $ Just $ PreImage "x" SHA256 }
-              , PartialEntry' "4" $ PartialEntry $ mempty { enOwner = First $ Just $ Owner "you" mempty, enPreImage = First $ Just $ PreImage "y" Blake2b256 }
+              [ PartialEntry' "3" $ PartialEntry $ mempty { enOwner = First $ Just $ Owner "me" mempty }
+              , PartialEntry' "4" $ PartialEntry $ mempty { enOwner = First $ Just $ Owner "you" mempty }
               ])
       it "should return all properties if key 'properties' not present in JSON request" $
         request methodPost "/metadata/query" [(hContentType, "application/json")] (Aeson.encode $ BatchRequest ["3"] Nothing) 
-          `shouldRespondWith` (matchingJSON $ BatchResponse [PartialEntry' "3" $ PartialEntry $ EntryF { enName = First $ Just $ GenericProperty "n" mempty, enDescription = First $ Just $ GenericProperty "d" mempty, enOwner = First $ Just $ Owner "me" mempty, enPreImage = First $ Just $ PreImage "x" SHA256 }])
+          `shouldRespondWith` (matchingJSON $ BatchResponse [PartialEntry' "3" $ PartialEntry $ EntryF { enName = First $ Just $ GenericProperty "n" mempty, enDescription = First $ Just $ GenericProperty "d" mempty, enOwner = First $ Just $ Owner "me" mempty, enAcronym = First $ Just $ GenericProperty "ABCD" [], enURL = First $ Just $ GenericProperty (AssetURL $ fromJust $ parseURI "https://google.com") [], enLogo = First $ Just $ GenericProperty (AssetLogo mempty) [], enUnit = First $ Just $ GenericProperty (AssetUnit "dave" 10) [] }])
