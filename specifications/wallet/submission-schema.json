@@ -1,15 +1,22 @@
 {
   "title": "Wallet will submit metadata in the following format",
   "definitions": {
-    "annotatedSignature" {
+    "annotatedSignature": {
       "type": "object",
-      "required": ["publicKey", "signature"]
+      "required": [
+        "publicKey",
+        "signature"
+      ],
       "properties": {
-        "publicKey": { "type": "string" },
-        "signature": { "type": "string" }
+        "publicKey": {
+          "type": "string"
+        },
+        "signature": {
+          "type": "string"
+        }
       }
     }
-  }
+  },
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -19,7 +26,7 @@
   ],
   "properties": {
     "subject": {
-      "type": "string"
+      "type": "string",
       "minLength": 256,
       "maxLength": 1
     },
@@ -27,8 +34,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "value",
-        "anSignatures"
+        "value"
       ],
       "properties": {
         "value": {
@@ -39,7 +45,11 @@
         "anSignatures": {
           "type": "array",
           "items": {
-            "anyOf": [{ "$ref": "#/definitions/annotatedSignature" }]
+            "anyOf": [
+              {
+                "$ref": "#/definitions/annotatedSignature"
+              }
+            ]
           }
         }
       }
@@ -48,8 +58,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "value",
-        "anSignatures"
+        "value"
       ],
       "properties": {
         "value": {
@@ -60,7 +69,11 @@
         "anSignatures": {
           "type": "array",
           "items": {
-            "anyOf": [{ "$ref": "#/definitions/annotatedSignature" }]
+            "anyOf": [
+              {
+                "$ref": "#/definitions/annotatedSignature"
+              }
+            ]
           }
         }
       }
@@ -69,8 +82,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "value",
-        "anSignatures"
+        "value"
       ],
       "properties": {
         "value": {
@@ -96,7 +108,11 @@
         "anSignatures": {
           "type": "array",
           "items": {
-            "anyOf": [{ "$ref": "#/definitions/annotatedSignature" }]
+            "anyOf": [
+              {
+                "$ref": "#/definitions/annotatedSignature"
+              }
+            ]
           }
         }
       }
@@ -105,8 +121,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "value",
-        "anSignatures"
+        "value"
       ],
       "properties": {
         "value": {
@@ -118,7 +133,11 @@
         "anSignatures": {
           "type": "array",
           "items": {
-            "anyOf": [{ "$ref": "#/definitions/annotatedSignature" }]
+            "anyOf": [
+              {
+                "$ref": "#/definitions/annotatedSignature"
+              }
+            ]
           }
         }
       }
@@ -127,8 +146,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "value",
-        "anSignature"
+        "value"
       ],
       "properties": {
         "value": {
@@ -140,7 +158,11 @@
         "anSignatures": {
           "type": "array",
           "items": {
-            "anyOf": [{ "$ref": "#/definitions/annotatedSignature" }]
+            "anyOf": [
+              {
+                "$ref": "#/definitions/annotatedSignature"
+              }
+            ]
           }
         }
       }
@@ -149,8 +171,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "value",
-        "anSignature"
+        "value"
       ],
       "properties": {
         "value": {
@@ -160,7 +181,11 @@
         "anSignatures": {
           "type": "array",
           "items": {
-            "anyOf": [{ "$ref": "#/definitions/annotatedSignature" }]
+            "anyOf": [
+              {
+                "$ref": "#/definitions/annotatedSignature"
+              }
+            ]
           }
         }
       }
