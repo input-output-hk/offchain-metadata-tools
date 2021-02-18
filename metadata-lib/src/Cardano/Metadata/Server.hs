@@ -89,9 +89,9 @@ batchHandler (StoreInterface { storeReadBatch = readBatch }) (BatchRequest subje
 handleErrors :: Either ReadError a -> Handler a
 handleErrors r =
   case r of
-    (Left (NoSubject subj))       -> throwError $ err404 { errBody = "Requested subject '" <> c subj <> "' not found" }
-    (Left (NoProperty subj prop)) -> throwError $ err404 { errBody = "Requested subject '" <> c subj <> "' does not have the property '" <> c (getPropertyName prop) <> "'" }
-    (Right x)                     -> pure x
+    (Left (NoSubject (Subject subj)))       -> throwError $ err404 { errBody = "Requested subject '" <> c subj <> "' not found" }
+    (Left (NoProperty (Subject subj) prop)) -> throwError $ err404 { errBody = "Requested subject '" <> c subj <> "' does not have the property '" <> c (getPropertyName prop) <> "'" }
+    (Right x)                               -> pure x
     
   where
     c :: Text -> BL.ByteString

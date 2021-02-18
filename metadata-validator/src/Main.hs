@@ -17,7 +17,7 @@ import Data.Function ((&))
 import GHC.Int (Int64)
 import Data.Maybe (fromJust)
 import Data.Void (Void)
-import Data.Char (isHexDigit)
+import Data.Char (isPrint)
 import Data.Text (Text)
 import qualified Data.Vector as Vector
 import qualified GitHub.Data.Name as GitHub
@@ -39,16 +39,16 @@ type Parser = P.Parsec Void Text
 
 pFileNameHex :: Parser Text
 pFileNameHex = do
-  (digits :: Text) <- P.takeWhile1P (Just "hex digit/char") isHexDigit
+  (fileName :: Text) <- P.takeWhile1P (Just "printable Unicode character") isPrint
 
-  let numDigits = T.length digits
-  if numDigits < 56 || numDigits > 64
-    then fail $ "Expected 56-64 hex digits but found " <> show numDigits <> "."
+  let len = T.length fileName
+  if len < 1 || len > 256
+    then fail $ "Expected 1-256 chars but found " <> show len <> "."
     else pure ()
 
   _fileSuffix <- P.string ".json"
   P.eof
-  pure digits
+  pure fileName
 
 main :: IO ()
 main = do

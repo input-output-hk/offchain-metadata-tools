@@ -38,7 +38,7 @@ import           Test.Tasty.HUnit (Assertion, assertEqual, testCase, (@?=))
 
 import qualified Test.Cardano.Metadata.Generators as Gen
 
-import Cardano.Metadata.Server.Types 
+import Cardano.Metadata.Server.Types
 
 tests :: TestTree
 tests = testGroup "Metadata type tests"
@@ -56,6 +56,9 @@ tests = testGroup "Metadata type tests"
 
       , testProperty "AssetUnit/json/roundtrips" (prop_json_roundtrips Gen.assetUnit)
       , testCase "AssetUnit/json/matches-spec" unit_assetUnit_json_spec
+
+      , testProperty "Subject/json/roundtrips" (prop_json_roundtrips Gen.subject)
+      , testCase "Subject/json/matches-spec" unit_subject_json_spec
 
       , testProperty "AnnotatedSignature/json/roundtrips" (prop_json_roundtrips Gen.annotatedSignature)
       , testProperty "AnnotatedSignature/json/matches-spec-keys" (prop_json_only_has_keys Gen.annotatedSignature ["publicKey", "signature"])
@@ -113,6 +116,16 @@ unit_assetURL_json_spec = do
   Aeson.fromJSON (asJSON badURL) @?= (Aeson.Error "Scheme must be https: but got http:" :: Aeson.Result AssetURL)
   Aeson.fromJSON (asJSON goodURL) @?= Aeson.Success (asAssetURL goodURL)
 
+unit_subject_json_spec :: Assertion
+unit_subject_json_spec = do
+  let badSubject1 = Aeson.String ""
+      badSubject2 = Aeson.String $ T.pack $ take 257 $ repeat 'a'
+      goodSubject = Aeson.String $ T.pack $ take 256 $ repeat 'a'
+
+  Aeson.fromJSON badSubject1 @?= (Aeson.Error "Length must be at least 1 characters, got 0" :: Aeson.Result Subject)
+  Aeson.fromJSON badSubject2 @?= (Aeson.Error "Length must be no more than 256 characters, got 257" :: Aeson.Result Subject)
+  Aeson.fromJSON goodSubject @?= (Aeson.Success $ Subject $ T.pack $ take 256 $ repeat 'a')
+
 unit_assetUnit_json_spec :: Assertion
 unit_assetUnit_json_spec = do
   let badDecimals1 = Aeson.Object $ HM.fromList $
@@ -121,6 +134,10 @@ unit_assetUnit_json_spec = do
         ]
       badDecimals2 = Aeson.Object $ HM.fromList $
         [ ("decimals", Aeson.Number 20)
+        , ("name", Aeson.String "steve")
+        ]
+      badDecimals3 = Aeson.Object $ HM.fromList $
+        [ ("decimals", Aeson.Number 0)
         , ("name", Aeson.String "steve")
         ]
       badName1 = Aeson.Object $ HM.fromList $
@@ -138,6 +155,7 @@ unit_assetUnit_json_spec = do
 
   Aeson.fromJSON badDecimals1 @?= (Aeson.Error "parsing Natural failed, unexpected negative number -1" :: Aeson.Result AssetUnit)
   Aeson.fromJSON badDecimals2 @?= (Aeson.Error "Number of decimals must be less than 19, got 20" :: Aeson.Result AssetUnit)
+  Aeson.fromJSON badDecimals3 @?= (Aeson.Error "Number of decimals must be greater than 1, got 0" :: Aeson.Result AssetUnit)
   Aeson.fromJSON badName1     @?= (Aeson.Error "Length must be at least 1 characters, got 0" :: Aeson.Result AssetUnit)
   Aeson.fromJSON badName2     @?= (Aeson.Error "Length must be no more than 30 characters, got 31" :: Aeson.Result AssetUnit)
   Aeson.fromJSON good         @?= (Aeson.Success $ AssetUnit "hello" 1)
@@ -245,7 +263,7 @@ unit_entry_json_spec = do
           ]
       },
       "acronym": { "value": "Stve" },
-      "unit": { "value": { "name": "Steves", "decimals": 0 } },
+      "unit": { "value": { "name": "Steves", "decimals": 1 } },
       "url": { "value": "https://www.google.com" },
       "logo": { "value": "AA==", "anSignatures": [] }
   }
@@ -255,7 +273,7 @@ unit_entry_json_spec = do
                   "7f71940915ea5fe85e840f843c929eba467e6f050475bad1f10b9c274d1888c0"
                   $ Entry
                     ( GenericProperty
-                        "SteveToken" 
+                        "SteveToken"
                         [ (AnnotatedSignature "7ef6ed44ba9456737ef8d2e31596fdafb66d5775ac1a254086a553b666516e5895bb0c6b7ba8bef1f6b4d9bd9253b4449d1354de2f9e043ea4eb43fd42f87108" "0ee262f062528667964782777917cd7139e19e8eb2c591767629e4200070c661")
                         , (AnnotatedSignature "c95cf87b74d1e4d3b413c927c65de836f0905ba2cd176c7cbff83d8b886b30fe1560c542c1f77bb88280dff55c2d267c9840fe36560fb13ba4a78b6429e51500" "7c3bfe2a11290a9b6ea054b4d0932678f88130511cfbfe3f634ee77d71edebe7")
                         , (AnnotatedSignature "f88692b13212bac8121151a99a4de4d5244e5f63566babd2b8ac20950ede74073af0570772b3ce3d11b72e972079199f02306e947cd5fcca688a9d4664eddb04" "8899d0777f399fffd44f72c85a8aa51605123a7ebf20bba42650780a0c81096a")
@@ -278,7 +296,7 @@ unit_entry_json_spec = do
                     ( Just $ GenericProperty "Stve" [])
                     ( Just $ GenericProperty (AssetURL $ fromJust $ parseURI "https://www.google.com") [])
                     ( Just $ GenericProperty (AssetLogo (Encoded "\NUL")) [])
-                    ( Just $ GenericProperty (AssetUnit "Steves" 0) [])
+                    ( Just $ GenericProperty (AssetUnit "Steves" 1) [])
               )
 
   let json2 = [r|
@@ -341,13 +359,13 @@ unit_batch_response_json_spec = do
   |]
 
   (Aeson.eitherDecode expected :: Either String BatchResponse)
-    @?= 
+    @?=
     (Right $ BatchResponse
       [ ( PartialEntry'
             "44b57ee30cdb55829d0a5d4f046baef078f1e97a7f21b62d75f8e96ea139c35f"
             $ PartialEntry $ EntryF
               (First Nothing)
-              (First $ Just $ GenericProperty "Wallet #6" [AnnotatedSignature "2e27065e365d38bef19b7bec139206f99b00effc8a2ad05bd22259aa939dd5083f25da91c4cb764eb1bfbce243ec32cce112be9762e1da7a38e975ebb0cc0b08" "44b57ee30cdb55829d0a5d4f046baef078f1e97a7f21b62d75f8e96ea139c35f"]) 
+              (First $ Just $ GenericProperty "Wallet #6" [AnnotatedSignature "2e27065e365d38bef19b7bec139206f99b00effc8a2ad05bd22259aa939dd5083f25da91c4cb764eb1bfbce243ec32cce112be9762e1da7a38e975ebb0cc0b08" "44b57ee30cdb55829d0a5d4f046baef078f1e97a7f21b62d75f8e96ea139c35f"])
               (First Nothing)
               (First Nothing)
               (First Nothing)
@@ -387,7 +405,7 @@ prop_json_only_has_keys genA keys = property $ do
   a <- forAll genA
 
   a `onlyHasKeys` keys
-  
+
 onlyHasKeys :: (MonadTest m, ToJSON a) => a -> [Text] -> m ()
 onlyHasKeys a ks =
   case Aeson.toJSON a of

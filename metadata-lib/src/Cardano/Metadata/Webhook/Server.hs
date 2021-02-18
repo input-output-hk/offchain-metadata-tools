@@ -31,7 +31,7 @@ import           Servant.GitHub.Webhook       ( GitHubEvent, GitHubSignedReqBody
 import qualified Network.Wreq as Wreq
 import qualified Network.Wai.Handler.Warp as Warp
 
-import           Cardano.Metadata.Server.Types (Subject, Entry', _eSubject)
+import           Cardano.Metadata.Server.Types (Subject(Subject), Entry', _eSubject)
 import           Cardano.Metadata.Webhook.Types 
 import           Cardano.Metadata.Webhook.API
 import           Cardano.Metadata.Store.Types (StoreInterface(..))
@@ -116,4 +116,4 @@ pushHook intf getEntryFromFile _ ev@(PushEvent' (Commit added modified removed) 
       let jsonSuffix = ".json"
       case T.stripSuffix jsonSuffix removedFile of
         Nothing      -> putStrLn $ "Not removing 'removedFile' because it's file extension does not match: '" <> T.unpack jsonSuffix <> "'."
-        Just subject -> delete subject
+        Just subject -> delete (Subject subject)

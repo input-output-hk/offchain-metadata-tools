@@ -44,6 +44,7 @@ library
                      , monad-logger
                      , mtl
                      , network-uri
+                     , quiet
                      , raw-strings-qq
                      , safe-exceptions
                      , scientific

@@ -50,7 +50,7 @@ import Text.Read (Read(readPrec), readEither)
 import Web.HttpApiData (FromHttpApiData, parseUrlPiece, ToHttpApiData, toUrlPiece)
 import qualified Text.Read as Read (lift)
 import Text.ParserCombinators.ReadP (choice, string)
-import Data.Aeson (ToJSON, FromJSON, (.:), (.:?))
+import Data.Aeson (ToJSON, FromJSON, (.:), (.:?), ToJSONKey, FromJSONKey)
 import Control.Applicative (some)
 import qualified Data.Aeson.Types as Aeson
 import qualified Data.Aeson as Aeson
@@ -61,6 +61,7 @@ import qualified Data.HashMap.Strict as HM
 import Text.Casing
 import qualified Data.List.NonEmpty as NE
 import GHC.Show (showSpace)
+import Quiet (Quiet(Quiet))
 
 -- | Specification of a larger unit for an asset. For example, the "lovelace"
 -- asset has the larger unit "ada" with 6 zeroes.
@@ -124,7 +125,7 @@ validateMetadataUnit assetUnit@AssetUnit{name, decimals} =
     (validateMinLength 1 name >>= validateMaxLength 30 >> validateDecimals decimals) $> assetUnit
 
 validateDecimals :: Natural -> Either String Natural
-validateDecimals n | n < 0  = Left $ "Number of decimals must be positive (> 0), got " <> show n
+validateDecimals n | n < 1  = Left $ "Number of decimals must be greater than 1, got " <> show n
 validateDecimals n | n > 19 = Left $ "Number of decimals must be less than 19, got " <> show n
 validateDecimals n          = Right n
 
@@ -488,7 +489,17 @@ instance Semigroup PartialEntry where
     = PartialEntry $ EntryF (a1 <> b1) (a2 <> b2) (a3 <> b3) (a4 <> b4) (a5 <> b5) (a6 <> b6) (a7 <> b7)
 
 -- | The metadata subject, the on-chain identifier
-type Subject = Text
+newtype Subject = Subject { unSubject :: Text }
+    deriving (Generic, Eq, Ord, FromHttpApiData, ToJSONKey, FromJSONKey)
+    deriving newtype (IsString)
+    deriving (Show) via (Quiet Subject)
+
+instance ToJSON Subject where
+  toJSON = Aeson.String . unSubject
+
+instance FromJSON Subject where
+  parseJSON = Aeson.withText "Subject" $
+    fmap Subject . applyValidator (validateMinLength 1 >=> validateMaxLength 256)
 
 -- | Public key and signature attesting to ownership of the metadata
 -- entry in this registry.
@@ -561,7 +572,7 @@ instance ToJSON value => ToJSON (GenericProperty value) where
 
 instance FromJSON value => FromJSON (GenericProperty value) where
   parseJSON = Aeson.withObject "GenericProperty" $ \obj ->
-    GenericProperty 
+    GenericProperty
       <$> obj .: "value"
       <*> (fromMaybe [] <$> obj .:? "anSignatures")
 

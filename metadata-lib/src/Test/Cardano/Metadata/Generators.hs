@@ -43,7 +43,7 @@ complexType =
   <*> Gen.map (Range.linear 0 20) ((,) <$> key <*> val)
 
 complexKey :: MonadGen m => m ComplexKey
-complexKey = subject
+complexKey = unSubject <$> subject
 
 complexKeyVals :: MonadGen m => m [(ComplexKey, ComplexType)]
 complexKeyVals = Gen.list (Range.linear 0 20) ((,) <$> complexKey <*> complexType)
@@ -71,7 +71,7 @@ propName = Gen.choice [ pure $ PropertyName "description"
                           ]
 
 subject :: MonadGen m => m Subject
-subject = Gen.text (Range.linear 0 128) Gen.unicodeAll
+subject = Subject <$> Gen.text (Range.linear 1 256) Gen.unicodeAll
 
 metadataValue :: MonadGen m => m Text
 metadataValue = Gen.text (Range.linear 0 128) Gen.unicodeAll
@@ -117,7 +117,7 @@ assetLogo = AssetLogo . Encoded . convertToBase Base64 . BS.pack <$> Gen.list (R
 assetUnit :: MonadGen m => m AssetUnit
 assetUnit = AssetUnit
   <$> Gen.text (Range.linear 1 30) Gen.unicodeAll
-  <*> Gen.integral (Range.linear 0 19)
+  <*> Gen.integral (Range.linear 1 19)
 
 entry :: MonadGen m => m Entry
 entry = Entry
