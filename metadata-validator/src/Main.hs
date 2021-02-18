@@ -39,7 +39,7 @@ type Parser = P.Parsec Void Text
 
 pFileNameHex :: Parser Text
 pFileNameHex = do
-  (fileName :: Text) <- P.takeWhile1P (Just "printable Unicode character") isPrint
+  (fileName :: Text) <- P.takeWhile1P (Just "printable Unicode character") (\c -> isPrint c && c /= '.')
 
   let len = T.length fileName
   if len < 1 || len > 256
