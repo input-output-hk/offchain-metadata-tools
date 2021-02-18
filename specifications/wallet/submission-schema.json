@@ -95,7 +95,7 @@
           "properties": {
             "decimals": {
               "type": "integer",
-              "minimum": 0,
+              "minimum": 1,
               "maximum": 19
             },
             "name": {
