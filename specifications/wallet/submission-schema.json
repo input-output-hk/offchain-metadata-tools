@@ -27,8 +27,8 @@
   "properties": {
     "subject": {
       "type": "string",
-      "minLength": 256,
-      "maxLength": 1
+      "maxLength": 256,
+      "minLength": 1
     },
     "name": {
       "type": "object",
