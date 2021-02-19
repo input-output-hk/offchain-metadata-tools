@@ -32,30 +32,31 @@ import           Servant.GitHub.Webhook       ( GitHubEvent, GitHubSignedReqBody
 import qualified Network.Wreq as Wreq
 import qualified Network.Wai.Handler.Warp as Warp
 
-import           Cardano.Metadata.Server.Types (Subject(Subject), Entry', _eSubject)
+import           Cardano.Metadata.Types.Common (Subject(Subject))
+import qualified Cardano.Metadata.Types.Weakly as Weakly
 import           Cardano.Metadata.Webhook.Types 
 import           Cardano.Metadata.Webhook.API
 import           Cardano.Metadata.Store.Types (StoreInterface(..))
 
 
-appSigned :: GitHubKey -> StoreInterface Subject Entry' -> GetEntryFromFile -> Application
+appSigned :: GitHubKey -> StoreInterface Subject Weakly.Metadata -> GetEntryFromFile -> Application
 appSigned key intf getEntryFromFile
   = serveWithContext
     (Proxy :: Proxy MetadataWebhookAPISigned)
     (key :. EmptyContext)
     (metadataWebhook intf getEntryFromFile)
 
-appUnsigned :: StoreInterface Subject Entry' -> GetEntryFromFile -> Application
+appUnsigned :: StoreInterface Subject Weakly.Metadata -> GetEntryFromFile -> Application
 appUnsigned intf getEntryFromFile
   = serveWithContext
     (Proxy :: Proxy MetadataWebhookAPIUnsigned)
     EmptyContext
     (metadataWebhookUnsigned intf getEntryFromFile)
 
-metadataWebhook :: StoreInterface Subject Entry' -> GetEntryFromFile -> Server MetadataWebhookAPISigned
+metadataWebhook :: StoreInterface Subject Weakly.Metadata -> GetEntryFromFile -> Server MetadataWebhookAPISigned
 metadataWebhook intf getEntryFromFile = (\a (_, b) -> pushHook intf getEntryFromFile a b)
 
-metadataWebhookUnsigned :: StoreInterface Subject Entry' -> GetEntryFromFile -> Server MetadataWebhookAPIUnsigned
+metadataWebhookUnsigned :: StoreInterface Subject Weakly.Metadata -> GetEntryFromFile -> Server MetadataWebhookAPIUnsigned
 metadataWebhookUnsigned = pushHook
 
 getFileContent :: GitHubToken -> GetEntryFromFile
@@ -89,7 +90,7 @@ getFileContent (GitHubToken githubToken) repoInfo fileName = do
           Right entry -> pure (Just entry)
 
 -- API handlers
-pushHook :: StoreInterface Subject Entry' -> GetEntryFromFile -> RepoWebhookEvent -> PushEvent' -> Handler ()
+pushHook :: StoreInterface Subject Weakly.Metadata -> GetEntryFromFile -> RepoWebhookEvent -> PushEvent' -> Handler ()
 pushHook intf getEntryFromFile _ ev@(PushEvent' (Commit added modified removed) repoInfo) = liftIO $ do
   -- putStrLn $ (show . whUserLogin . evPullRequestSender) ev ++ " pullRequested a commit, resulting in the following event: "
   putStrLn $ BLC.unpack $ Aeson.encode ev
@@ -102,16 +103,16 @@ pushHook intf getEntryFromFile _ ev@(PushEvent' (Commit added modified removed) 
     toList :: Maybe (NonEmpty a) -> [a]
     toList = maybe mempty NE.toList
 
-    writeEntry :: StoreInterface Subject Entry' -> Text -> IO ()
+    writeEntry :: StoreInterface Subject Weakly.Metadata -> Text -> IO ()
     writeEntry (StoreInterface { storeWrite = write }) file = do
       mEntry <- getEntryFromFile repoInfo file
       case mEntry of
         Nothing    -> pure ()
         Just entry -> do
-          let subject = _eSubject entry
+          let subject = Weakly.metaSubject entry
           write subject entry
 
-    removeEntry :: StoreInterface Subject Entry' -> Text -> IO ()
+    removeEntry :: StoreInterface Subject Weakly.Metadata -> Text -> IO ()
     removeEntry (StoreInterface { storeDelete = delete }) removedFile = do
       let jsonSuffix = ".json"
       case T.stripSuffix jsonSuffix removedFile of

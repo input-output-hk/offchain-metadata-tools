@@ -33,7 +33,7 @@ import qualified Network.Wreq as Wreq
 import qualified Network.Wai.Handler.Warp as Warp
 
 import           Cardano.Metadata.Webhook.Types
-import           Cardano.Metadata.Server.Types (Subject, Entry', _eSubject)
+import           Cardano.Metadata.Types.Common (AnnotatedSignature)
 import           Cardano.Metadata.Store.Types (StoreInterface(..))
 
 type MetadataWebhookAPISigned   = MetadataWebhookAPIF GitHubSignedReqBody

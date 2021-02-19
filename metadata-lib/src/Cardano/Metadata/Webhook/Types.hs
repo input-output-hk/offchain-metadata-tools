@@ -39,7 +39,8 @@ import           Servant.GitHub.Webhook       ( GitHubEvent, GitHubSignedReqBody
 import qualified Network.Wreq as Wreq
 import qualified Network.Wai.Handler.Warp as Warp
 
-import           Cardano.Metadata.Server.Types (Subject, Entry', _eSubject)
+import           Cardano.Metadata.Types.Common (Subject)
+import qualified Cardano.Metadata.Types.Weakly as Weakly
 import           Cardano.Metadata.Store.Types (StoreInterface(..))
 
 newtype GitHubKey = GitHubKey (forall result. SGH.GitHubKey result)
@@ -107,4 +108,4 @@ instance ToJSON RepositoryInfo where
   toJSON (RepositoryInfo contentsUrl) = Aeson.Object $ HM.fromList $
     [("contents_url", toJSON contentsUrl)]
 
-type GetEntryFromFile = RepositoryInfo -> Text -> IO (Maybe Entry')
+type GetEntryFromFile = RepositoryInfo -> Text -> IO (Maybe Weakly.Metadata)

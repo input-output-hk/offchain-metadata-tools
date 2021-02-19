@@ -26,48 +26,50 @@ import Data.Proxy (Proxy)
 import Servant
 import Control.Exception.Safe (catchAny)
 
-import Cardano.Metadata.Server.Types
+import Cardano.Metadata.Server.Types (BatchRequest(BatchRequest), BatchResponse(BatchResponse))
 import Cardano.Metadata.Store.Types
 import Cardano.Metadata.Server.API
+import Cardano.Metadata.Types.Common (Subject(Subject), PropertyName, unPropertyName)
+import Cardano.Metadata.Types.Weakly (Metadata(Metadata), Property, metaSubject, metaProperties, getMetadataProperty)
 
 -- | 'Network.Wai.Application' of the metadata server.
 --
 -- The function takes a set of functions as an argument, that
 -- determine how the application will service requests.
-webApp :: StoreInterface Subject Entry' -> Application
+webApp :: StoreInterface Subject Metadata -> Application
 webApp intf = serve (Proxy :: Proxy MetadataServerAPI) (metadataServer intf)
 
-metadataServer :: StoreInterface Subject Entry' -> Server MetadataServerAPI
+metadataServer :: StoreInterface Subject Metadata -> Server MetadataServerAPI
 metadataServer intf = subjectHandler intf
                  :<|> subjectHandler intf
                  :<|> propertyHandler intf
                  :<|> batchHandler intf
 
 subjectHandler
-  :: StoreInterface Subject Entry'
+  :: StoreInterface Subject Metadata
   -> Subject
-  -> Handler Entry'
+  -> Handler Metadata
 subjectHandler (StoreInterface { storeRead = read }) subject =
   catchExceptions . handleErrors =<< liftIO (do
-    mEntry <- read subject
-    pure $ case mEntry of
+    mMetadata <- read subject
+    pure $ case mMetadata of
       Nothing    -> Left $ NoSubject subject
       Just entry -> Right entry
   )
 
 propertyHandler
-  :: StoreInterface Subject Entry'
+  :: StoreInterface Subject Metadata
   -> Subject
   -> PropertyName
-  -> Handler PartialEntry'
+  -> Handler Metadata
 propertyHandler f subject propName = do
   entry <- subjectHandler f subject
   catchExceptions . handleErrors $ do
-    partialEntry <- getProperty subject propName entry
-    pure $ PartialEntry' subject partialEntry
+    props <- getPropertiesThrowingErrors [propName] entry
+    pure $ Metadata subject (HM.fromList props)
 
 batchHandler
-  :: StoreInterface Subject Entry'
+  :: StoreInterface Subject Metadata
   -> BatchRequest
   -> Handler BatchResponse
 batchHandler (StoreInterface { storeReadBatch = readBatch }) (BatchRequest subjects mPropNames) =
@@ -75,22 +77,20 @@ batchHandler (StoreInterface { storeReadBatch = readBatch }) (BatchRequest subje
     entries <- readBatch subjects
 
     pure $ BatchResponse $ 
-      flip foldMap entries $ \entry@(Entry' subject (Entry name description owner acronym url logo unit)) ->
+      flip foldMap entries $ \entry ->
         case mPropNames of
-          Nothing        ->
-            [PartialEntry' subject (PartialEntry $ EntryF (First owner) (pure name) (pure description) (First acronym) (First url) (First logo) (First unit))]
+          Nothing        -> [entry]
           Just propNames ->
             let
-              partialEntry = flip foldMap propNames $ \propName ->
-                getPropertyLenient subject propName entry
+              props = getPropertiesIgnoringErrors propNames entry
             in
-              [PartialEntry' subject partialEntry]
+              [Metadata (metaSubject entry) (HM.fromList props)]
 
 handleErrors :: Either ReadError a -> Handler a
 handleErrors r =
   case r of
     (Left (NoSubject (Subject subj)))       -> throwError $ err404 { errBody = "Requested subject '" <> c subj <> "' not found" }
-    (Left (NoProperty (Subject subj) prop)) -> throwError $ err404 { errBody = "Requested subject '" <> c subj <> "' does not have the property '" <> c (getPropertyName prop) <> "'" }
+    (Left (NoProperty (Subject subj) prop)) -> throwError $ err404 { errBody = "Requested subject '" <> c subj <> "' does not have the property '" <> c (unPropertyName prop) <> "'" }
     (Right x)                               -> pure x
     
   where
@@ -103,23 +103,36 @@ catchExceptions action =
     `catchAny`
       (\e -> throwError $ err500 { errBody = "Exception occurred while handling request: " <> BLC.pack (show e) <> "." } )
 
-getProperty :: Subject -> PropertyName -> Entry' -> Either ReadError PartialEntry
-getProperty subj propName entry =
-  case getPropertyLenient subj propName entry of
-    x | x == mempty
-       && propName /= propertyName PropTypeSubject
-      -> Left $ NoProperty subj propName
-    x -> Right x
+data PropertyResponse = RequestedSubject Subject
+                      | RequestedProperty Property
 
-getPropertyLenient :: Subject -> PropertyName -> Entry' -> PartialEntry
-getPropertyLenient subj propName = withProperties f
+-- | Get a list of properties from the metadata, treating any error as
+-- a failure.
+getPropertiesThrowingErrors :: [PropertyName] -> Metadata -> Either ReadError [(PropertyName, Property)]
+getPropertiesThrowingErrors ps = sequence . getProperties ps
+
+-- | Get a list of properties from the metadata, ignoring any errors
+-- thrown.
+getPropertiesIgnoringErrors :: [PropertyName] -> Metadata -> [(PropertyName, Property)]
+getPropertiesIgnoringErrors ps = mconcat . fmap ignoreErrors . getProperties ps
   where
-    f :: forall t. Property t -> PartialEntry
-    f (PropOwner t owner)             | (propName == propertyName t) = PartialEntry $ mempty { enOwner = (First $ Just owner) }
-    f (PropName t name)               | (propName == propertyName t) = PartialEntry $ mempty { enName = (First $ Just name) }
-    f (PropDescription t description) | (propName == propertyName t) = PartialEntry $ mempty { enDescription = (First $ Just description) }
-    f (PropAcronym t acronym)         | (propName == propertyName t) = PartialEntry $ mempty { enAcronym = (First $ Just acronym) }
-    f (PropAssetURL t assetURL)       | (propName == propertyName t) = PartialEntry $ mempty { enURL = (First $ Just assetURL) }
-    f (PropAssetLogo t assetLogo)     | (propName == propertyName t) = PartialEntry $ mempty { enLogo = (First $ Just assetLogo) }
-    f (PropAssetUnit t assetUnit)     | (propName == propertyName t) = PartialEntry $ mempty { enUnit = (First $ Just assetUnit) }
-    f otherwise                                                      = mempty
+    ignoreErrors :: Either a b -> [b]
+    ignoreErrors (Left _err) = []
+    ignoreErrors (Right x)   = [x]
+
+-- | Get a list of properties from the metadata, ignoring requests for
+-- the metadata subject.
+getProperties :: [PropertyName] -> Metadata -> [Either ReadError (PropertyName, Property)]
+getProperties ps metadata =
+  flip foldMap ps $ \p ->
+    case getProperty p metadata of
+      Left err    -> [Left err]
+      Right mProp -> case mProp of
+        RequestedSubject _subj -> mempty
+        RequestedProperty prop -> [Right (p, prop)]
+
+-- | Get a property from the metadata.
+getProperty :: PropertyName -> Metadata -> Either ReadError PropertyResponse
+getProperty "subject" metadata = Right $ RequestedSubject (metaSubject metadata)
+getProperty propName metadata  =
+  maybe (Left $ NoProperty (metaSubject metadata) propName) (pure . RequestedProperty) $ getMetadataProperty propName metadata

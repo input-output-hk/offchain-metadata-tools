@@ -39,7 +39,7 @@ import qualified Data.ByteString.Lazy.Char8 as BSLC
 import Colog (msgSeverity, pattern E, pattern D, pattern I, LogAction, Message, WithLog, log, usingLoggerT, cmap, fmtMessage, logTextStdout, filterBySeverity)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 
-import Cardano.Metadata.Server.Types (Entry')
+import qualified Cardano.Metadata.Types.Wallet as Wallet (Metadata)
 import Config (Config(Config), opts, mkConfig, AuthScheme(NoAuthScheme, OAuthScheme))
 
 type Parser = P.Parsec Void Text
@@ -136,7 +136,7 @@ validatePRFile authScheme repoOwner repoName file = do
         Left err           -> do
           log E $ T.pack $ "Failed to decode Metadata entry from JSON value '" <> show obj <> "', error was: '" <> show err <> "'."
           exitFailure'
-        Right (entry :: Entry') -> do
+        Right (entry :: Wallet.Metadata) -> do
           log I "PR valid!"
           log I $ T.pack $ "Decoded entry: " <> show entry
 
