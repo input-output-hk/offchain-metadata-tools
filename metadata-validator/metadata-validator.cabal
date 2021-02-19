@@ -13,6 +13,7 @@ executable metadata-validator
   build-depends:       aeson
                      , base
                      , bytestring
+                     , co-log
                      , containers
                      , base64-bytestring
                      , directory
@@ -53,3 +54,4 @@ executable metadata-validator
                         -threaded
 
   other-modules:        Paths_metadata_validator
+                        Config
