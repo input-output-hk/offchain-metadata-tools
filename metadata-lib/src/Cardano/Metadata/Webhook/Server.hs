@@ -6,6 +6,7 @@ import           Control.Monad.IO.Class       ( liftIO )
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Maybe (fromMaybe)
+import Data.Foldable (traverse_)
 import Control.Lens ((^.), (.~))
 import Data.Function ((&))
 import qualified Data.ByteString              as BS
@@ -93,14 +94,13 @@ pushHook intf getEntryFromFile _ ev@(PushEvent' (Commit added modified removed) 
   -- putStrLn $ (show . whUserLogin . evPullRequestSender) ev ++ " pullRequested a commit, resulting in the following event: "
   putStrLn $ BLC.unpack $ Aeson.encode ev
 
-  withFirstFile added    (writeEntry intf)
-  withFirstFile modified (writeEntry intf)
-  withFirstFile removed  (removeEntry intf)
+  traverse_ (writeEntry intf) (toList added)
+  traverse_ (writeEntry intf) (toList modified)
+  traverse_ (writeEntry intf) (toList removed)
 
   where
-    withFirstFile :: Monoid m => Maybe (NonEmpty Text) -> (Text -> m) -> m
-    withFirstFile Nothing _         = mempty
-    withFirstFile (Just (x :| _)) f = f x
+    toList :: Maybe (NonEmpty a) -> [a]
+    toList = maybe mempty NE.toList
 
     writeEntry :: StoreInterface Subject Entry' -> Text -> IO ()
     writeEntry (StoreInterface { storeWrite = write }) file = do
