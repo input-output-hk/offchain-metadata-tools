@@ -1,9 +1,9 @@
 module Cardano.Metadata.Store.Postgres.Config where
 
-import qualified Network.Wai.Handler.Warp         as Warp
-import Options.Applicative
-import qualified Data.ByteString.Char8 as BC
+import qualified Data.ByteString.Char8       as BC
 import           Database.Persist.Postgresql (ConnectionString)
+import qualified Network.Wai.Handler.Warp    as Warp
+import           Options.Applicative
 
 data Opts = Opts
     { optDbName              :: String

@@ -1,7 +1,7 @@
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE GADTs             #-}
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE RankNTypes        #-}
 
 module Cardano.Metadata.Server
   ( ReadError(..)
@@ -10,27 +10,31 @@ module Cardano.Metadata.Server
   , MetadataServerAPI
   ) where
 
-import Data.Text (Text)
-import Data.Monoid(First(First))
-import Data.Traversable (forM)
-import Data.Functor.Identity (Identity(Identity))
-import qualified Data.Text.Lazy.Encoding as TLE
-import qualified Data.ByteString.Lazy as BL
-import qualified Data.ByteString.Lazy.Char8 as BLC
-import qualified Data.Text.Lazy as TL
-import qualified Data.Aeson as Aeson
-import qualified Data.HashMap.Strict as HM
-import Control.Monad.IO.Class (liftIO)
-import           Network.Wai                  ( Application )
-import Data.Proxy (Proxy)
-import Servant
-import Control.Exception.Safe (catchAny)
+import           Control.Exception.Safe        (catchAny)
+import           Control.Monad.IO.Class        (liftIO)
+import qualified Data.Aeson                    as Aeson
+import qualified Data.ByteString.Lazy          as BL
+import qualified Data.ByteString.Lazy.Char8    as BLC
+import           Data.Functor.Identity         (Identity (Identity))
+import qualified Data.HashMap.Strict           as HM
+import           Data.Monoid                   (First (First))
+import           Data.Proxy                    (Proxy)
+import           Data.Text                     (Text)
+import qualified Data.Text.Lazy                as TL
+import qualified Data.Text.Lazy.Encoding       as TLE
+import           Data.Traversable              (forM)
+import           Network.Wai                   (Application)
+import           Servant
 
-import Cardano.Metadata.Server.Types (BatchRequest(BatchRequest), BatchResponse(BatchResponse))
-import Cardano.Metadata.Store.Types
-import Cardano.Metadata.Server.API
-import Cardano.Metadata.Types.Common (Subject(Subject), PropertyName, unPropertyName)
-import Cardano.Metadata.Types.Weakly (Metadata(Metadata), Property, metaSubject, metaProperties, getMetadataProperty)
+import           Cardano.Metadata.Server.API
+import           Cardano.Metadata.Server.Types (BatchRequest (BatchRequest),
+                                                BatchResponse (BatchResponse))
+import           Cardano.Metadata.Store.Types
+import           Cardano.Metadata.Types.Common (PropertyName, Subject (Subject),
+                                                unPropertyName)
+import           Cardano.Metadata.Types.Weakly (Metadata (Metadata), Property,
+                                                getMetadataProperty,
+                                                metaProperties, metaSubject)
 
 -- | 'Network.Wai.Application' of the metadata server.
 --
@@ -76,7 +80,7 @@ batchHandler (StoreInterface { storeReadBatch = readBatch }) (BatchRequest subje
   catchExceptions . liftIO $ do
     entries <- readBatch subjects
 
-    pure $ BatchResponse $ 
+    pure $ BatchResponse $
       flip foldMap entries $ \entry ->
         case mPropNames of
           Nothing        -> [entry]
@@ -92,7 +96,7 @@ handleErrors r =
     (Left (NoSubject (Subject subj)))       -> throwError $ err404 { errBody = "Requested subject '" <> c subj <> "' not found" }
     (Left (NoProperty (Subject subj) prop)) -> throwError $ err404 { errBody = "Requested subject '" <> c subj <> "' does not have the property '" <> c (unPropertyName prop) <> "'" }
     (Right x)                               -> pure x
-    
+
   where
     c :: Text -> BL.ByteString
     c = TLE.encodeUtf8 . TL.fromStrict

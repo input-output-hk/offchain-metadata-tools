@@ -1,47 +1,59 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Test.Cardano.Metadata.Types
   ( tests
   ) where
 
-import           Data.List (delete, find, sort)
-import           Data.Functor.Identity (Identity(Identity))
-import           Data.Monoid (Sum (Sum), getSum, First(First))
-import           Data.Ratio (Ratio, (%))
-import           Data.Word (Word8)
-import           Data.Maybe (fromJust)
-import           Data.Text (Text)
-import Data.ByteArray.Encoding
-    ( Base (Base16, Base64), convertFromBase, convertToBase )
-import qualified Data.ByteString.Lazy.Char8 as BLC
-import qualified Data.Bifunctor as Bifunctor
-import qualified Data.ByteString as B
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
-import qualified Data.Aeson as Aeson
-import           Text.Read (readEither)
-import           Text.RawString.QQ
-import           qualified Data.HashMap.Strict as HM
-import           Hedgehog (Gen, MonadTest, annotate, forAll, property, tripping, (===), footnote, failure)
-import qualified Hedgehog as H (Property)
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
-import qualified Data.Aeson as Aeson
-import qualified Data.Aeson.Encode.Pretty as Aeson
-import qualified Data.HashMap.Strict as HM
-import Data.Aeson (ToJSON, FromJSON)
-import           Test.Tasty (TestTree, testGroup)
-import           Network.URI (parseURI, URI(URI))
+import           Data.Aeson                       (FromJSON, ToJSON)
+import qualified Data.Aeson                       as Aeson
+import qualified Data.Aeson                       as Aeson
+import qualified Data.Aeson.Encode.Pretty         as Aeson
+import qualified Data.Bifunctor                   as Bifunctor
+import           Data.ByteArray.Encoding          (Base (Base16, Base64),
+                                                   convertFromBase,
+                                                   convertToBase)
+import qualified Data.ByteString                  as B
+import qualified Data.ByteString.Lazy.Char8       as BLC
+import           Data.Functor.Identity            (Identity (Identity))
+import qualified Data.HashMap.Strict              as HM
+import qualified Data.HashMap.Strict              as HM
+import           Data.List                        (delete, find, sort)
+import           Data.Maybe                       (fromJust)
+import           Data.Monoid                      (First (First), Sum (Sum),
+                                                   getSum)
+import           Data.Ratio                       (Ratio, (%))
+import           Data.Text                        (Text)
+import qualified Data.Text                        as T
+import qualified Data.Text.Encoding               as T
+import           Data.Word                        (Word8)
+import           Hedgehog                         (Gen, MonadTest, annotate,
+                                                   failure, footnote, forAll,
+                                                   property, tripping, (===))
+import qualified Hedgehog                         as H (Property)
+import qualified Hedgehog.Gen                     as Gen
+import qualified Hedgehog.Range                   as Range
+import           Network.URI                      (URI (URI), parseURI)
+import           Test.Tasty                       (TestTree, testGroup)
 import           Test.Tasty.Hedgehog
-import           Test.Tasty.HUnit (Assertion, assertEqual, testCase, (@?=))
+import           Test.Tasty.HUnit                 (Assertion, assertEqual,
+                                                   testCase, (@?=))
+import           Text.RawString.QQ
+import           Text.Read                        (readEither)
 
+import           Test.Cardano.Helpers             (prop_json_only_has_keys,
+                                                   prop_json_roundtrips,
+                                                   prop_read_show_roundtrips)
 import qualified Test.Cardano.Metadata.Generators as Gen
-import Test.Cardano.Helpers (prop_json_roundtrips, prop_read_show_roundtrips, prop_json_only_has_keys)
 
-import Cardano.Metadata.Types.Common (Subject, unSubject, propertyValue, propertyAnSignatures, PropertyName, unPropertyName, asSignature, asPublicKey, HashFn(Blake2b256, Blake2b224, SHA256))
-import qualified Cardano.Metadata.Types.Weakly as Weakly
+import           Cardano.Metadata.Types.Common    (HashFn (Blake2b224, Blake2b256, SHA256),
+                                                   PropertyName, Subject,
+                                                   asPublicKey, asSignature,
+                                                   propertyAnSignatures,
+                                                   propertyValue,
+                                                   unPropertyName, unSubject)
+import qualified Cardano.Metadata.Types.Weakly    as Weakly
 
 tests :: TestTree
 tests = testGroup "Metadata type tests"

@@ -1,13 +1,14 @@
 module Test.Cardano.Helpers where
 
-import qualified Data.Aeson as Aeson
+import           Data.Aeson          (FromJSON, ToJSON)
+import qualified Data.Aeson          as Aeson
 import qualified Data.HashMap.Strict as HM
-import           Data.List (sort)
-import Data.Aeson (ToJSON, FromJSON)
-import Data.Text (Text)
-import Hedgehog (Gen, forAll, property, tripping, MonadTest, footnote, failure, (===))
-import qualified Hedgehog as H (Property)
-import Text.Read (readEither)
+import           Data.List           (sort)
+import           Data.Text           (Text)
+import           Hedgehog            (Gen, MonadTest, failure, footnote, forAll,
+                                      property, tripping, (===))
+import qualified Hedgehog            as H (Property)
+import           Text.Read           (readEither)
 
 prop_read_show_roundtrips :: (Show a, Eq a, Read a) => Gen a -> H.Property
 prop_read_show_roundtrips gen = property $ do

@@ -1,37 +1,45 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell   #-}
 
 module Test.Cardano.Metadata.Generators where
 
 import           Control.Monad.Except
 import           Control.Monad.IO.Class
+import qualified Data.Aeson                    as Aeson
+import           Data.Aeson.TH
+import           Data.ByteArray.Encoding       (Base (Base16, Base64),
+                                                convertFromBase, convertToBase)
+import qualified Data.ByteString               as BS
+import qualified Data.ByteString.Base64        as Base64
 import           Data.Functor.Identity
-import           Data.Text (Text)
+import qualified Data.HashMap.Strict           as HM
+import           Data.List                     (intersperse)
+import qualified Data.Map.Strict               as M
+import           Data.Monoid                   (First (First))
+import           Data.Text                     (Text)
+import qualified Data.Text                     as T
+import qualified Data.Vector                   as V
 import           Data.Word
-import           Hedgehog (Gen, MonadGen) 
-import Data.ByteArray.Encoding
-    ( Base (Base16, Base64), convertFromBase, convertToBase )
-import           Network.URI (URI(URI), URIAuth(URIAuth))
-import           Test.Tasty (TestTree, testGroup)
+import           Hedgehog                      (Gen, MonadGen)
+import qualified Hedgehog.Gen                  as Gen
+import qualified Hedgehog.Range                as Range
+import           Network.URI                   (URI (URI), URIAuth (URIAuth))
+import           Test.Tasty                    (TestTree, testGroup)
 import           Test.Tasty.Hedgehog
-import Data.Aeson.TH
-import Data.List (intersperse)
-import Data.Monoid (First(First))
-import qualified Data.Aeson as Aeson
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Base64 as Base64
-import qualified Data.HashMap.Strict as HM
-import qualified Data.Map.Strict as M
-import qualified Data.Text as T
-import qualified Hedgehog.Gen as Gen
-import qualified Data.Vector as V
-import qualified Hedgehog.Range as Range
 
-import Cardano.Metadata.Server.Types (BatchRequest(BatchRequest), BatchResponse(BatchResponse))
-import Cardano.Metadata.Store.Types
-import qualified Cardano.Metadata.Types.Weakly as Weakly
-import Cardano.Metadata.Types.Common (Property(Property), Owner(Owner), PreImage(PreImage), Subject(Subject), unSubject, PropertyName(PropertyName), AnnotatedSignature(AnnotatedSignature), HashFn(Blake2b256, Blake2b224, SHA256), Encoded(Encoded), Name, Description)
+import           Cardano.Metadata.Server.Types (BatchRequest (BatchRequest),
+                                                BatchResponse (BatchResponse))
+import           Cardano.Metadata.Store.Types
+import           Cardano.Metadata.Types.Common (AnnotatedSignature (AnnotatedSignature),
+                                                Description, Encoded (Encoded),
+                                                HashFn (Blake2b224, Blake2b256, SHA256),
+                                                Name, Owner (Owner),
+                                                PreImage (PreImage),
+                                                Property (Property),
+                                                PropertyName (PropertyName),
+                                                Subject (Subject), unSubject)
 import qualified Cardano.Metadata.Types.Wallet as Wallet
+import qualified Cardano.Metadata.Types.Weakly as Weakly
 
 data ComplexType = ComplexType { _ctArr :: [Int]
                                , _ctMap :: M.Map Word8 Word8
@@ -86,7 +94,7 @@ owner :: MonadGen m => m Owner
 owner = Owner <$> publicKey <*> sig
 
 stronglyTypedProperty :: MonadGen m => m a -> m (Property a)
-stronglyTypedProperty genA = 
+stronglyTypedProperty genA =
   Property <$> genA <*> Gen.list (Range.linear 0 5) annotatedSignature
 
 name :: MonadGen m => m Name

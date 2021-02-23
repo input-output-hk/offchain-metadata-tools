@@ -1,33 +1,32 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RankNTypes            #-}
 
 module Main where
 
-import           Control.Monad.IO.Class       ( liftIO )
-import qualified Data.Text as T
-import qualified Data.ByteString.Char8        as C8
-import qualified Database.Persist.Postgresql as Postgresql
-import           System.Environment           ( lookupEnv )
-import Control.Monad.Logger (runStdoutLoggingT)
-import qualified Network.Wai.Handler.Warp as Warp
-import qualified Options.Applicative as Opt
+import           Control.Monad.IO.Class                 (liftIO)
+import           Control.Monad.Logger                   (runStdoutLoggingT)
+import qualified Data.ByteString.Char8                  as C8
+import qualified Data.Text                              as T
+import qualified Database.Persist.Postgresql            as Postgresql
+import qualified Network.Wai.Handler.Warp               as Warp
+import qualified Options.Applicative                    as Opt
+import           System.Environment                     (lookupEnv)
 
-import           Cardano.Metadata.Webhook.Types
+import qualified Cardano.Metadata.Store.Postgres        as Store
+import           Cardano.Metadata.Store.Postgres.Config (Opts (..),
+                                                         pgConnectionString)
 import           Cardano.Metadata.Webhook.Server
-import           Cardano.Metadata.Store.Postgres.Config (Opts(..), pgConnectionString)
-import qualified Cardano.Metadata.Store.Postgres as Store
-import Config (opts)
+import           Cardano.Metadata.Webhook.Types
+import           Config                                 (opts)
 
 main :: IO ()
 main = do
   key         <- maybe mempty C8.pack <$> lookupEnv "METADATA_WEBHOOK_SECRET"
-  githubToken <- GitHubToken <$> maybe "" T.pack <$> lookupEnv "METADATA_GITHUB_TOKEN"
+  githubToken <- GitHubToken . maybe "" T.pack <$> lookupEnv "METADATA_GITHUB_TOKEN"
 
   options@(Opts { optDbConnections       = numDbConns
                 , optDbMetadataTableName = tableName
@@ -40,6 +39,6 @@ main = do
     Postgresql.withPostgresqlPool pgConnString numDbConns $ \pool -> liftIO $ do
       putStrLn $ "Initializing table '" <> tableName <> "'."
       intf <- Store.postgresStore pool (T.pack tableName)
-      
+
       putStrLn $ "Metadata webhook is starting on port " <> show port <> "."
       liftIO $ Warp.run port (appSigned (gitHubKey $ pure key) intf (getFileContent githubToken))

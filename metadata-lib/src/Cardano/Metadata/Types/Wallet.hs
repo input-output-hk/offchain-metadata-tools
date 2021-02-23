@@ -1,36 +1,39 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE DerivingVia                #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE NamedFieldPuns             #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ViewPatterns               #-}
 
 module Cardano.Metadata.Types.Wallet where
 
-import Control.DeepSeq (NFData)
-import Data.String (IsString)
-import Quiet (Quiet(Quiet))
-import qualified Data.HashMap.Strict as HM
-import qualified Data.Aeson.Types as Aeson
-import qualified Data.Text as T
-import qualified Data.Bifunctor as Bifunctor
-import qualified Data.ByteString as BS
-import Control.Monad ((>=>))
-import Data.Aeson ((.:), (.:?), ToJSON, FromJSON)
-import Data.Functor (($>))
-import Data.ByteArray.Encoding
-    ( Base (Base16, Base64))
-import Network.URI
-    ( URI, parseAbsoluteURI, uriScheme)
-import Data.Text (Text)
-import Numeric.Natural ( Natural )
-import GHC.Generics (Generic)
+import           Control.DeepSeq               (NFData)
+import           Control.Monad                 ((>=>))
+import           Data.Aeson                    (FromJSON, ToJSON, (.:), (.:?))
+import qualified Data.Aeson.Types              as Aeson
+import qualified Data.Bifunctor                as Bifunctor
+import           Data.ByteArray.Encoding       (Base (Base16, Base64))
+import qualified Data.ByteString               as BS
+import           Data.Functor                  (($>))
+import qualified Data.HashMap.Strict           as HM
+import           Data.String                   (IsString)
+import           Data.Text                     (Text)
+import qualified Data.Text                     as T
+import           GHC.Generics                  (Generic)
+import           Network.URI                   (URI, parseAbsoluteURI,
+                                                uriScheme)
+import           Numeric.Natural               (Natural)
+import           Quiet                         (Quiet (Quiet))
 
+import           Cardano.Metadata.Types.Common (Description, Encoded, Name,
+                                                Property, PropertyName,
+                                                Subject (Subject),
+                                                propertyValue, rawEncoded,
+                                                unPropertyName, unSubject)
 import qualified Cardano.Metadata.Types.Weakly as Weakly
-import Cardano.Metadata.Types.Common (Property, Subject(Subject), Encoded, PropertyName, Encoded, Name, Description, unPropertyName, rawEncoded, propertyValue, unSubject)
 
 data Metadata
   = Metadata { metaSubject     :: Subject
@@ -47,7 +50,7 @@ data Metadata
 -- | Specification of a larger unit for an asset. For example, the "lovelace"
 -- asset has the larger unit "ada" with 6 zeroes.
 data AssetUnit = AssetUnit
-    { name :: Text -- ^ Name of the larger asset.
+    { name     :: Text -- ^ Name of the larger asset.
     , decimals :: Natural  -- ^ Number of zeroes to add to base unit.
     } deriving (Generic, Show, Eq, Ord)
 

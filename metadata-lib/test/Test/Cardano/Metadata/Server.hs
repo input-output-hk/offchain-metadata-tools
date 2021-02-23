@@ -1,65 +1,73 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE GADTs               #-}
+{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE QuasiQuotes         #-}
+{-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE GADTs #-}
 
 module Test.Cardano.Metadata.Server
   ( tests
   ) where
 
-import           Prelude hiding (read)
-import           Control.Monad.IO.Class (liftIO)
-import           Servant.API
-import           Data.Traversable
-import           Data.String (fromString)
+import           Control.Monad                    (join)
+import           Control.Monad.IO.Class           (liftIO)
+import           Data.Aeson                       (FromJSON, ToJSON)
+import qualified Data.Aeson                       as Aeson
+import qualified Data.Aeson                       as Aeson
+import qualified Data.Aeson.Encode.Pretty         as Aeson
+import qualified Data.ByteString.Char8            as BC
+import qualified Data.ByteString.Lazy.Char8       as BLC
 import           Data.Foldable
-import           Data.Maybe (fromJust)
-import           Data.Functor.Identity (Identity(Identity))
-import           Data.Functor (void)
-import           Data.Proxy (Proxy(Proxy))
-import           Data.Monoid (First(First))
-import           Control.Monad (join)
-import           Data.Text (Text)
+import           Data.Functor                     (void)
+import           Data.Functor.Identity            (Identity (Identity))
+import qualified Data.HashMap.Strict              as HM
+import qualified Data.HashMap.Strict              as HM
+import           Data.Map.Strict                  (Map)
+import qualified Data.Map.Strict                  as M
+import           Data.Maybe                       (fromJust)
+import           Data.Monoid                      (First (First))
+import           Data.Proxy                       (Proxy (Proxy))
+import           Data.String                      (fromString)
+import           Data.Text                        (Text)
+import qualified Data.Text                        as T
+import           Data.Traversable
 import           Data.Word
-import qualified Data.ByteString.Char8 as BC
-import qualified Data.ByteString.Lazy.Char8 as BLC
-import qualified Data.Text as T
-import qualified Data.Aeson as Aeson
-import           Text.Read (readEither)
-import           Text.RawString.QQ
-import           qualified Data.HashMap.Strict as HM
-import           Hedgehog (Gen, MonadTest, annotate, forAll, property, tripping, (===), footnote, failure, evalIO, diff)
-import qualified Hedgehog as H (Property)
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
-import qualified Data.Aeson as Aeson
-import qualified Data.Aeson.Encode.Pretty as Aeson
-import Data.Aeson (ToJSON, FromJSON)
-import           Test.Tasty (TestTree, testGroup, withResource)
-import           Test.Tasty.Hedgehog
-import           Test.Hspec.Wai
-import           Test.Tasty.HUnit (Assertion, assertEqual, testCase, (@?=))
-import Test.Tasty.Hspec
+import           Hedgehog                         (Gen, MonadTest, annotate,
+                                                   diff, evalIO, failure,
+                                                   footnote, forAll, property,
+                                                   tripping, (===))
+import qualified Hedgehog                         as H (Property)
+import qualified Hedgehog.Gen                     as Gen
+import qualified Hedgehog.Range                   as Range
+import           Network.HTTP.Client              (defaultManagerSettings,
+                                                   newManager)
+import           Network.HTTP.Types
+import           Network.URI                      (parseURI)
 import qualified Network.Wai.Handler.Warp         as Warp
-import Servant.Client
-import Network.HTTP.Client (newManager, defaultManagerSettings)
-import Data.Map.Strict (Map)
-import qualified Data.HashMap.Strict as HM
-import qualified Data.Map.Strict as M
-import Network.HTTP.Types 
-import Network.URI (parseURI)
+import           Prelude                          hiding (read)
+import           Servant.API
+import           Servant.Client
+import           Test.Hspec.Wai
+import           Test.Tasty                       (TestTree, testGroup,
+                                                   withResource)
+import           Test.Tasty.Hedgehog
+import           Test.Tasty.Hspec
+import           Test.Tasty.HUnit                 (Assertion, assertEqual,
+                                                   testCase, (@?=))
+import           Text.RawString.QQ
+import           Text.Read                        (readEither)
 
-import Test.Cardano.Metadata.Store
-import Test.Cardano.Metadata.Generators (ComplexType)
-import Cardano.Metadata.Server
-import Cardano.Metadata.Server.Types (BatchRequest(BatchRequest), BatchResponse(BatchResponse))
-import qualified Cardano.Metadata.Types.Weakly as Weakly
-import Cardano.Metadata.Types.Common (Subject(Subject), Property(Property), unSubject)
-import Cardano.Metadata.Store.Types
-import Cardano.Metadata.Store.Simple (simpleStore)
+import           Cardano.Metadata.Server
+import           Cardano.Metadata.Server.Types    (BatchRequest (BatchRequest),
+                                                   BatchResponse (BatchResponse))
+import           Cardano.Metadata.Store.Simple    (simpleStore)
+import           Cardano.Metadata.Store.Types
+import           Cardano.Metadata.Types.Common    (Property (Property),
+                                                   Subject (Subject), unSubject)
+import qualified Cardano.Metadata.Types.Weakly    as Weakly
+import           Test.Cardano.Metadata.Generators (ComplexType)
+import           Test.Cardano.Metadata.Store
 
 tests :: IO TestTree
 tests = do
@@ -85,39 +93,39 @@ spec_server intf@(StoreInterface { storeWrite = write }) = do
       [ (subject1, entry1)
       , (subject2, entry2)
       ]
-        
+
   runIO $ traverse_ (uncurry write) testData
 
   with (pure $ webApp intf) $ do
     describe "GET /metadata/{subject}" $ do
-      it "should return 404 if subject doesn't exist" $ 
+      it "should return 404 if subject doesn't exist" $
         get "/metadata/bad"
           `shouldRespondWith`
             "Requested subject 'bad' not found" { matchStatus = 404 }
 
-      it "should return the subject if it does exist" $ 
+      it "should return the subject if it does exist" $
         get ("/metadata/" <> subject1Str)
           `shouldRespondWith`
             (matchingJSON entry1) { matchStatus = 200 }
 
     describe "GET /metadata/{subject}/properties" $ do
-      it "should return 404 if subject doesn't exist" $ 
+      it "should return 404 if subject doesn't exist" $
         get "/metadata/bad/properties"
           `shouldRespondWith`
             "Requested subject 'bad' not found" { matchStatus = 404 }
 
-      it "should return the properties of the subject if it does exist" $ 
+      it "should return the properties of the subject if it does exist" $
         get ("/metadata/" <> subject1Str <> "/properties")
           `shouldRespondWith`
             (matchingJSON entry1) { matchStatus = 200 }
 
     describe "GET /metadata/{subject}/properties/{property}" $ do
-      it "should return 404 if subject doesn't exist" $ 
+      it "should return 404 if subject doesn't exist" $
         get "/metadata/bad/properties/owner"
           `shouldRespondWith`
             "Requested subject 'bad' not found" { matchStatus = 404 }
 
-      it "should return 404 if property doesn't exist" $ 
+      it "should return 404 if property doesn't exist" $
         get ("/metadata/" <> subject1Str <> "/properties/bad")
           `shouldRespondWith`
             "Requested subject '3' does not have the property 'bad'" { matchStatus = 404 }
@@ -145,7 +153,7 @@ spec_server intf@(StoreInterface { storeWrite = write }) = do
           `shouldRespondWith`
             (matchingJSON $ BatchResponse [])
 
-      it "should ignore subjects not found, returning subjects that were found" $ 
+      it "should ignore subjects not found, returning subjects that were found" $
         batchRequest (BatchRequest [subject1, "bad"] (Just []))
           `shouldRespondWith`
             (matchingJSON $ BatchResponse [Weakly.Metadata "3" mempty])
@@ -155,7 +163,7 @@ spec_server intf@(StoreInterface { storeWrite = write }) = do
           `shouldRespondWith`
             (matchingJSON $ BatchResponse [Weakly.Metadata "3" mempty])
 
-      it "should ignore properties not found, returning properties that were found" $ 
+      it "should ignore properties not found, returning properties that were found" $
         batchRequest (BatchRequest [subject1] (Just ["owner", "bad"]))
           `shouldRespondWith`
             (matchingJSON $ BatchResponse [Weakly.Metadata "3" (HM.singleton "owner" owner)])

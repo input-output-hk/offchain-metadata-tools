@@ -2,14 +2,16 @@
 
 module Cardano.Metadata.Types.Weakly where
 
-import Data.Text (Text)
-import qualified Data.Aeson as Aeson
-import qualified Data.Aeson.Types as Aeson
-import Data.Aeson (ToJSON, FromJSON, (.:))
-import qualified Data.HashMap.Strict as HM
+import           Data.Aeson                    (FromJSON, ToJSON, (.:))
+import qualified Data.Aeson                    as Aeson
+import qualified Data.Aeson.Types              as Aeson
+import qualified Data.HashMap.Strict           as HM
+import           Data.Text                     (Text)
 
-import Cardano.Metadata.Types.Common (Subject, PropertyName(PropertyName), unPropertyName, AnnotatedSignature)
-import qualified Cardano.Metadata.Types.Common as Strongly (Property(Property))
+import           Cardano.Metadata.Types.Common (AnnotatedSignature,
+                                                PropertyName (PropertyName),
+                                                Subject, unPropertyName)
+import qualified Cardano.Metadata.Types.Common as Strongly (Property (Property))
 
 type Property = Strongly.Property Aeson.Value
 

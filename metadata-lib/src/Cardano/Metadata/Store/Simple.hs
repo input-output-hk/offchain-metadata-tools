@@ -1,18 +1,18 @@
 
 module Cardano.Metadata.Store.Simple where
 
-import Prelude hiding (read, init)
-import Control.Concurrent.MVar
-import Data.Maybe (catMaybes)
-import Data.Map.Strict (Map)
-import Data.Functor (void)
-import Data.Text (Text)
-import qualified Data.Aeson as Aeson
-import qualified Data.HashMap.Strict as HM
-import qualified Data.Map.Strict as Map
+import           Control.Concurrent.MVar
+import qualified Data.Aeson                    as Aeson
+import           Data.Functor                  (void)
+import qualified Data.HashMap.Strict           as HM
+import           Data.Map.Strict               (Map)
+import qualified Data.Map.Strict               as Map
+import           Data.Maybe                    (catMaybes)
+import           Data.Text                     (Text)
+import           Prelude                       hiding (init, read)
 
-import Cardano.Metadata.Server.Types
-import Cardano.Metadata.Store.Types 
+import           Cardano.Metadata.Server.Types
+import           Cardano.Metadata.Store.Types
 
 newtype KeyValue k v = KeyValue (MVar (Map k v))
 
@@ -40,7 +40,7 @@ read k (KeyValue mVar) = do
 readBatch :: Ord k => [k] -> KeyValue k v -> IO [v]
 readBatch ks (KeyValue mVar) = do
   m <- readMVar mVar
-  pure . catMaybes . fmap (\k -> Map.lookup k m) $ ks 
+  pure . catMaybes . fmap (\k -> Map.lookup k m) $ ks
 
 write :: Ord k => k -> v -> KeyValue k v -> IO (KeyValue k v)
 write k v = modifyKeyValue (Map.insert k v)

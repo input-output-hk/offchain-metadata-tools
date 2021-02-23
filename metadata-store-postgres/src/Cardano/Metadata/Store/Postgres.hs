@@ -1,17 +1,16 @@
-{-# LANGUAGE IncoherentInstances #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE DeriveAnyClass      #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TemplateHaskell            #-}
-{-# LANGUAGE QuasiQuotes                #-}
-{-# LANGUAGE TypeFamilies               #-}
-{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE DeriveAnyClass             #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE IncoherentInstances        #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE QuasiQuotes                #-}
+{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeFamilies               #-}
 
 module Cardano.Metadata.Store.Postgres
   ( read
@@ -25,33 +24,36 @@ module Cardano.Metadata.Store.Postgres
   , PostgresKeyValueException(..)
   ) where
 
-import           Prelude hiding (init, read)
-import           Control.Monad.IO.Class  (liftIO)
+import           Cardano.Metadata.Store.Types
 import           Control.Exception.Safe
-import           Data.Coerce (coerce)
-import           Database.Persist hiding (update, delete)
-import           Data.Traversable (for)
+import           Control.Monad.IO.Class       (liftIO)
+import           Control.Monad.Logger         (logInfoN, runNoLoggingT,
+                                               runStderrLoggingT,
+                                               runStdoutLoggingT)
 import           Control.Monad.Reader
-import          Data.Text (Text)
-import           Database.Persist.Sql (SqlBackend, ConnectionPool, Single(Single))
-import           Database.Persist.TH
-import qualified Database.Persist.Sql as Sql
-import qualified Database.Persist.Postgresql as Postgresql
-import           Control.Monad.Logger (logInfoN, runNoLoggingT, runStderrLoggingT,
-                     runStdoutLoggingT)
-import Cardano.Metadata.Store.Types 
-import Data.Pool
-import Data.Word
-import Data.Foldable (traverse_)
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as M
-import qualified Data.HashMap.Strict as HM
-import qualified Data.Text.Lazy.Encoding as TLE
-import qualified Data.Text.Lazy as TL
-import Data.Aeson (ToJSONKey, ToJSON, ToJSONKeyFunction, FromJSON, FromJSONKey)
-import qualified Data.Aeson as Aeson
-import qualified Data.Aeson.Types as Aeson
+import           Data.Aeson                   (FromJSON, FromJSONKey, ToJSON,
+                                               ToJSONKey, ToJSONKeyFunction)
+import qualified Data.Aeson                   as Aeson
 import qualified Data.Aeson.Encoding.Internal as Aeson
+import qualified Data.Aeson.Types             as Aeson
+import           Data.Coerce                  (coerce)
+import           Data.Foldable                (traverse_)
+import qualified Data.HashMap.Strict          as HM
+import           Data.Map.Strict              (Map)
+import qualified Data.Map.Strict              as M
+import           Data.Pool
+import           Data.Text                    (Text)
+import qualified Data.Text.Lazy               as TL
+import qualified Data.Text.Lazy.Encoding      as TLE
+import           Data.Traversable             (for)
+import           Data.Word
+import           Database.Persist             hiding (delete, update)
+import qualified Database.Persist.Postgresql  as Postgresql
+import           Database.Persist.Sql         (ConnectionPool, Single (Single),
+                                               SqlBackend)
+import qualified Database.Persist.Sql         as Sql
+import           Database.Persist.TH
+import           Prelude                      hiding (init, read)
 
 data PostgresKeyValueException = UniqueKeyConstraintViolated
                                | FailedToDecodeJSONValue String Text
@@ -99,7 +101,7 @@ postgresStore
   -- ^ Database table name
   -> IO (StoreInterface k v)
 postgresStore pool tableName = do
-  kvs <- init pool tableName 
+  kvs <- init pool tableName
   pure $ StoreInterface (\k   -> read k kvs)
                         (\ks  -> readBatch ks kvs)
                         (\k v -> write k v kvs)
@@ -208,12 +210,12 @@ decodeJSONKey t = case Aeson.fromJSONKey of
 
 handleJSONDecodeError :: Text -> Either String a -> IO a
 handleJSONDecodeError t = either (\err -> throw $ FailedToDecodeJSONValue err t) pure
-      
+
 toPersistValueJSONKey :: ToJSONKey k => k -> PersistValue
 toPersistValueJSONKey = toPersistValue . toJSONKeyText
 
 toJSONKeyText :: ToJSONKey k => k -> Text
-toJSONKeyText k = 
+toJSONKeyText k =
   case Aeson.toJSONKey of
     Aeson.ToJSONKeyText  f _ -> f k
     Aeson.ToJSONKeyValue _ f -> TL.toStrict $ TLE.decodeUtf8 $ Aeson.encodingToLazyByteString $ f k

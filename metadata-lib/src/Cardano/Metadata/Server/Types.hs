@@ -1,69 +1,71 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE AllowAmbiguousTypes        #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DefaultSignatures          #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE DerivingVia                #-}
+{-# LANGUAGE DuplicateRecordFields      #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedLabels #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE NamedFieldPuns             #-}
+{-# LANGUAGE OverloadedLabels           #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE QuasiQuotes                #-}
+{-# LANGUAGE RankNTypes                 #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TupleSections              #-}
+{-# LANGUAGE TypeApplications           #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE UndecidableInstances       #-}
 
 module Cardano.Metadata.Server.Types where
 
-import Data.Text (Text)
-import Control.Monad ((>=>))
-import Control.DeepSeq
-    ( NFData )
-import Data.Maybe (fromMaybe)
-import Data.ByteString (ByteString)
-import qualified Data.ByteString as BS
-import Network.URI
-    ( URI, parseAbsoluteURI, uriScheme )
-import Numeric.Natural
-    ( Natural )
-import Data.Functor (($>))
-import Data.String (IsString, fromString)
-import Data.ByteArray.Encoding
-    ( Base (Base16, Base64), convertFromBase, convertToBase )
-import Data.Monoid (First(First), getFirst)
-import GHC.Generics
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
-import Data.Functor.Identity (Identity(Identity))
-import Text.Read (Read(readPrec), readEither)
-import Web.HttpApiData (FromHttpApiData, parseUrlPiece, ToHttpApiData, toUrlPiece)
-import qualified Text.Read as Read (lift)
-import Text.ParserCombinators.ReadP (choice, string)
-import Data.Aeson (ToJSON, FromJSON, (.:), (.:?), ToJSONKey, FromJSONKey)
-import Control.Applicative (some)
-import qualified Data.Aeson.Types as Aeson
-import qualified Data.Aeson as Aeson
-import Data.Aeson.TH
-import Data.Set (Set)
-import qualified Data.Set as Set
-import qualified Data.HashMap.Strict as HM
-import Text.Casing
-import qualified Data.List.NonEmpty as NE
-import GHC.Show (showSpace)
-import Quiet (Quiet(Quiet))
+import           Control.Applicative           (some)
+import           Control.DeepSeq               (NFData)
+import           Control.Monad                 ((>=>))
+import           Data.Aeson                    (FromJSON, FromJSONKey, ToJSON,
+                                                ToJSONKey, (.:), (.:?))
+import qualified Data.Aeson                    as Aeson
+import           Data.Aeson.TH
+import qualified Data.Aeson.Types              as Aeson
+import           Data.ByteArray.Encoding       (Base (Base16, Base64),
+                                                convertFromBase, convertToBase)
+import           Data.ByteString               (ByteString)
+import qualified Data.ByteString               as BS
+import           Data.Functor                  (($>))
+import           Data.Functor.Identity         (Identity (Identity))
+import qualified Data.HashMap.Strict           as HM
+import qualified Data.List.NonEmpty            as NE
+import           Data.Maybe                    (fromMaybe)
+import           Data.Monoid                   (First (First), getFirst)
+import           Data.Set                      (Set)
+import qualified Data.Set                      as Set
+import           Data.String                   (IsString, fromString)
+import           Data.Text                     (Text)
+import qualified Data.Text                     as T
+import qualified Data.Text.Encoding            as T
+import           GHC.Generics
+import           GHC.Show                      (showSpace)
+import           Network.URI                   (URI, parseAbsoluteURI,
+                                                uriScheme)
+import           Numeric.Natural               (Natural)
+import           Quiet                         (Quiet (Quiet))
+import           Text.Casing
+import           Text.ParserCombinators.ReadP  (choice, string)
+import           Text.Read                     (Read (readPrec), readEither)
+import qualified Text.Read                     as Read (lift)
+import           Web.HttpApiData               (FromHttpApiData, ToHttpApiData,
+                                                parseUrlPiece, toUrlPiece)
 
-import Cardano.Metadata.Types.Common (Subject(Subject), PropertyName(PropertyName), unPropertyName, AnnotatedSignature)
+import           Cardano.Metadata.Types.Common (AnnotatedSignature,
+                                                PropertyName (PropertyName),
+                                                Subject (Subject),
+                                                unPropertyName)
 import qualified Cardano.Metadata.Types.Weakly as Weakly
 
 -- | Represents the content of a batch request to the metadata system.

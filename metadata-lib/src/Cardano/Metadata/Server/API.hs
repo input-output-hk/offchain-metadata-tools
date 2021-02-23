@@ -1,14 +1,14 @@
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DataKinds     #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Cardano.Metadata.Server.API where
 
-import Servant.API
-import Data.Text (Text)
+import           Data.Text                     (Text)
+import           Servant.API
 
-import Cardano.Metadata.Server.Types (BatchRequest, BatchResponse)
+import           Cardano.Metadata.Server.Types (BatchRequest, BatchResponse)
+import           Cardano.Metadata.Types.Common (PropertyName, Subject)
 import qualified Cardano.Metadata.Types.Weakly as Weakly
-import Cardano.Metadata.Types.Common (Subject, PropertyName)
 
 type MetadataServerAPI =
   "metadata" :>

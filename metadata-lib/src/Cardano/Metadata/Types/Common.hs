@@ -1,34 +1,36 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE DerivingVia                #-}
+{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE KindSignatures             #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE TemplateHaskell            #-}
 
 module Cardano.Metadata.Types.Common where
 
-import Quiet (Quiet(Quiet))
-import GHC.Generics (Generic)
-import Data.String (IsString)
-import Data.ByteArray.Encoding (Base(Base16, Base64), convertFromBase, convertToBase)
-import Data.ByteString (ByteString)
-import Text.Casing (toCamel, fromHumps)
-import Data.Text (Text)
-import qualified Data.Text.Encoding as T
-import qualified Data.Text as T
-import Text.Read (readPrec, readEither)
-import Text.ParserCombinators.ReadP (choice, string)
-import qualified Text.Read as Read (lift)
-import qualified Data.HashMap.Strict as HM
-import Control.DeepSeq (NFData)
-import Web.HttpApiData (FromHttpApiData, ToHttpApiData)
-import Data.Aeson (ToJSON, FromJSON, ToJSONKey, FromJSONKey, (.:))
-import Data.Aeson.TH (deriveJSON)
-import Data.Hashable (Hashable)
-import qualified Data.Aeson.Types as Aeson
+import           Control.DeepSeq              (NFData)
+import           Data.Aeson                   (FromJSON, FromJSONKey, ToJSON,
+                                               ToJSONKey, (.:))
+import           Data.Aeson.TH                (deriveJSON)
+import qualified Data.Aeson.Types             as Aeson
+import           Data.ByteArray.Encoding      (Base (Base16, Base64),
+                                               convertFromBase, convertToBase)
+import           Data.ByteString              (ByteString)
+import           Data.Hashable                (Hashable)
+import qualified Data.HashMap.Strict          as HM
+import           Data.String                  (IsString)
+import           Data.Text                    (Text)
+import qualified Data.Text                    as T
+import qualified Data.Text.Encoding           as T
+import           GHC.Generics                 (Generic)
+import           Quiet                        (Quiet (Quiet))
+import           Text.Casing                  (fromHumps, toCamel)
+import           Text.ParserCombinators.ReadP (choice, string)
+import           Text.Read                    (readEither, readPrec)
+import qualified Text.Read                    as Read (lift)
+import           Web.HttpApiData              (FromHttpApiData, ToHttpApiData)
 
 -- | The metadata subject, the on-chain identifier
 newtype Subject = Subject { unSubject :: Text }

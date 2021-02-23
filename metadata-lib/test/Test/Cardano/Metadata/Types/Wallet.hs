@@ -4,34 +4,48 @@ module Test.Cardano.Metadata.Types.Wallet
   ( tests
   ) where
 
-import           Hedgehog (Gen, MonadTest, annotate, forAll, property, tripping, (===), footnote, failure)
-import           Data.Maybe (fromJust)
-import qualified Hedgehog as H (Property)
-import Data.ByteArray.Encoding
-    ( Base (Base16, Base64), convertFromBase, convertToBase )
-import qualified Hedgehog.Gen as Gen
-import qualified Data.HashMap.Strict as HM
-import qualified Hedgehog.Range as Range
-import qualified Data.Aeson as Aeson
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
-import qualified Data.ByteString as B
-import qualified Data.Aeson.Encode.Pretty as Aeson
-import qualified Data.Aeson.Types as Aeson
-import qualified Data.HashMap.Strict as HM
-import Data.Aeson (ToJSON, FromJSON)
-import           Test.Tasty (TestTree, testGroup)
-import           Network.URI (parseURI, URI(URI))
+import           Data.Aeson                       (FromJSON, ToJSON)
+import qualified Data.Aeson                       as Aeson
+import qualified Data.Aeson.Encode.Pretty         as Aeson
+import qualified Data.Aeson.Types                 as Aeson
+import           Data.ByteArray.Encoding          (Base (Base16, Base64),
+                                                   convertFromBase,
+                                                   convertToBase)
+import qualified Data.ByteString                  as B
+import qualified Data.HashMap.Strict              as HM
+import qualified Data.HashMap.Strict              as HM
+import           Data.Maybe                       (fromJust)
+import qualified Data.Text                        as T
+import qualified Data.Text.Encoding               as T
+import           Hedgehog                         (Gen, MonadTest, annotate,
+                                                   failure, footnote, forAll,
+                                                   property, tripping, (===))
+import qualified Hedgehog                         as H (Property)
+import qualified Hedgehog.Gen                     as Gen
+import qualified Hedgehog.Range                   as Range
+import           Network.URI                      (URI (URI), parseURI)
+import           Test.Tasty                       (TestTree, testGroup)
 import           Test.Tasty.Hedgehog
-import           Test.Tasty.HUnit (Assertion, assertEqual, testCase, (@?=))
+import           Test.Tasty.HUnit                 (Assertion, assertEqual,
+                                                   testCase, (@?=))
 
+import           Test.Cardano.Helpers             (prop_json_roundtrips)
 import qualified Test.Cardano.Metadata.Generators as Gen
-import Test.Cardano.Helpers (prop_json_roundtrips)
 
-import Cardano.Metadata.Types.Common (Subject(Subject), unSubject, PropertyName, unPropertyName, asSignature, asPublicKey, Encoded(Encoded), Name, Property(Property), Description)
-import Cardano.Metadata.Types.Wallet (AssetLogo(AssetLogo), AssetURL(AssetURL), AssetUnit(AssetUnit), assetLogoMaxLength, Acronym(Acronym))
-import qualified Cardano.Metadata.Types.Wallet as Wallet
-import qualified Cardano.Metadata.Types.Weakly as Weakly
+import           Cardano.Metadata.Types.Common    (Description,
+                                                   Encoded (Encoded), Name,
+                                                   Property (Property),
+                                                   PropertyName,
+                                                   Subject (Subject),
+                                                   asPublicKey, asSignature,
+                                                   unPropertyName, unSubject)
+import           Cardano.Metadata.Types.Wallet    (Acronym (Acronym),
+                                                   AssetLogo (AssetLogo),
+                                                   AssetURL (AssetURL),
+                                                   AssetUnit (AssetUnit),
+                                                   assetLogoMaxLength)
+import qualified Cardano.Metadata.Types.Wallet    as Wallet
+import qualified Cardano.Metadata.Types.Weakly    as Weakly
 
 tests :: TestTree
 tests = testGroup "Wallet Metadata type tests"
@@ -71,22 +85,22 @@ unit_extra_constraints_json_spec = do
         Aeson.parseEither Wallet.fromWeaklyTypedMetadata weakMeta @?= expect
 
   fromWeakMetadataTest
-    (asWeakMetadata goodSubject goodName goodDescription) 
+    (asWeakMetadata goodSubject goodName goodDescription)
     (Right $ Wallet.Metadata (Subject goodSubject) (asProp goodName) (asProp goodDescription) Nothing Nothing Nothing Nothing mempty)
   fromWeakMetadataTest
-    (asWeakMetadata goodSubject goodName badDescription) 
+    (asWeakMetadata goodSubject goodName badDescription)
     (Left "Error in $: Length must be no more than 500 characters, got 501")
   fromWeakMetadataTest
-    (asWeakMetadata goodSubject badName1 goodDescription) 
+    (asWeakMetadata goodSubject badName1 goodDescription)
     (Left "Error in $: Length must be at least 1 characters, got 0")
   fromWeakMetadataTest
-    (asWeakMetadata goodSubject badName2 goodDescription) 
+    (asWeakMetadata goodSubject badName2 goodDescription)
     (Left "Error in $: Length must be no more than 50 characters, got 51")
   fromWeakMetadataTest
-    (asWeakMetadata badSubject1 goodName goodDescription) 
+    (asWeakMetadata badSubject1 goodName goodDescription)
     (Left "Error in $: Length must be at least 1 characters, got 0")
   fromWeakMetadataTest
-    (asWeakMetadata badSubject2 goodName goodDescription) 
+    (asWeakMetadata badSubject2 goodName goodDescription)
     (Left "Error in $: Length must be no more than 256 characters, got 257")
 
 unit_acronym_json_spec :: Assertion
@@ -159,4 +173,4 @@ prop_fromWeakly_roundtrips :: H.Property
 prop_fromWeakly_roundtrips = property $ do
   a <- forAll Gen.walletMetadata
 
-  tripping a Wallet.toWeaklyTypedMetadata (Aeson.parseEither Wallet.fromWeaklyTypedMetadata) 
+  tripping a Wallet.toWeaklyTypedMetadata (Aeson.parseEither Wallet.fromWeaklyTypedMetadata)
