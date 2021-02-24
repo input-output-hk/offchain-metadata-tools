@@ -24,14 +24,11 @@ executable metadata-validator
                      , lens
                      , lens-aeson
                      , metadata-lib
-                     , metadata-store-postgres
                      , vector
                      , monad-logger
                      , co-log
                      , mtl
                      , optparse-applicative
-                     , persistent
-                     , persistent-postgresql
                      , safe-exceptions
                      , scientific
                      , servant
