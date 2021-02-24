@@ -4,46 +4,33 @@ module Test.Cardano.Metadata.Types.Wallet
   ( tests
   ) where
 
-import           Data.Aeson                       (FromJSON, ToJSON)
 import qualified Data.Aeson                       as Aeson
-import qualified Data.Aeson.Encode.Pretty         as Aeson
 import qualified Data.Aeson.Types                 as Aeson
 import           Data.ByteArray.Encoding          (Base (Base16, Base64),
-                                                   convertFromBase,
                                                    convertToBase)
 import qualified Data.ByteString                  as B
-import qualified Data.HashMap.Strict              as HM
 import qualified Data.HashMap.Strict              as HM
 import           Data.Maybe                       (fromJust)
 import qualified Data.Text                        as T
 import qualified Data.Text.Encoding               as T
-import           Hedgehog                         (Gen, MonadTest, annotate,
-                                                   failure, footnote, forAll,
-                                                   property, tripping, (===))
+import           Hedgehog                         (property, tripping, (===))
 import qualified Hedgehog                         as H (Property)
-import qualified Hedgehog.Gen                     as Gen
-import qualified Hedgehog.Range                   as Range
-import           Network.URI                      (URI (URI), parseURI)
+import           Hedgehog.Internal.Property       (forAllT)
+import           Network.URI                      (parseURI)
 import           Test.Tasty                       (TestTree, testGroup)
 import           Test.Tasty.Hedgehog
-import           Test.Tasty.HUnit                 (Assertion, assertEqual,
-                                                   testCase, (@?=))
+import           Test.Tasty.HUnit                 (Assertion, testCase, (@?=))
+import Cardano.Api (ScriptInEra(ScriptInEra), ScriptLanguageInEra(SimpleScriptV2InMary), SlotNo(SlotNo), TimeLocksSupported(TimeLocksInSimpleScriptV2), SimpleScript(RequireTimeBefore), Script(SimpleScript), SimpleScriptVersion(SimpleScriptV2), serialiseToCBOR)
 
 import           Test.Cardano.Helpers             (prop_json_roundtrips)
 import qualified Test.Cardano.Metadata.Generators as Gen
-
-import           Cardano.Metadata.Types.Common    (Description,
-                                                   Encoded (Encoded), Name,
-                                                   Property (Property),
-                                                   PropertyName,
-                                                   Subject (Subject),
-                                                   asPublicKey, asSignature,
-                                                   unPropertyName, unSubject)
+import           Cardano.Metadata.Types.Common    (Encoded (Encoded),
+                                                   Property (Property), Subject(Subject))
 import           Cardano.Metadata.Types.Wallet    (AssetLogo (AssetLogo),
                                                    AssetURL (AssetURL),
                                                    AssetUnit (AssetUnit),
                                                    Ticker (Ticker),
-                                                   assetLogoMaxLength)
+                                                   assetLogoMaxLength, verifyPolicy, metaPolicy, metaSubject)
 import qualified Cardano.Metadata.Types.Wallet    as Wallet
 import qualified Cardano.Metadata.Types.Weakly    as Weakly
 
@@ -64,43 +51,59 @@ tests = testGroup "Wallet Metadata type tests"
 
       , testCase "Wallet/extra-constraints/json/matches-spec" unit_extra_constraints_json_spec
       , testProperty "Wallet/Metadata/fromWeakly/roundtrips" prop_fromWeakly_roundtrips
+
+      , testProperty "Policy/json/roundtrips" (prop_json_roundtrips Gen.policy)
+      , testProperty "Policy/Wallet.Metadata/verifies" prop_wallet_metadata_policy_verifies
       ]
   ]
 
+prop_wallet_metadata_policy_verifies :: H.Property
+prop_wallet_metadata_policy_verifies = property $ do
+  meta <- forAllT Gen.walletMetadata'
+
+  verifyPolicy (metaPolicy meta) (metaSubject meta) === Right ()
+
 unit_extra_constraints_json_spec :: Assertion
 unit_extra_constraints_json_spec = do
-  let badSubject1 = ""
-      badSubject2 = T.pack $ take 257 $ repeat 'a'
-      goodSubject = T.pack $ take 256 $ repeat 'a'
-      badName1 = ""
-      badName2 = T.pack $ take 51 $ repeat 'a'
-      goodName = T.pack $ take 50 $ repeat 'a'
-      badDescription = T.pack $ take 501 $ repeat 'a'
+  let badSubject1   = ""
+      badSubject2   = T.pack $ take 257 $ repeat 'a'
+      script        = ScriptInEra SimpleScriptV2InMary (SimpleScript SimpleScriptV2 (RequireTimeBefore TimeLocksInSimpleScriptV2 (SlotNo 5183319957624374596)))
+      goodPolicyRaw = T.decodeUtf8 $ convertToBase Base16 $ serialiseToCBOR script
+      goodPolicy    = Wallet.mkPolicy script
+      goodSubject   = Wallet.policyId goodPolicy <> (T.pack $ take 200 $ repeat 'a')
+
+      badName1        = ""
+      badName2        = T.pack $ take 51 $ repeat 'a'
+      goodName        = T.pack $ take 50 $ repeat 'a'
+      badDescription  = T.pack $ take 501 $ repeat 'a'
       goodDescription = T.pack $ take 500 $ repeat 'a'
 
-      asWeakProp a = Property (Aeson.String a) []
-      asWeakMetadata subj name desc = Weakly.Metadata (Subject subj) (HM.fromList [("name", asWeakProp name), ("description", asWeakProp desc)])
-      asProp a = Property a []
+      asWeakProp a = Property (Aeson.String a) (Just [])
+      asWeakMetadata subj policy name desc = Weakly.Metadata (Subject subj) (HM.fromList [("name", asWeakProp name), ("description", asWeakProp desc), ("policy", Property (Aeson.String policy) Nothing)])
+      asProp a = Property a (Just [])
       fromWeakMetadataTest weakMeta expect =
         Aeson.parseEither Wallet.fromWeaklyTypedMetadata weakMeta @?= expect
 
   fromWeakMetadataTest
-    (asWeakMetadata goodSubject goodName goodDescription)
-    (Right $ Wallet.Metadata (Subject goodSubject) (asProp goodName) (asProp goodDescription) Nothing Nothing Nothing Nothing mempty)
+    (asWeakMetadata goodSubject goodPolicyRaw goodName goodDescription)
+    (Right $ Wallet.Metadata (Subject goodSubject) goodPolicy (asProp goodName) (asProp goodDescription) Nothing Nothing Nothing Nothing mempty)
   fromWeakMetadataTest
-    (asWeakMetadata goodSubject goodName badDescription)
+    (asWeakMetadata goodSubject goodPolicyRaw goodName goodDescription)
+    (Right $ Wallet.Metadata (Subject goodSubject) goodPolicy (asProp goodName) (asProp goodDescription) Nothing Nothing Nothing Nothing mempty)
+  fromWeakMetadataTest
+    (asWeakMetadata goodSubject goodPolicyRaw goodName badDescription)
     (Left "Error in $: Length must be no more than 500 characters, got 501")
   fromWeakMetadataTest
-    (asWeakMetadata goodSubject badName1 goodDescription)
+    (asWeakMetadata goodSubject goodPolicyRaw badName1 goodDescription)
     (Left "Error in $: Length must be at least 1 characters, got 0")
   fromWeakMetadataTest
-    (asWeakMetadata goodSubject badName2 goodDescription)
+    (asWeakMetadata goodSubject goodPolicyRaw badName2 goodDescription)
     (Left "Error in $: Length must be no more than 50 characters, got 51")
   fromWeakMetadataTest
-    (asWeakMetadata badSubject1 goodName goodDescription)
+    (asWeakMetadata badSubject1 goodPolicyRaw goodName goodDescription)
     (Left "Error in $: Length must be at least 1 characters, got 0")
   fromWeakMetadataTest
-    (asWeakMetadata badSubject2 goodName goodDescription)
+    (asWeakMetadata badSubject2 goodPolicyRaw goodName goodDescription)
     (Left "Error in $: Length must be no more than 256 characters, got 257")
 
 unit_ticker_json_spec :: Assertion
@@ -109,7 +112,6 @@ unit_ticker_json_spec = do
       badTicker1  = "A"
       badTicker2  = "ABCDE"
       asJSON     = Aeson.String
-      asAssetURL = AssetURL . fromJust . parseURI . T.unpack
 
   Aeson.fromJSON (asJSON goodTicker) @?= (Aeson.Success $ Ticker goodTicker)
   Aeson.fromJSON (asJSON badTicker1) @?= (Aeson.Error "Length must be at least 2 characters, got 1" :: Aeson.Result Ticker)
@@ -171,6 +173,6 @@ unit_assetUnit_json_spec = do
 
 prop_fromWeakly_roundtrips :: H.Property
 prop_fromWeakly_roundtrips = property $ do
-  a <- forAll Gen.walletMetadata
+  a <- forAllT Gen.walletMetadata'
 
   tripping a Wallet.toWeaklyTypedMetadata (Aeson.parseEither Wallet.fromWeaklyTypedMetadata)

@@ -2,16 +2,12 @@
 module Cardano.Metadata.Store.Simple where
 
 import           Control.Concurrent.MVar
-import qualified Data.Aeson                    as Aeson
 import           Data.Functor                  (void)
-import qualified Data.HashMap.Strict           as HM
 import           Data.Map.Strict               (Map)
 import qualified Data.Map.Strict               as Map
 import           Data.Maybe                    (catMaybes)
-import           Data.Text                     (Text)
 import           Prelude                       hiding (init, read)
 
-import           Cardano.Metadata.Server.Types
 import           Cardano.Metadata.Store.Types
 
 newtype KeyValue k v = KeyValue (MVar (Map k v))

@@ -2,9 +2,7 @@
 {-# LANGUAGE TypeApplications  #-}
 
 import           Control.Monad.IO.Class           (liftIO)
-import           Control.Monad.Logger             (logInfoN, runNoLoggingT,
-                                                   runStderrLoggingT,
-                                                   runStdoutLoggingT)
+import           Control.Monad.Logger             (runNoLoggingT)
 import qualified Data.Pool                        as Pool
 import           Data.Proxy                       (Proxy (Proxy))
 import           Data.Tagged                      (Tagged, unTagged)

@@ -9,61 +9,44 @@ module Test.Cardano.Metadata.Types
 
 import           Data.Aeson                       (FromJSON, ToJSON)
 import qualified Data.Aeson                       as Aeson
-import qualified Data.Aeson                       as Aeson
-import qualified Data.Aeson.Encode.Pretty         as Aeson
 import qualified Data.Bifunctor                   as Bifunctor
-import           Data.ByteArray.Encoding          (Base (Base16, Base64),
-                                                   convertFromBase,
-                                                   convertToBase)
-import qualified Data.ByteString                  as B
+import           Data.ByteArray.Encoding          (Base (Base16), convertToBase)
 import qualified Data.ByteString.Lazy.Char8       as BLC
-import           Data.Functor.Identity            (Identity (Identity))
 import qualified Data.HashMap.Strict              as HM
-import qualified Data.HashMap.Strict              as HM
-import           Data.List                        (delete, find, sort)
-import           Data.Maybe                       (fromJust)
-import           Data.Monoid                      (First (First), Sum (Sum),
-                                                   getSum)
-import           Data.Ratio                       (Ratio, (%))
-import           Data.Text                        (Text)
 import qualified Data.Text                        as T
 import qualified Data.Text.Encoding               as T
-import           Data.Word                        (Word8)
-import           Hedgehog                         (Gen, MonadTest, annotate,
-                                                   failure, footnote, forAll,
-                                                   property, tripping, (===))
+import           Hedgehog                         (Gen, 
+                                                   forAll,
+                                                   property, (===))
+import           Hedgehog.Internal.Property       (forAllT)
 import qualified Hedgehog                         as H (Property)
-import qualified Hedgehog.Gen                     as Gen
-import qualified Hedgehog.Range                   as Range
-import           Network.URI                      (URI (URI), parseURI)
 import           Test.Tasty                       (TestTree, testGroup)
 import           Test.Tasty.Hedgehog
-import           Test.Tasty.HUnit                 (Assertion, assertEqual,
+import           Test.Tasty.HUnit                 (Assertion,
                                                    testCase, (@?=))
-import           Text.RawString.QQ
 import           Text.Read                        (readEither)
+import Text.RawString.QQ (r)
 
 import           Test.Cardano.Helpers             (prop_json_only_has_keys,
                                                    prop_json_roundtrips,
                                                    prop_read_show_roundtrips)
 import qualified Test.Cardano.Metadata.Generators as Gen
+import Cardano.Crypto.DSIGN
 
 import           Cardano.Metadata.Types.Common    (HashFn (Blake2b224, Blake2b256, SHA256),
-                                                   PropertyName, Subject, Property(Property),
-                                                   asPublicKey, asSignature,
-                                                   propertyAnSignatures,
+                                                   asPublicKey, asAttestationSignature,
                                                    propertyValue,
-                                                   unPropertyName, unSubject)
+                                                   unPropertyName, unSubject, Property(Property))
 import qualified Cardano.Metadata.Types.Weakly    as Weakly
 
 tests :: TestTree
 tests = testGroup "Metadata type tests"
   [ testGroup "Parsers and printers"
       [
-        testProperty "Metadata/json/roundtrips" (prop_json_roundtrips Gen.weaklyTypedMetadata)
+        testProperty "Metadata/json/roundtrips" (prop_json_roundtrips Gen.weaklyTypedMetadata')
       , testProperty "Metadata/json/matches-spec" prop_json_metadata_spec
 
-      , testProperty "Property/json/roundtrips" (prop_json_roundtrips Gen.weaklyTypedProperty)
+      , testProperty "Property/json/roundtrips" (prop_json_roundtrips Gen.weaklyTypedProperty')
       , testProperty "Property/json/matches-spec" prop_json_property_spec
       , testCase     "Property/json/missing-anSignatures-ok" unit_property_missing_annotatedSignatures
 
@@ -76,7 +59,7 @@ tests = testGroup "Metadata type tests"
       , testProperty "PropertyName/json/roundtrips" (prop_json_roundtrips Gen.propertyName)
       , testProperty "PropertyName/json/matches-spec" prop_json_propertyName_spec
 
-      , testProperty "AnnotatedSignature/json/roundtrips" (prop_json_roundtrips Gen.annotatedSignature)
+      , testProperty "AnnotatedSignature/json/roundtrips" (prop_json_roundtrips Gen.annotatedSignature')
       , testProperty "AnnotatedSignature/json/matches-spec" prop_json_annotatedSignature_spec
 
       , testProperty "PreImage/json/roundtrips" (prop_json_roundtrips Gen.preImage)
@@ -117,7 +100,7 @@ unit_property_missing_annotatedSignatures = do
       }
     |]
 
-  Aeson.eitherDecode json @?= Right (Property (Aeson.String "string") [])
+  Aeson.eitherDecode json @?= Right (Property (Aeson.Object $ HM.fromList [("value", "string")]) Nothing)
 
 prop_json_subject_spec :: H.Property
 prop_json_subject_spec = property $ do
@@ -133,27 +116,31 @@ prop_json_propertyName_spec = property $ do
 
 prop_json_annotatedSignature_spec :: H.Property
 prop_json_annotatedSignature_spec = property $ do
-  as <- forAll Gen.annotatedSignature
+  as <- forAllT Gen.annotatedSignature'
 
   Aeson.toJSON as === Aeson.Object (HM.fromList
-                                     [ ("signature", Aeson.String $ asSignature as)
-                                     , ("publicKey", Aeson.String $ asPublicKey as)
+                                     [ ("signature", Aeson.String $ T.decodeUtf8 $ convertToBase Base16 $ rawSerialiseSigDSIGN $ asAttestationSignature as)
+                                     , ("publicKey", Aeson.String $ T.decodeUtf8 $ convertToBase Base16 $ rawSerialiseVerKeyDSIGN $ asPublicKey as)
                                      ]
                                   )
 
 prop_json_property_spec :: H.Property
 prop_json_property_spec = property $ do
-  p <- forAll Gen.weaklyTypedProperty
+  p@(Property v anSigs) <- forAllT Gen.weaklyTypedProperty'
 
-  Aeson.toJSON p === Aeson.Object (HM.fromList
-                                     [ ("value", propertyValue p)
-                                     , ("anSignatures", Aeson.toJSON $ propertyAnSignatures p)
-                                     ]
-                                  )
+  case anSigs of
+    Nothing   -> 
+      Aeson.toJSON p === Aeson.toJSON v
+    Just sigs ->
+      Aeson.toJSON p === Aeson.Object (HM.fromList
+                                         [ ("value", propertyValue p)
+                                         , ("anSignatures", Aeson.toJSON $ sigs)
+                                         ]
+                                      )
 
 prop_json_metadata_spec :: H.Property
 prop_json_metadata_spec = property $ do
-  m <- forAll Gen.weaklyTypedMetadata
+  m <- forAllT Gen.weaklyTypedMetadata'
 
   Aeson.toJSON m === Aeson.Object (HM.fromList $
                                      [ ("subject", Aeson.String $ unSubject $ Weakly.metaSubject m) ]

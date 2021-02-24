@@ -6,7 +6,8 @@ import qualified Data.HashMap.Strict as HM
 import           Data.List           (sort)
 import           Data.Text           (Text)
 import           Hedgehog            (Gen, MonadTest, failure, footnote, forAll,
-                                      property, tripping, (===))
+                                      property, tripping, (===), toGenT, GenT)
+import Hedgehog.Internal.Property (forAllT)
 import qualified Hedgehog            as H (Property)
 import           Text.Read           (readEither)
 
@@ -16,9 +17,9 @@ prop_read_show_roundtrips gen = property $ do
 
   tripping a show readEither
 
-prop_json_roundtrips :: (Show a, Eq a, ToJSON a, FromJSON a) => Gen a -> H.Property
+prop_json_roundtrips :: (Show a, Eq a, ToJSON a, FromJSON a) => GenT IO a -> H.Property
 prop_json_roundtrips gen = property $ do
-  a <- forAll gen
+  a <- forAllT (toGenT gen)
 
   tripping a Aeson.toJSON Aeson.fromJSON
 

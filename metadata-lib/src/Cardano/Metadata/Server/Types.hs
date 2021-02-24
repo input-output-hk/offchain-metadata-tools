@@ -25,47 +25,14 @@
 
 module Cardano.Metadata.Server.Types where
 
-import           Control.Applicative           (some)
-import           Control.DeepSeq               (NFData)
-import           Control.Monad                 ((>=>))
-import           Data.Aeson                    (FromJSON, FromJSONKey, ToJSON,
-                                                ToJSONKey, (.:), (.:?))
+import           Data.Aeson                    (FromJSON, ToJSON, (.:), (.:?))
 import qualified Data.Aeson                    as Aeson
 import           Data.Aeson.TH
-import qualified Data.Aeson.Types              as Aeson
-import           Data.ByteArray.Encoding       (Base (Base16, Base64),
-                                                convertFromBase, convertToBase)
-import           Data.ByteString               (ByteString)
-import qualified Data.ByteString               as BS
-import           Data.Functor                  (($>))
-import           Data.Functor.Identity         (Identity (Identity))
 import qualified Data.HashMap.Strict           as HM
-import qualified Data.List.NonEmpty            as NE
-import           Data.Maybe                    (fromMaybe)
-import           Data.Monoid                   (First (First), getFirst)
-import           Data.Set                      (Set)
-import qualified Data.Set                      as Set
-import           Data.String                   (IsString, fromString)
-import           Data.Text                     (Text)
-import qualified Data.Text                     as T
-import qualified Data.Text.Encoding            as T
-import           GHC.Generics
-import           GHC.Show                      (showSpace)
-import           Network.URI                   (URI, parseAbsoluteURI,
-                                                uriScheme)
-import           Numeric.Natural               (Natural)
-import           Quiet                         (Quiet (Quiet))
 import           Text.Casing
-import           Text.ParserCombinators.ReadP  (choice, string)
-import           Text.Read                     (Read (readPrec), readEither)
-import qualified Text.Read                     as Read (lift)
-import           Web.HttpApiData               (FromHttpApiData, ToHttpApiData,
-                                                parseUrlPiece, toUrlPiece)
 
-import           Cardano.Metadata.Types.Common (AnnotatedSignature,
-                                                PropertyName (PropertyName),
-                                                Subject (Subject),
-                                                unPropertyName)
+import           Cardano.Metadata.Types.Common (PropertyName,
+                                                Subject)
 import qualified Cardano.Metadata.Types.Weakly as Weakly
 
 -- | Represents the content of a batch request to the metadata system.
