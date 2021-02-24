@@ -23,12 +23,18 @@ let
   haskellPackagesMusl64 = recRecurseIntoAttrs
     # the Haskell.nix package set, reduced to local packages.
     (selectProjectPackages pkgs.pkgsCross.musl64.metadataServerHaskellPackages);
+  metadataValidatorTarball = pkgs.runCommandNoCC "metadata-validator-tarball" { buildInputs = [ pkgs.gnutar gzip ]; } ''
+    cp ${haskellPackagesMusl64.metadata-validator.components.exes.metadata-validator}/bin/metadata-validator ./
+    mkdir -p $out/nix-support
+    tar -czvf $out/metadata-validator.tar.gz metadata-validator
+    echo "file binary-dist $out/metadata-validator.tar.gz" > $out/nix-support/hydra-build-products
+  '';
   nixosTests = recRecurseIntoAttrs (import ./nix/nixos/tests {
     inherit pkgs;
   });
 
   self = {
-    inherit metadataServerHaskellPackages;
+    inherit metadataServerHaskellPackages metadataValidatorTarball;
     inherit haskellPackages hydraEvalErrors nixosTests;
 
     inherit (pkgs.iohkNix) checkCabalProject;
