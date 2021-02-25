@@ -11,8 +11,9 @@
 module Cardano.Metadata.Types.Common where
 
 import           Control.DeepSeq              (NFData)
+import           Data.Maybe (fromMaybe)
 import           Data.Aeson                   (FromJSON, FromJSONKey, ToJSON,
-                                               ToJSONKey, (.:))
+                                               ToJSONKey, (.:), (.:?))
 import           Data.Aeson.TH                (deriveJSON)
 import qualified Data.Aeson.Types             as Aeson
 import           Data.ByteArray.Encoding      (Base (Base16, Base64),
@@ -136,7 +137,7 @@ instance FromJSON value => FromJSON (Property value) where
   parseJSON = Aeson.withObject "Weakly-typed Property" $ \obj ->
     Property
       <$> obj .: "value"
-      <*> obj .: "anSignatures"
+      <*> (fromMaybe [] <$> obj .:? "anSignatures")
 
 $(deriveJSON Aeson.defaultOptions{ Aeson.fieldLabelModifier = toCamel . fromHumps . drop 2 } ''AnnotatedSignature)
 $(deriveJSON Aeson.defaultOptions{ Aeson.fieldLabelModifier = toCamel . fromHumps . drop 3 } ''Owner)
