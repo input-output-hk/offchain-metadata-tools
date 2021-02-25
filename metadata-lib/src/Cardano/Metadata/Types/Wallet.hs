@@ -42,7 +42,7 @@ data Metadata
              , metaUnit        :: Maybe (Property AssetUnit)
              , metaLogo        :: Maybe (Property AssetLogo)
              , metaURL         :: Maybe (Property AssetURL)
-             , metaAcronym     :: Maybe (Property Acronym)
+             , metaTicker      :: Maybe (Property Ticker)
              , metaOther       :: HM.HashMap PropertyName Weakly.Property
              }
   deriving (Show, Eq)
@@ -70,14 +70,14 @@ newtype AssetURL = AssetURL
 
 instance NFData AssetURL
 
-newtype Acronym = Acronym { unAcronym :: Text }
+newtype Ticker = Ticker { unTicker :: Text }
   deriving (Generic, Eq, Ord, ToJSON)
   deriving newtype (IsString)
-  deriving (Show) via (Quiet Acronym)
+  deriving (Show) via (Quiet Ticker)
 
-instance FromJSON Acronym where
-  parseJSON = Aeson.withText "Acronym" $ \t ->
-    Acronym <$> applyValidator validateMetadataAcronym t
+instance FromJSON Ticker where
+  parseJSON = Aeson.withText "Ticker" $ \t ->
+    Ticker <$> applyValidator validateMetadataTicker t
 
 fromWeaklyTypedMetadata :: Weakly.Metadata -> Aeson.Parser Metadata
 fromWeaklyTypedMetadata (Weakly.Metadata subj props) =
@@ -86,7 +86,7 @@ fromWeaklyTypedMetadata (Weakly.Metadata subj props) =
     obj = HM.fromList $ fmap (Bifunctor.bimap unPropertyName Aeson.toJSON) $ HM.toList $ props
 
     rest :: HM.HashMap PropertyName Weakly.Property
-    rest = foldr HM.delete props ["name", "description", "unit", "logo", "url", "acronym"]
+    rest = foldr HM.delete props ["name", "description", "unit", "logo", "url", "ticker"]
   in
     Metadata
     <$> (applyValidator validateMetadataSubject subj)
@@ -95,7 +95,7 @@ fromWeaklyTypedMetadata (Weakly.Metadata subj props) =
     <*> obj .:? "unit"
     <*> obj .:? "logo"
     <*> obj .:? "url"
-    <*> obj .:? "acronym"
+    <*> obj .:? "ticker"
     <*> pure rest
 
   where
@@ -105,7 +105,7 @@ fromWeaklyTypedMetadata (Weakly.Metadata subj props) =
       pure prop
 
 toWeaklyTypedMetadata :: Metadata -> Weakly.Metadata
-toWeaklyTypedMetadata (Metadata subj name desc unit logo url acronym rest) =
+toWeaklyTypedMetadata (Metadata subj name desc unit logo url ticker rest) =
   Weakly.Metadata subj $
     HM.fromList $
       [ ("name"       , Weakly.toWeaklyTypedProperty name)
@@ -113,7 +113,7 @@ toWeaklyTypedMetadata (Metadata subj name desc unit logo url acronym rest) =
       ] <> optionalProperty "unit" unit
         <> optionalProperty "logo" logo
         <> optionalProperty "url" url
-        <> optionalProperty "acronym" acronym
+        <> optionalProperty "ticker" ticker
         <> HM.toList rest
   where
     optionalProperty :: ToJSON a => PropertyName -> Maybe (Property a) -> [(PropertyName, Property Aeson.Value)]
@@ -142,8 +142,8 @@ validateMetadataSubject = fmap Subject . (validateMinLength 1 >=> validateMaxLen
 validateMetadataName :: Text -> Either String Text
 validateMetadataName = validateMinLength 1 >=> validateMaxLength 50
 
-validateMetadataAcronym :: Text -> Either String Text
-validateMetadataAcronym = validateMinLength 2 >=> validateMaxLength 4
+validateMetadataTicker :: Text -> Either String Text
+validateMetadataTicker = validateMinLength 2 >=> validateMaxLength 4
 
 validateMetadataDescription :: Text -> Either String Text
 validateMetadataDescription = validateMaxLength 500
