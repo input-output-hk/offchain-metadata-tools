@@ -1,3 +1,4 @@
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -48,7 +49,7 @@ import           Test.Cardano.Helpers             (prop_json_only_has_keys,
 import qualified Test.Cardano.Metadata.Generators as Gen
 
 import           Cardano.Metadata.Types.Common    (HashFn (Blake2b224, Blake2b256, SHA256),
-                                                   PropertyName, Subject,
+                                                   PropertyName, Subject, Property(Property),
                                                    asPublicKey, asSignature,
                                                    propertyAnSignatures,
                                                    propertyValue,
@@ -64,6 +65,7 @@ tests = testGroup "Metadata type tests"
 
       , testProperty "Property/json/roundtrips" (prop_json_roundtrips Gen.weaklyTypedProperty)
       , testProperty "Property/json/matches-spec" prop_json_property_spec
+      , testCase     "Property/json/missing-anSignatures-ok" unit_property_missing_annotatedSignatures
 
       , testProperty "Name/json/roundtrips" (prop_json_roundtrips Gen.name)
       , testProperty "Description/json/roundtrips" (prop_json_roundtrips Gen.description)
@@ -105,6 +107,17 @@ unit_hashfn_show_spec = do
   show Blake2b256 @?= "blake2b-256"
   show Blake2b224 @?= "blake2b-224"
   show SHA256     @?= "sha256"
+
+unit_property_missing_annotatedSignatures :: Assertion
+unit_property_missing_annotatedSignatures = do
+  let
+    json = [r|
+      {
+        "value": "string"
+      }
+    |]
+
+  Aeson.eitherDecode json @?= Right (Property (Aeson.String "string") [])
 
 prop_json_subject_spec :: H.Property
 prop_json_subject_spec = property $ do
