@@ -1,11 +1,12 @@
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GADTs      #-}
 {-# LANGUAGE RankNTypes #-}
 
 module Cardano.Metadata.Store.Types where
 
-import Data.Text (Text)
+import           Data.Text                     (Text)
 
-import Cardano.Metadata.Server.Types
+import           Cardano.Metadata.Server.Types
+import           Cardano.Metadata.Types.Common (PropertyName, Subject)
 
 data ReadError = NoSubject Subject
                | NoProperty Subject PropertyName
@@ -20,19 +21,19 @@ data StoreInterface k v
                    -- ^ read: Read a value from the data store
                    , storeReadBatch :: [k] -> IO [v]
                    -- ^ readBatch: Read a series of values from the data store
-                   , storeWrite  :: k -> v -> IO ()
+                   , storeWrite     :: k -> v -> IO ()
                    -- ^ write: Write a value to the data store
-                   , storeDelete :: k -> IO ()
+                   , storeDelete    :: k -> IO ()
                    -- ^ delete: Remove a key value pair from the data store
-                   , storeUpdate :: (v -> Maybe v) -> k -> IO ()
+                   , storeUpdate    :: (v -> Maybe v) -> k -> IO ()
                    -- ^ update: Read a value from the data store and
                    -- apply a function to it. If the result is
                    -- Nothing, delete the key, otherwise update the
                    -- value at that key with the result of the
                    -- function application (removing the "Just").
-                   , storeToList :: IO [(k, v)]
+                   , storeToList    :: IO [(k, v)]
                    -- ^ toList: Convert a data store to a list of
                    -- key-value pairs.
-                   , storeEmpty  :: IO ()
+                   , storeEmpty     :: IO ()
                    -- ^ empty: Delete all entries in the key-value store
                    }

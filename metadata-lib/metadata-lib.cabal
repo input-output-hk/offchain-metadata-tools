@@ -15,11 +15,15 @@ library
                        Cardano.Metadata.Server.API
                        Cardano.Metadata.Store.Types
                        Cardano.Metadata.Store.Simple
+                       Cardano.Metadata.Types.Common
+                       Cardano.Metadata.Types.Wallet
+                       Cardano.Metadata.Types.Weakly
                        Cardano.Metadata.Webhook.Types
                        Cardano.Metadata.Webhook.API
                        Cardano.Metadata.Webhook.Server
                        Test.Cardano.Metadata.Store
                        Test.Cardano.Metadata.Generators
+                       Test.Cardano.Helpers
 
   build-depends:       HUnit
                      , QuickCheck
@@ -33,6 +37,7 @@ library
                      , deepseq
                      , directory
                      , github-webhooks
+                     , hashable
                      , hedgehog
                      , hspec
                      , http-api-data
@@ -60,6 +65,7 @@ library
                      , tasty-quickcheck
                      , text
                      , unordered-containers
+                     , vector
                      , wai
                      , warp
                      , wreq
@@ -69,36 +75,39 @@ test-suite unit-tests
   main-is:              Main.hs
   type:                 exitcode-stdio-1.0
 
-  build-depends:  base >=4.12 && <5
-                , HUnit
+  build-depends:  HUnit
                 , QuickCheck
                 , aeson
                 , aeson-pretty
+                , base >=4.12 && <5
                 , base64-bytestring
+                , bytestring
                 , containers
                 , hedgehog
                 , hspec
                 , hspec-wai
+                , http-client
                 , http-types
                 , memory
                 , metadata-lib
                 , mtl
                 , network-uri
-                , tasty
-                , tasty-hedgehog
-                , bytestring
                 , raw-strings-qq
-                , tasty-hspec
-                , http-client
-                , tasty-hunit
-                , tasty-quickcheck
-                , text
                 , servant
                 , servant-client
                 , smallcheck
-                , warp
+                , tasty
+                , tasty-hedgehog
+                , tasty-hspec
+                , tasty-hunit
+                , tasty-quickcheck
+                , text
                 , unordered-containers
+                , vector
+                , warp
 
   other-modules:        Test.Cardano.Metadata.Server.Types
                         Test.Cardano.Metadata.Server
                         Test.Cardano.Metadata.Store.Simple
+                        Test.Cardano.Metadata.Types
+                        Test.Cardano.Metadata.Types.Wallet

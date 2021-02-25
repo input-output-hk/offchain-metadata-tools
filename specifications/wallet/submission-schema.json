@@ -54,7 +54,7 @@
         }
       }
     },
-    "acronym": {
+    "ticker": {
       "type": "object",
       "additionalProperties": false,
       "required": [

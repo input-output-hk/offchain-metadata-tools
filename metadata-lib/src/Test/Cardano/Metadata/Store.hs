@@ -1,32 +1,35 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE GADTs               #-}
+{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE QuasiQuotes         #-}
+{-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE GADTs #-}
 
 module Test.Cardano.Metadata.Store
   ( testKeyValueImplementation
   , testKeyValueComplexTypeImplementation
   ) where
 
-import Data.Word
-import Data.List (sort)
-import Data.Maybe (catMaybes)
-import Test.Tasty
-import           Hedgehog (Gen, MonadTest, annotate, forAll, property, tripping, (===), footnote, failure, evalIO, diff)
-import qualified Hedgehog as H (Property)
-import qualified Hedgehog.Gen as Gen
-import           Data.Text (Text)
-import qualified Hedgehog.Range as Range
-import qualified Data.Map.Strict as M
+import           Control.Monad                    (join)
+import           Data.Functor                     (void)
+import           Data.List                        (sort)
+import qualified Data.Map.Strict                  as M
+import           Data.Maybe                       (catMaybes)
+import           Data.Text                        (Text)
+import           Data.Word
+import           Hedgehog                         (Gen, MonadTest, annotate,
+                                                   diff, evalIO, failure,
+                                                   footnote, forAll, property,
+                                                   tripping, (===))
+import qualified Hedgehog                         as H (Property)
+import qualified Hedgehog.Gen                     as Gen
+import qualified Hedgehog.Range                   as Range
+import           Test.Tasty
 import           Test.Tasty.Hedgehog
-import           Control.Monad (join)
-import           Data.Functor (void)
 
+import           Cardano.Metadata.Store.Types
 import qualified Test.Cardano.Metadata.Generators as Gen
-import Cardano.Metadata.Store.Types
 
 -- | Tests the ability of the given store interface to act as a
 -- key-value store.
@@ -159,7 +162,7 @@ prop_delete_cancels_write getIntf = property $ do
     result   <- write k v >> delete k >> toList
 
     reset f kvs
-    expected <- delete k >> toList 
+    expected <- delete k >> toList
 
     pure $
       sort result === sort expected
@@ -224,7 +227,7 @@ prop_read_observation getIntf = property $ do
 
     pure $ do
       result === expected
-    
+
 -- The last value written to the key is the value of that key, also
 -- covers idempotence.
 -- ∀k v1 v2 . write k v1 >> write k v2 = write k v2

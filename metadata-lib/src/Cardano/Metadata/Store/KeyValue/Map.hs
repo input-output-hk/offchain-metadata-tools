@@ -2,9 +2,9 @@
 
 module Cardano.Metadata.Store.KeyValue.Map where
 
-import Data.Map.Strict (Map)
-import Control.Concurrent.MVar
-import qualified Data.Map.Strict as Map
+import           Control.Concurrent.MVar
+import           Data.Map.Strict         (Map)
+import qualified Data.Map.Strict         as Map
 
 newtype KeyValue k v = KeyValue (MVar (Map k v))
 

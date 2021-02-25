@@ -1,11 +1,11 @@
 module Config where
 
-import Options.Applicative
-import qualified Data.ByteString     as BS
-import Data.Text (Text)
-import qualified GitHub as GitHub
-import qualified GitHub.Data.Name as GitHub
 import qualified Colog
+import qualified Data.ByteString     as BS
+import           Data.Text           (Text)
+import qualified GitHub
+import qualified GitHub.Data.Name    as GitHub
+import           Options.Applicative
 
 data AuthScheme = NoAuthScheme
                 | OAuthScheme BS.ByteString
