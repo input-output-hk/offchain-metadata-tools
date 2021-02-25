@@ -39,10 +39,10 @@ import           Cardano.Metadata.Types.Common    (Description,
                                                    Subject (Subject),
                                                    asPublicKey, asSignature,
                                                    unPropertyName, unSubject)
-import           Cardano.Metadata.Types.Wallet    (Acronym (Acronym),
-                                                   AssetLogo (AssetLogo),
+import           Cardano.Metadata.Types.Wallet    (AssetLogo (AssetLogo),
                                                    AssetURL (AssetURL),
                                                    AssetUnit (AssetUnit),
+                                                   Ticker (Ticker),
                                                    assetLogoMaxLength)
 import qualified Cardano.Metadata.Types.Wallet    as Wallet
 import qualified Cardano.Metadata.Types.Weakly    as Weakly
@@ -59,8 +59,8 @@ tests = testGroup "Wallet Metadata type tests"
       , testProperty "AssetUnit/json/roundtrips" (prop_json_roundtrips Gen.assetUnit)
       , testCase "AssetUnit/json/matches-spec" unit_assetUnit_json_spec
 
-      , testProperty "Acronym/json/roundtrips" (prop_json_roundtrips Gen.acronym)
-      , testCase "Acronym/json/matches-spec" unit_acronym_json_spec
+      , testProperty "Ticker/json/roundtrips" (prop_json_roundtrips Gen.ticker)
+      , testCase "Ticker/json/matches-spec" unit_ticker_json_spec
 
       , testCase "Wallet/extra-constraints/json/matches-spec" unit_extra_constraints_json_spec
       , testProperty "Wallet/Metadata/fromWeakly/roundtrips" prop_fromWeakly_roundtrips
@@ -103,17 +103,17 @@ unit_extra_constraints_json_spec = do
     (asWeakMetadata badSubject2 goodName goodDescription)
     (Left "Error in $: Length must be no more than 256 characters, got 257")
 
-unit_acronym_json_spec :: Assertion
-unit_acronym_json_spec = do
-  let goodAcronym  = "ABCD"
-      badAcronym1  = "A"
-      badAcronym2  = "ABCDE"
+unit_ticker_json_spec :: Assertion
+unit_ticker_json_spec = do
+  let goodTicker  = "ABCD"
+      badTicker1  = "A"
+      badTicker2  = "ABCDE"
       asJSON     = Aeson.String
       asAssetURL = AssetURL . fromJust . parseURI . T.unpack
 
-  Aeson.fromJSON (asJSON goodAcronym) @?= (Aeson.Success $ Acronym goodAcronym)
-  Aeson.fromJSON (asJSON badAcronym1) @?= (Aeson.Error "Length must be at least 2 characters, got 1" :: Aeson.Result Acronym)
-  Aeson.fromJSON (asJSON badAcronym2) @?= (Aeson.Error "Length must be no more than 4 characters, got 5" :: Aeson.Result Acronym)
+  Aeson.fromJSON (asJSON goodTicker) @?= (Aeson.Success $ Ticker goodTicker)
+  Aeson.fromJSON (asJSON badTicker1) @?= (Aeson.Error "Length must be at least 2 characters, got 1" :: Aeson.Result Ticker)
+  Aeson.fromJSON (asJSON badTicker2) @?= (Aeson.Error "Length must be no more than 4 characters, got 5" :: Aeson.Result Ticker)
 
 unit_assetLogo_json_spec :: Assertion
 unit_assetLogo_json_spec = do

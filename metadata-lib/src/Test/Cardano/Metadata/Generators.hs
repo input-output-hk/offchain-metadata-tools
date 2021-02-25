@@ -126,8 +126,8 @@ uriAuthority = do
 assetURL :: MonadGen m => m Wallet.AssetURL
 assetURL = Wallet.AssetURL <$> httpsURI
 
-acronym :: MonadGen m => m Wallet.Acronym
-acronym = Wallet.Acronym <$> Gen.text (Range.linear 2 4) Gen.unicodeAll
+ticker :: MonadGen m => m Wallet.Ticker
+ticker = Wallet.Ticker <$> Gen.text (Range.linear 2 4) Gen.unicodeAll
 
 assetLogo :: MonadGen m => m Wallet.AssetLogo
 assetLogo = Wallet.AssetLogo . Encoded . convertToBase Base64 . BS.pack <$> Gen.list (Range.linear 0 256) (Gen.word8 Range.constantBounded)
@@ -145,7 +145,7 @@ walletMetadata = Wallet.Metadata
   <*> Gen.maybe (stronglyTypedProperty assetUnit)
   <*> Gen.maybe (stronglyTypedProperty assetLogo)
   <*> Gen.maybe (stronglyTypedProperty assetURL)
-  <*> Gen.maybe (stronglyTypedProperty acronym)
+  <*> Gen.maybe (stronglyTypedProperty ticker)
   <*> (fmap HM.fromList $ Gen.list (Range.linear 1 5) ((,) <$> propertyName <*> weaklyTypedProperty))
 
 batchRequest :: MonadGen m => m BatchRequest
