@@ -1,2 +1,0 @@
-
-module Cardano.Metadata where

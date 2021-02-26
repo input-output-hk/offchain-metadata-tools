@@ -10,7 +10,8 @@ extra-source-files:  ../CHANGELOG.md
 library
   hs-source-dirs:      src
 
-  exposed-modules:     Cardano.Metadata.Server
+  exposed-modules:     Cardano.Metadata.Attestation
+                       Cardano.Metadata.Server
                        Cardano.Metadata.Server.Types
                        Cardano.Metadata.Server.API
                        Cardano.Metadata.Store.Types
@@ -32,6 +33,11 @@ library
                      , base
                      , base64-bytestring
                      , bytestring
+                     , cardano-api
+                     , cardano-api-test
+                     , cardano-crypto
+                     , cardano-metadata-submitter
+                     , cardano-crypto-class
                      , casing
                      , containers
                      , deepseq
@@ -46,6 +52,7 @@ library
                      , lens
                      , lens-aeson
                      , memory
+                     , mmorph
                      , monad-logger
                      , mtl
                      , network-uri
@@ -65,10 +72,19 @@ library
                      , tasty-quickcheck
                      , text
                      , unordered-containers
+                     , validation
                      , vector
                      , wai
                      , warp
                      , wreq
+
+  ghc-options:          -Wall
+                        -Wincomplete-record-updates
+                        -Wincomplete-uni-patterns
+                        -Wincomplete-patterns
+                        -Wredundant-constraints
+                        -Wpartial-fields
+                        -Wcompat
 
 test-suite unit-tests
   hs-source-dirs:       test
@@ -82,6 +98,8 @@ test-suite unit-tests
                 , base >=4.12 && <5
                 , base64-bytestring
                 , bytestring
+                , cardano-api
+                , cardano-crypto-class
                 , containers
                 , hedgehog
                 , hspec
@@ -103,7 +121,9 @@ test-suite unit-tests
                 , tasty-quickcheck
                 , text
                 , unordered-containers
+                , validation
                 , vector
+                , wai-extra
                 , warp
 
   other-modules:        Test.Cardano.Metadata.Server.Types
@@ -111,3 +131,12 @@ test-suite unit-tests
                         Test.Cardano.Metadata.Store.Simple
                         Test.Cardano.Metadata.Types
                         Test.Cardano.Metadata.Types.Wallet
+                        Test.Cardano.Metadata.Attestation
+
+  ghc-options:          -Wall
+                        -Wincomplete-record-updates
+                        -Wincomplete-uni-patterns
+                        -Wincomplete-patterns
+                        -Wredundant-constraints
+                        -Wpartial-fields
+                        -Wcompat

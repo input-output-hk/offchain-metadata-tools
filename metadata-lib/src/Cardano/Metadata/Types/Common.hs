@@ -7,18 +7,23 @@
 {-# LANGUAGE KindSignatures             #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Cardano.Metadata.Types.Common where
 
 import           Control.DeepSeq              (NFData)
+import           Data.Foldable (asum)
 import           Data.Maybe (fromMaybe)
 import           Data.Aeson                   (FromJSON, FromJSONKey, ToJSON,
-                                               ToJSONKey, (.:), (.:?))
+                                               ToJSONKey, (.:))
+import qualified Data.Aeson                   as Aeson
 import           Data.Aeson.TH                (deriveJSON)
 import qualified Data.Aeson.Types             as Aeson
 import           Data.ByteArray.Encoding      (Base (Base16, Base64),
                                                convertFromBase, convertToBase)
-import           Data.ByteString              (ByteString)
+import qualified Data.ByteString.Char8 as     BC
+import qualified Data.ByteString.Lazy as BSL
 import           Data.Hashable                (Hashable)
 import qualified Data.HashMap.Strict          as HM
 import           Data.String                  (IsString)
@@ -31,7 +36,9 @@ import           Text.Casing                  (fromHumps, toCamel)
 import           Text.ParserCombinators.ReadP (choice, string)
 import           Text.Read                    (readEither, readPrec)
 import qualified Text.Read                    as Read (lift)
-import           Web.HttpApiData              (FromHttpApiData, ToHttpApiData)
+import           Web.HttpApiData              (FromHttpApiData)
+import Cardano.Crypto.DSIGN
+import Cardano.Crypto.Hash
 
 -- | The metadata subject, the on-chain identifier
 newtype Subject = Subject { unSubject :: Text }
@@ -45,10 +52,16 @@ newtype PropertyName = PropertyName { unPropertyName :: Text }
   deriving (Show) via (Quiet PropertyName)
 
 data Property value
-  = Property { propertyValue        :: value
-             , propertyAnSignatures :: [AnnotatedSignature]
+  = Property { _propertyValue        :: value
+             , _propertyAnSignatures :: Maybe [AnnotatedSignature]
              }
   deriving (Eq, Show)
+
+propertyValue :: Property value -> value
+propertyValue = _propertyValue
+
+propertyAnSignatures :: Property value -> [AnnotatedSignature]
+propertyAnSignatures = fromMaybe [] . _propertyAnSignatures
 
 -- | A human-readable name for the metadata subject, suitable for use in an interface
 type Name        = Property Text
@@ -59,8 +72,8 @@ type Description = Property Text
 -- | A pair of a public key, and a signature of the metadata entry by
 -- that public key.
 data AnnotatedSignature =
-  AnnotatedSignature { asSignature :: Text
-                     , asPublicKey :: Text
+  AnnotatedSignature { asAttestationSignature :: SigDSIGN Ed25519DSIGN
+                     , asPublicKey            :: VerKeyDSIGN Ed25519DSIGN
                      }
   deriving (Eq, Show)
 
@@ -91,6 +104,44 @@ newtype Encoded (base :: Base) = Encoded
     { rawEncoded :: ByteString }
     deriving (Generic, Show, Eq, Ord, Semigroup, Monoid)
 
+mkAnnotatedSignature :: forall val . ToJSON val => SignKeyDSIGN Ed25519DSIGN -> Subject -> PropertyName -> val -> AnnotatedSignature
+mkAnnotatedSignature skey subj propName propVal =
+  let
+    hashSubj     = hashWith (T.encodeUtf8 . unSubject) subj :: Hash Blake2b_256 Subject
+    hashPropName = hashWith (T.encodeUtf8 . unPropertyName) propName :: Hash Blake2b_256 PropertyName
+    hashPropVal  = hashWith (BSL.toStrict . Aeson.encode) propVal :: Hash Blake2b_256 val
+
+    h = hashWith id
+      (  hashToBytes hashSubj
+      <> hashToBytes hashPropName
+      <> hashToBytes hashPropVal
+      ) :: Hash Blake2b_256 ByteString
+    publicKey = deriveVerKeyDSIGN skey
+    sig       = signDSIGN () (hashToBytes h) skey
+  in
+    AnnotatedSignature sig publicKey
+
+deserialiseBase16 :: Text -> Either Text ByteString
+deserialiseBase16 t =
+  case (convertFromBase Base16 . T.encodeUtf8 $ t) of
+    Left err -> Left . T.pack $ "Failed to deserialise Base16 bytestring from text: '" <> T.unpack t <> "', error was: " <> err
+    Right x  -> pure x
+
+deserialiseAttestationSignature :: ByteString -> Either Text (SigDSIGN Ed25519DSIGN)
+deserialiseAttestationSignature t =
+  case rawDeserialiseSigDSIGN t of
+    Nothing -> Left . T.pack $ "Failed to parse Ed25519DSIGN signature from '" <> BC.unpack t <> "'."
+    Just x  -> pure x
+
+deserialisePublicKey :: ByteString -> Either Text (VerKeyDSIGN Ed25519DSIGN)
+deserialisePublicKey t =
+  case rawDeserialiseVerKeyDSIGN t of
+    Nothing -> Left . T.pack $ "Failed to parse Ed25519DSIGN verification key from '" <> BC.unpack t <> "'."
+    Just x  -> pure x
+
+
+-- Instances
+
 instance FromJSON (Encoded 'Base16) where
   parseJSON = Aeson.withText "base16 bytestring" $
       either fail (pure . Encoded) . convertFromBase Base16 . T.encodeUtf8
@@ -107,8 +158,6 @@ instance ToJSON (Encoded 'Base64) where
 
 instance NFData (Encoded 'Base16)
 instance NFData (Encoded 'Base64)
-
--- Instances
 
 instance ToJSON HashFn where
   toJSON = Aeson.String . T.pack . show
@@ -128,17 +177,48 @@ instance Read HashFn where
                                 ]
 
 instance ToJSON value => ToJSON (Property value) where
-  toJSON (Property value sigs) = Aeson.Object $ HM.fromList $
+  toJSON (Property value Nothing)     = Aeson.toJSON value
+  toJSON (Property value (Just sigs)) = Aeson.Object $ HM.fromList $
     [ ("value", Aeson.toJSON value)
     , ("anSignatures", Aeson.toJSON sigs)
     ]
 
 instance FromJSON value => FromJSON (Property value) where
-  parseJSON = Aeson.withObject "Weakly-typed Property" $ \obj ->
-    Property
-      <$> obj .: "value"
-      <*> (fromMaybe [] <$> obj .:? "anSignatures")
+  parseJSON v =
+    asum [ Aeson.withObject "Weakly-typed Property" (\obj -> Property <$> obj .: "value" <*> (Just <$> obj .: "anSignatures")) v
+         , Property <$> Aeson.parseJSON v <*> pure Nothing
+         ]
 
-$(deriveJSON Aeson.defaultOptions{ Aeson.fieldLabelModifier = toCamel . fromHumps . drop 2 } ''AnnotatedSignature)
+instance ToJSON AnnotatedSignature where
+  toJSON (AnnotatedSignature sig pubKey) = Aeson.Object . HM.fromList $
+    [ ("signature", Aeson.String $ T.decodeUtf8 $ convertToBase Base16 $ rawSerialiseSigDSIGN sig)
+    , ("publicKey", Aeson.String $ T.decodeUtf8 $ convertToBase Base16 $ rawSerialiseVerKeyDSIGN pubKey)
+    ]
+
+instance FromJSON AnnotatedSignature where
+  parseJSON = Aeson.withObject "AnnotatedSignature" $ \obj -> do
+    AnnotatedSignature
+    <$> (deserialiseSigDSIGN' =<< deserialiseBase16' =<< obj .: "signature")
+    <*> (deserialiseVerKeyDSIGN' =<< deserialiseBase16' =<< obj .: "publicKey")
+
+    where
+      deserialiseBase16' :: Text -> Aeson.Parser ByteString
+      deserialiseBase16' t =
+        case (convertFromBase Base16 . T.encodeUtf8 $ t) of
+          Left err -> fail $ "Failed to deserialise Base16 bytestring from text: '" <> T.unpack t <> "', error was: " <> err
+          Right x  -> pure x
+
+      deserialiseSigDSIGN' :: ByteString -> Aeson.Parser (SigDSIGN Ed25519DSIGN)
+      deserialiseSigDSIGN' t =
+        case rawDeserialiseSigDSIGN t of
+          Nothing -> fail $ "Failed to parse Ed25519DSIGN signature from '" <> BC.unpack t <> "'."
+          Just x  -> pure x
+
+      deserialiseVerKeyDSIGN' :: ByteString -> Aeson.Parser (VerKeyDSIGN Ed25519DSIGN)
+      deserialiseVerKeyDSIGN' t =
+        case rawDeserialiseVerKeyDSIGN t of
+          Nothing -> fail $ "Failed to parse Ed25519DSIGN verification key from '" <> BC.unpack t <> "'."
+          Just x  -> pure x
+
 $(deriveJSON Aeson.defaultOptions{ Aeson.fieldLabelModifier = toCamel . fromHumps . drop 3 } ''Owner)
 $(deriveJSON Aeson.defaultOptions{ Aeson.fieldLabelModifier = toCamel . fromHumps . drop 2 } ''PreImage)

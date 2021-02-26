@@ -36,6 +36,7 @@ executable metadata-validator
                      , servant-server
                      , text
                      , unordered-containers
+                     , validation
                      , wai
                      , warp
                      , wreq

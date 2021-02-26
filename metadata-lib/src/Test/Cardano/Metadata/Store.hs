@@ -11,17 +11,14 @@ module Test.Cardano.Metadata.Store
   , testKeyValueComplexTypeImplementation
   ) where
 
+import           Prelude hiding (read)
 import           Control.Monad                    (join)
 import           Data.Functor                     (void)
 import           Data.List                        (sort)
 import qualified Data.Map.Strict                  as M
 import           Data.Maybe                       (catMaybes)
-import           Data.Text                        (Text)
 import           Data.Word
-import           Hedgehog                         (Gen, MonadTest, annotate,
-                                                   diff, evalIO, failure,
-                                                   footnote, forAll, property,
-                                                   tripping, (===))
+import           Hedgehog                         (evalIO, forAll, property, (===))
 import qualified Hedgehog                         as H (Property)
 import qualified Hedgehog.Gen                     as Gen
 import qualified Hedgehog.Range                   as Range
@@ -92,7 +89,7 @@ prop_complex_delete getIntf = property $ do
 
 prop_complex_update :: IO (StoreInterface Gen.ComplexKey Gen.ComplexType) -> H.Property
 prop_complex_update getIntf = property $ do
-  (f@(StoreInterface { storeRead = read, storeWrite = write, storeDelete = delete, storeUpdate = update })) <- evalIO getIntf
+  (f@(StoreInterface { storeRead = read, storeWrite = write, storeUpdate = update })) <- evalIO getIntf
   k   <- forAll Gen.complexKey
   v   <- forAll Gen.complexType
   kvs <- forAll Gen.complexKeyVals
@@ -135,7 +132,6 @@ prop_delete_denotation :: IO (StoreInterface Word8 Word8) -> H.Property
 prop_delete_denotation getIntf = property $ do
   (f@(StoreInterface { storeDelete = delete, storeToList = toList })) <- evalIO getIntf
   k   <- forAll Gen.key
-  v   <- forAll Gen.val
   kvs <- forAll Gen.keyVals
 
   join $ evalIO $ do
@@ -255,10 +251,9 @@ prop_write_last_wins getIntf = property $ do
 -- ∀k. delete k >> delete k = delete k
 prop_delete_idempotent :: IO (StoreInterface Word8 Word8) -> H.Property
 prop_delete_idempotent getIntf = property $ do
-  (f@(StoreInterface { storeWrite = write, storeDelete = delete, storeToList = toList })) <- evalIO getIntf
+  (f@(StoreInterface { storeDelete = delete, storeToList = toList })) <- evalIO getIntf
 
   k   <- forAll Gen.key
-  v   <- forAll Gen.val
   kvs <- forAll Gen.keyVals
 
   join $ evalIO $ do

@@ -40,8 +40,10 @@ import           Prelude                       hiding (log)
 import           System.Exit                   (exitFailure, exitSuccess)
 import qualified Text.Megaparsec               as P
 import qualified Text.Megaparsec.Char          as P
+import Data.Validation (Validation(Success,Failure))
 
-import qualified Cardano.Metadata.Types.Wallet as Wallet (Metadata)
+import qualified Cardano.Metadata.Types.Wallet as Wallet (Metadata, toWeaklyTypedMetadata, metaSubject, metaPolicy, verifyPolicy)
+import Cardano.Metadata.Attestation (validateMetadataAttestationSignatures, prettyPrintAttestationError)
 import           Config                        (AuthScheme (NoAuthScheme, OAuthScheme),
                                                 Config (Config), mkConfig, opts)
 
@@ -140,8 +142,21 @@ validatePRFile authScheme repoOwner repoName file = do
           log E $ T.pack $ "Failed to decode Metadata entry from JSON value '" <> show obj <> "', error was: '" <> show err <> "'."
           exitFailure'
         Right (entry :: Wallet.Metadata) -> do
-          log I "PR valid!"
-          log I $ T.pack $ "Decoded entry: " <> show entry
+          log I $ T.pack $ "Successfully decoded entry: " <> show entry
+          log I $ T.pack $ "Validating attestation signatures..."
+
+          case validateMetadataAttestationSignatures (Wallet.toWeaklyTypedMetadata entry) of
+            Failure errs ->
+              traverse_ (log E . prettyPrintAttestationError) errs
+            Success ()   ->
+              let
+                policy = Wallet.metaPolicy entry
+              in
+                case Wallet.verifyPolicy policy (Wallet.metaSubject entry) of
+                  Left err ->
+                    log E $ T.pack $ "Failed to verify policy '" <> show policy <> "', error was: " <> T.unpack err
+                  Right () ->
+                    log I "PR valid!"
 
 -- | Maximum size in bytes of a metadata entry.
 metadataJSONMaxSize :: Int64

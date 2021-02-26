@@ -3,7 +3,6 @@
 
 module Cardano.Metadata.Server.API where
 
-import           Data.Text                     (Text)
 import           Servant.API
 
 import           Cardano.Metadata.Server.Types (BatchRequest, BatchResponse)

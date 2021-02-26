@@ -8,8 +8,7 @@ import qualified Data.Aeson.Types              as Aeson
 import qualified Data.HashMap.Strict           as HM
 import           Data.Text                     (Text)
 
-import           Cardano.Metadata.Types.Common (AnnotatedSignature,
-                                                PropertyName (PropertyName),
+import           Cardano.Metadata.Types.Common (PropertyName (PropertyName),
                                                 Subject, unPropertyName)
 import qualified Cardano.Metadata.Types.Common as Strongly (Property (Property))
 
@@ -40,11 +39,12 @@ getMetadataProperty propertyName (Metadata _ props) = HM.lookup propertyName pro
 
 instance ToJSON Metadata where
   toJSON (Metadata subject properties) = Aeson.Object $ HM.fromList $
-    [ ("subject", Aeson.toJSON subject) ]
+    [ ("subject", Aeson.toJSON subject)
+    ]
     <> (fmap (Aeson.toJSON) <$> (fromPropertyNameList $ HM.toList properties))
 
 instance FromJSON Metadata where
   parseJSON = Aeson.withObject "Weakly-typed Metadata" $ \obj ->
     Metadata
     <$> obj .: "subject"
-    <*> (traverse Aeson.parseJSON $ HM.fromList $ toPropertyNameList $ HM.toList $ HM.filterWithKey (\k _ -> k /= "subject") obj)
+    <*> (traverse Aeson.parseJSON $ HM.fromList $ toPropertyNameList $ HM.toList $ foldr HM.delete obj ["subject"])

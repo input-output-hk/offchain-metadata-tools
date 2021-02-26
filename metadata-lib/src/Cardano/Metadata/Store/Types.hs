@@ -3,9 +3,6 @@
 
 module Cardano.Metadata.Store.Types where
 
-import           Data.Text                     (Text)
-
-import           Cardano.Metadata.Server.Types
 import           Cardano.Metadata.Types.Common (PropertyName, Subject)
 
 data ReadError = NoSubject Subject

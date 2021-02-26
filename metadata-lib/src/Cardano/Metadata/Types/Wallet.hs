@@ -13,23 +13,29 @@ module Cardano.Metadata.Types.Wallet where
 import           Control.DeepSeq               (NFData)
 import           Control.Monad                 ((>=>))
 import           Data.Aeson                    (FromJSON, ToJSON, (.:), (.:?))
+import           Data.Function ((&))
 import qualified Data.Aeson.Types              as Aeson
 import qualified Data.Bifunctor                as Bifunctor
-import           Data.ByteArray.Encoding       (Base (Base16, Base64))
+import           Data.ByteArray.Encoding       (Base (Base16, Base64), convertToBase)
 import qualified Data.ByteString               as BS
+import qualified Data.ByteString.Char8 as B8
 import           Data.Functor                  (($>))
 import qualified Data.HashMap.Strict           as HM
 import           Data.String                   (IsString)
 import           Data.Text                     (Text)
 import qualified Data.Text                     as T
+import qualified Data.Text.Encoding                     as T
 import           GHC.Generics                  (Generic)
 import           Network.URI                   (URI, parseAbsoluteURI,
                                                 uriScheme)
 import           Numeric.Natural               (Natural)
 import           Quiet                         (Quiet (Quiet))
+import qualified Cardano.Metadata.Types as Submitter
+import qualified Cardano.Metadata.GoguenRegistry as Submitter
+import qualified Cardano.Api as Cardano
 
 import           Cardano.Metadata.Types.Common (Description, Encoded, Name,
-                                                Property, PropertyName,
+                                                Property(Property), PropertyName,
                                                 Subject (Subject),
                                                 propertyValue, rawEncoded,
                                                 unPropertyName, unSubject)
@@ -37,6 +43,7 @@ import qualified Cardano.Metadata.Types.Weakly as Weakly
 
 data Metadata
   = Metadata { metaSubject     :: Subject
+             , metaPolicy      :: Policy
              , metaName        :: Name
              , metaDescription :: Description
              , metaUnit        :: Maybe (Property AssetUnit)
@@ -79,6 +86,23 @@ instance FromJSON Ticker where
   parseJSON = Aeson.withText "Ticker" $ \t ->
     Ticker <$> applyValidator validateMetadataTicker t
 
+data Policy = Policy Submitter.Policy
+
+verifyPolicy :: Policy -> Subject -> Either Text ()
+verifyPolicy (Policy submitterPolicy) (Subject subj) =
+  Submitter.verifyPolicy submitterPolicy (Submitter.Subject subj)
+  & Bifunctor.first T.pack
+
+policyId :: Policy -> Text
+policyId (Policy policy) = T.pack . B8.unpack . Cardano.serialiseToRawBytesHex . Submitter.hashPolicy $ policy
+
+mkPolicy :: Cardano.ScriptInEra Cardano.MaryEra -> Policy
+mkPolicy script =
+  let
+    scriptText = T.decodeUtf8 $ convertToBase Base16 $ Cardano.serialiseToCBOR script
+  in
+    Policy (Submitter.Policy scriptText script)
+
 fromWeaklyTypedMetadata :: Weakly.Metadata -> Aeson.Parser Metadata
 fromWeaklyTypedMetadata (Weakly.Metadata subj props) =
   let
@@ -86,17 +110,20 @@ fromWeaklyTypedMetadata (Weakly.Metadata subj props) =
     obj = HM.fromList $ fmap (Bifunctor.bimap unPropertyName Aeson.toJSON) $ HM.toList $ props
 
     rest :: HM.HashMap PropertyName Weakly.Property
-    rest = foldr HM.delete props ["name", "description", "unit", "logo", "url", "ticker"]
-  in
-    Metadata
-    <$> (applyValidator validateMetadataSubject subj)
-    <*> (validateProp validateMetadataName =<< obj .: "name")
-    <*> (validateProp validateMetadataDescription =<< obj .: "description")
-    <*> obj .:? "unit"
-    <*> obj .:? "logo"
-    <*> obj .:? "url"
-    <*> obj .:? "ticker"
-    <*> pure rest
+    rest = foldr HM.delete props ["name", "description", "unit", "logo", "url", "ticker", "policy"]
+  in do
+    subject <- (applyValidator validateMetadataSubject subj)
+    policy  <- obj .: "policy"
+    applyValidator (Bifunctor.first T.unpack . verifyPolicy policy) subject
+  
+    Metadata subject policy
+      <$> (validateProp validateMetadataName =<< obj .: "name")
+      <*> (validateProp validateMetadataDescription =<< obj .: "description")
+      <*> obj .:? "unit"
+      <*> obj .:? "logo"
+      <*> obj .:? "url"
+      <*> obj .:? "ticker"
+      <*> pure rest
 
   where
     validateProp :: (a -> Either String a) -> Property a -> Aeson.Parser (Property a)
@@ -105,11 +132,12 @@ fromWeaklyTypedMetadata (Weakly.Metadata subj props) =
       pure prop
 
 toWeaklyTypedMetadata :: Metadata -> Weakly.Metadata
-toWeaklyTypedMetadata (Metadata subj name desc unit logo url ticker rest) =
+toWeaklyTypedMetadata (Metadata subj policy name desc unit logo url ticker rest) =
   Weakly.Metadata subj $
     HM.fromList $
       [ ("name"       , Weakly.toWeaklyTypedProperty name)
       , ("description", Weakly.toWeaklyTypedProperty desc)
+      , ("policy", Property (Aeson.toJSON policy) Nothing)
       ] <> optionalProperty "unit" unit
         <> optionalProperty "logo" logo
         <> optionalProperty "url" url
@@ -175,6 +203,7 @@ validateMetadataLogo logo
   where
     len = BS.length . rawEncoded . unAssetLogo $ logo
 
+assetLogoMaxLength :: Int
 assetLogoMaxLength = 65536
 
 resultToEither :: Aeson.Result a -> Either String a
@@ -215,3 +244,16 @@ instance ToJSON AssetUnit where
   toJSON (AssetUnit name decimals) = Aeson.Object $ HM.fromList $ [ ("name", Aeson.toJSON name)
                                                                   , ("decimals", Aeson.toJSON decimals)
                                                                   ]
+
+instance ToJSON Policy where
+  toJSON (Policy (Submitter.Policy rawPolicy _script)) = Aeson.String rawPolicy
+
+instance FromJSON Policy where
+  parseJSON = Aeson.withText "Policy" $ \t ->
+    fmap Policy $ Submitter.parseWellKnown $ Submitter.PropertyValue t (Aeson.String t)
+
+instance Show Policy where
+  show (Policy (Submitter.Policy raw _script)) = T.unpack raw
+
+instance Eq Policy where
+  (Policy (Submitter.Policy raw1 _script1)) == (Policy (Submitter.Policy raw2 _script2)) = raw1 == raw2

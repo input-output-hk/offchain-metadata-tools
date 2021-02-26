@@ -10,20 +10,15 @@ module Cardano.Metadata.Server
   , MetadataServerAPI
   ) where
 
+import           Prelude hiding (read)
 import           Control.Exception.Safe        (catchAny)
 import           Control.Monad.IO.Class        (liftIO)
-import qualified Data.Aeson                    as Aeson
 import qualified Data.ByteString.Lazy          as BL
 import qualified Data.ByteString.Lazy.Char8    as BLC
-import           Data.Functor.Identity         (Identity (Identity))
 import qualified Data.HashMap.Strict           as HM
-import           Data.Monoid                   (First (First))
-import           Data.Proxy                    (Proxy)
 import           Data.Text                     (Text)
 import qualified Data.Text.Lazy                as TL
 import qualified Data.Text.Lazy.Encoding       as TLE
-import           Data.Traversable              (forM)
-import           Network.Wai                   (Application)
 import           Servant
 
 import           Cardano.Metadata.Server.API
@@ -34,7 +29,7 @@ import           Cardano.Metadata.Types.Common (PropertyName, Subject (Subject),
                                                 unPropertyName)
 import           Cardano.Metadata.Types.Weakly (Metadata (Metadata), Property,
                                                 getMetadataProperty,
-                                                metaProperties, metaSubject)
+                                                metaSubject)
 
 -- | 'Network.Wai.Application' of the metadata server.
 --
@@ -69,8 +64,8 @@ propertyHandler
 propertyHandler f subject propName = do
   entry <- subjectHandler f subject
   catchExceptions . handleErrors $ do
-    props <- getPropertiesThrowingErrors [propName] entry
-    pure $ Metadata subject (HM.fromList props)
+    metadataView <- narrowPropertiesThrowingErrors [propName] entry
+    pure $ projectMetadataFromView (metaSubject entry) metadataView
 
 batchHandler
   :: StoreInterface Subject Metadata
@@ -86,9 +81,9 @@ batchHandler (StoreInterface { storeReadBatch = readBatch }) (BatchRequest subje
           Nothing        -> [entry]
           Just propNames ->
             let
-              props = getPropertiesIgnoringErrors propNames entry
+              metadataView = narrowPropertiesIgnoringErrors propNames entry
             in
-              [Metadata (metaSubject entry) (HM.fromList props)]
+              [projectMetadataFromView (metaSubject entry) metadataView]
 
 handleErrors :: Either ReadError a -> Handler a
 handleErrors r =
@@ -107,18 +102,15 @@ catchExceptions action =
     `catchAny`
       (\e -> throwError $ err500 { errBody = "Exception occurred while handling request: " <> BLC.pack (show e) <> "." } )
 
-data PropertyResponse = RequestedSubject Subject
-                      | RequestedProperty Property
-
--- | Get a list of properties from the metadata, treating any error as
+-- | Narrow a list of properties from the metadata, treating any error as
 -- a failure.
-getPropertiesThrowingErrors :: [PropertyName] -> Metadata -> Either ReadError [(PropertyName, Property)]
-getPropertiesThrowingErrors ps = sequence . getProperties ps
+narrowPropertiesThrowingErrors :: [PropertyName] -> Metadata -> Either ReadError MetadataView
+narrowPropertiesThrowingErrors ps = fmap mconcat . sequence . narrowProperties ps
 
--- | Get a list of properties from the metadata, ignoring any errors
+-- | Narrow a list of properties from the metadata, ignoring any errors
 -- thrown.
-getPropertiesIgnoringErrors :: [PropertyName] -> Metadata -> [(PropertyName, Property)]
-getPropertiesIgnoringErrors ps = mconcat . fmap ignoreErrors . getProperties ps
+narrowPropertiesIgnoringErrors :: [PropertyName] -> Metadata -> MetadataView
+narrowPropertiesIgnoringErrors ps = foldMap mconcat . fmap ignoreErrors . narrowProperties ps
   where
     ignoreErrors :: Either a b -> [b]
     ignoreErrors (Left _err) = []
@@ -126,17 +118,30 @@ getPropertiesIgnoringErrors ps = mconcat . fmap ignoreErrors . getProperties ps
 
 -- | Get a list of properties from the metadata, ignoring requests for
 -- the metadata subject.
-getProperties :: [PropertyName] -> Metadata -> [Either ReadError (PropertyName, Property)]
-getProperties ps metadata =
+narrowProperties :: [PropertyName] -> Metadata -> [Either ReadError MetadataView]
+narrowProperties ps metadata =
   flip foldMap ps $ \p ->
-    case getProperty p metadata of
-      Left err    -> [Left err]
-      Right mProp -> case mProp of
-        RequestedSubject _subj -> mempty
-        RequestedProperty prop -> [Right (p, prop)]
+    [narrowProperty p metadata]
 
--- | Get a property from the metadata.
-getProperty :: PropertyName -> Metadata -> Either ReadError PropertyResponse
-getProperty "subject" metadata = Right $ RequestedSubject (metaSubject metadata)
-getProperty propName metadata  =
-  maybe (Left $ NoProperty (metaSubject metadata) propName) (pure . RequestedProperty) $ getMetadataProperty propName metadata
+-- | Narrow a Metadata entry to the requested property.
+narrowProperty :: PropertyName -> Metadata -> Either ReadError MetadataView
+narrowProperty "subject" _meta =
+  Right $ MetadataView mempty
+narrowProperty propName meta =
+  case getMetadataProperty propName meta of
+    Nothing   -> Left $ NoProperty (metaSubject meta) propName
+    Just prop -> Right $ MetadataView (HM.singleton propName prop)
+
+data MetadataView = MetadataView { mvProps    :: HM.HashMap PropertyName Property
+                                 }
+  deriving (Eq, Show)
+
+projectMetadataFromView :: Subject -> MetadataView -> Metadata
+projectMetadataFromView subj (MetadataView props) = Metadata subj props
+
+instance Semigroup MetadataView where
+  (MetadataView ps1) <> (MetadataView ps2) =
+    (MetadataView (HM.unionWith (\_ b -> b) ps1 ps2))
+
+instance Monoid MetadataView where
+  mempty = MetadataView mempty

@@ -10,53 +10,20 @@ module Test.Cardano.Metadata.Server
   ( tests
   ) where
 
-import           Control.Monad                    (join)
-import           Control.Monad.IO.Class           (liftIO)
-import           Data.Aeson                       (FromJSON, ToJSON)
+import           Data.Aeson                       (ToJSON)
 import qualified Data.Aeson                       as Aeson
-import qualified Data.Aeson                       as Aeson
-import qualified Data.Aeson.Encode.Pretty         as Aeson
 import qualified Data.ByteString.Char8            as BC
 import qualified Data.ByteString.Lazy.Char8       as BLC
 import           Data.Foldable
-import           Data.Functor                     (void)
-import           Data.Functor.Identity            (Identity (Identity))
 import qualified Data.HashMap.Strict              as HM
-import qualified Data.HashMap.Strict              as HM
-import           Data.Map.Strict                  (Map)
-import qualified Data.Map.Strict                  as M
-import           Data.Maybe                       (fromJust)
-import           Data.Monoid                      (First (First))
-import           Data.Proxy                       (Proxy (Proxy))
 import           Data.String                      (fromString)
-import           Data.Text                        (Text)
 import qualified Data.Text                        as T
-import           Data.Traversable
-import           Data.Word
-import           Hedgehog                         (Gen, MonadTest, annotate,
-                                                   diff, evalIO, failure,
-                                                   footnote, forAll, property,
-                                                   tripping, (===))
-import qualified Hedgehog                         as H (Property)
-import qualified Hedgehog.Gen                     as Gen
-import qualified Hedgehog.Range                   as Range
-import           Network.HTTP.Client              (defaultManagerSettings,
-                                                   newManager)
-import           Network.HTTP.Types
-import           Network.URI                      (parseURI)
-import qualified Network.Wai.Handler.Warp         as Warp
+import           Network.HTTP.Types (methodPost, hContentType)
 import           Prelude                          hiding (read)
-import           Servant.API
-import           Servant.Client
 import           Test.Hspec.Wai
-import           Test.Tasty                       (TestTree, testGroup,
-                                                   withResource)
-import           Test.Tasty.Hedgehog
+import           Test.Tasty                       (TestTree)
 import           Test.Tasty.Hspec
-import           Test.Tasty.HUnit                 (Assertion, assertEqual,
-                                                   testCase, (@?=))
-import           Text.RawString.QQ
-import           Text.Read                        (readEither)
+import           Network.Wai.Test (SResponse)
 
 import           Cardano.Metadata.Server
 import           Cardano.Metadata.Server.Types    (BatchRequest (BatchRequest),
@@ -64,10 +31,8 @@ import           Cardano.Metadata.Server.Types    (BatchRequest (BatchRequest),
 import           Cardano.Metadata.Store.Simple    (simpleStore)
 import           Cardano.Metadata.Store.Types
 import           Cardano.Metadata.Types.Common    (Property (Property),
-                                                   Subject (Subject), unSubject)
+                                                   Subject (Subject), unSubject, PreImage(PreImage), HashFn(SHA256))
 import qualified Cardano.Metadata.Types.Weakly    as Weakly
-import           Test.Cardano.Metadata.Generators (ComplexType)
-import           Test.Cardano.Metadata.Store
 
 tests :: IO TestTree
 tests = do
@@ -82,11 +47,11 @@ spec_server intf@(StoreInterface { storeWrite = write }) = do
     subject1    = Subject "3"
     subject1Str = BC.pack . T.unpack . unSubject $ subject1
     subject2    = Subject "4"
-    subject2Str = BC.pack . T.unpack . unSubject $ subject2
-    owner       = Property (Aeson.String "me") []
-    odd         = Property (Aeson.String "odd") []
-    random      = Property (Aeson.String "random") []
-    entry1 = Weakly.Metadata subject1 (HM.fromList [("owner", owner), ("odd", odd)])
+    preImg      = Property (Aeson.toJSON $ PreImage "6d792d676f6775656e2d736372697074" SHA256) Nothing
+    owner       = Property (Aeson.String "me") Nothing
+    odd1        = Property (Aeson.String "odd") (Just [])
+    random      = Property (Aeson.String "random") (Just [])
+    entry1 = Weakly.Metadata subject1 (HM.fromList [("owner", owner), ("odd", odd1), ("preImage", preImg)])
     entry2 = Weakly.Metadata subject2 (HM.fromList [("random", random)])
 
     testData =
@@ -139,9 +104,13 @@ spec_server intf@(StoreInterface { storeWrite = write }) = do
           `shouldRespondWith`
             (matchingJSON $ Weakly.Metadata subject1 mempty) { matchStatus = 200 }
 
+        get ("/metadata/" <> subject1Str <> "/properties/preImage")
+          `shouldRespondWith`
+            (matchingJSON $ Weakly.Metadata subject1 (HM.singleton "preImage" preImg)) { matchStatus = 200 }
+
         get "/metadata/3/properties/odd"
           `shouldRespondWith`
-            (matchingJSON (Weakly.Metadata subject1 (HM.singleton "odd" odd))) { matchStatus = 200 }
+            (matchingJSON (Weakly.Metadata subject1 (HM.singleton "odd" odd1))) { matchStatus = 200 }
 
     describe "GET /metadata/query" $ do
       it "should return empty response if subject not found" $ do
@@ -169,9 +138,9 @@ spec_server intf@(StoreInterface { storeWrite = write }) = do
             (matchingJSON $ BatchResponse [Weakly.Metadata "3" (HM.singleton "owner" owner)])
 
       it "should return a batch response" $ do
-        batchRequest (BatchRequest [subject1] (Just ["owner", "subject"]))
+        batchRequest (BatchRequest [subject1] (Just ["owner", "subject", "preImage"]))
           `shouldRespondWith`
-            (matchingJSON $ BatchResponse [Weakly.Metadata "3" (HM.singleton "owner" owner)])
+            (matchingJSON $ BatchResponse [Weakly.Metadata "3" (HM.fromList [("owner", owner), ("preImage", preImg)])])
 
         batchRequest (BatchRequest [subject1, subject2] (Just ["owner", "subject"]))
           `shouldRespondWith`
@@ -187,6 +156,7 @@ spec_server intf@(StoreInterface { storeWrite = write }) = do
               , entry2
               ])
 
+batchRequest :: BatchRequest -> WaiSession st SResponse
 batchRequest batchReq =
   request
     methodPost

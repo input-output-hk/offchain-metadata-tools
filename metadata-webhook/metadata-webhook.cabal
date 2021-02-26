@@ -50,3 +50,4 @@ executable metadata-webhook
                         -threaded
 
   other-modules:        Paths_metadata_webhook
+                        Config

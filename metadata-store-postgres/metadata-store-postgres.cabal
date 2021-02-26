@@ -40,6 +40,14 @@ library
                      , wai
                      , warp
 
+  ghc-options:          -Wall
+                        -Wincomplete-record-updates
+                        -Wincomplete-uni-patterns
+                        -Wincomplete-patterns
+                        -Wredundant-constraints
+                        -Wpartial-fields
+                        -Wcompat
+
 test-suite integration-tests 
   hs-source-dirs:       test
   main-is:              Main.hs
@@ -85,5 +93,13 @@ test-suite integration-tests
                 , unordered-containers
                 , wai
                 , warp
+
+  ghc-options:          -Wall
+                        -Wincomplete-record-updates
+                        -Wincomplete-uni-patterns
+                        -Wincomplete-patterns
+                        -Wredundant-constraints
+                        -Wpartial-fields
+                        -Wcompat
 
   -- other-modules:    Test.Cardano.Metadata.Store.Postgres
