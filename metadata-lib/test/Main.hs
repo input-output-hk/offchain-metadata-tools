@@ -6,7 +6,6 @@ import qualified Test.Cardano.Metadata.Server.Types
 import qualified Test.Cardano.Metadata.Store.Simple
 import qualified Test.Cardano.Metadata.Types
 import qualified Test.Cardano.Metadata.Types.Wallet
-import qualified Test.Cardano.Metadata.Attestation
 
 main :: IO ()
 main = do
@@ -17,6 +16,5 @@ main = do
       , Test.Cardano.Metadata.Types.Wallet.tests
       , Test.Cardano.Metadata.Server.Types.tests
       , Test.Cardano.Metadata.Store.Simple.tests
-      , Test.Cardano.Metadata.Attestation.tests
       , serverSpec
       ]

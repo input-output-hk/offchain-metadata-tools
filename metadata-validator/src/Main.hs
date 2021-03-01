@@ -18,7 +18,6 @@ import           Colog                         (pattern D, pattern E, pattern I,
                                                 msgSeverity, usingLoggerT)
 import           Control.Monad.IO.Class        (MonadIO, liftIO)
 import           Data.Aeson                    (FromJSON)
-import qualified Data.Aeson                    as Aeson
 import qualified Data.Aeson.Types              as Aeson
 import qualified Data.Aeson.Parser              as Aeson
 import qualified Data.ByteString.Base64        as Base64
@@ -41,12 +40,10 @@ import           Prelude                       hiding (log)
 import           System.Exit                   (exitFailure, exitSuccess)
 import qualified Text.Megaparsec               as P
 import qualified Text.Megaparsec.Char          as P
-import Data.Validation (Validation(Success,Failure))
 
 import Cardano.Metadata.GoguenRegistry (parseRegistryEntry, validateEntry)
-import Cardano.Metadata.CurrentSlot (getCurrentSlot, mainnetSlotParameters, testnetSlotParameters)
+import Cardano.Metadata.CurrentSlot (getCurrentSlot, mainnetSlotParameters)
 
-import qualified Cardano.Metadata.Types.Wallet as Wallet (Metadata, toWeaklyTypedMetadata, metaSubject, metaPolicy, verifyPolicy)
 import           Config                        (AuthScheme (NoAuthScheme, OAuthScheme),
                                                 Config (Config), mkConfig, opts)
 
@@ -137,15 +134,15 @@ validatePRFile authScheme repoOwner repoName file = do
 
   case Aeson.decodeWith Aeson.value (Aeson.parse parseRegistryEntry) content of
     Nothing -> do
-      log E $ T.pack $ "Content '" <> BSLC.unpack content <> "' is not a valid JSON value, decoding error was: '" <> show err <> "'."
+      log E $ T.pack $ "Content '" <> BSLC.unpack content <> "' is not a valid JSON value."
       exitFailure'
     Just entry -> do
       log I $ T.pack $ "Successfully decoded entry: " <> show entry
       log I $ T.pack "Validating attestation signatures and content..."
-      slotNo <- getCurrentSlotNo mainnetParameters -- FIXME: Allow for choosing between mainnet/testnet
+      slotNo <- liftIO $ getCurrentSlot mainnetSlotParameters -- FIXME: Allow for choosing between mainnet/testnet
       case validateEntry slotNo entry of
         Left err -> do
-          log E $ "Failed to decode Metadata entry '" <> T.pack (show obj) <> "', error was: '" <> err <> "'."
+          log E $ "Failed to decode Metadata entry '" <> T.pack (show entry) <> "', error was: '" <> err <> "'."
           exitFailure'
         Right () ->
           log I "PR valid!"

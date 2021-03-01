@@ -13,7 +13,6 @@ module Cardano.Metadata.Types.Wallet where
 import           Control.DeepSeq               (NFData)
 import           Control.Monad                 ((>=>))
 import           Data.Aeson                    (FromJSON, ToJSON, (.:), (.:?))
-import           Data.Function ((&))
 import qualified Data.Aeson.Types              as Aeson
 import qualified Data.Bifunctor                as Bifunctor
 import           Data.ByteArray.Encoding       (Base (Base16, Base64), convertToBase)
@@ -31,7 +30,6 @@ import           Network.URI                   (URI, parseAbsoluteURI,
 import           Numeric.Natural               (Natural)
 import           Quiet                         (Quiet (Quiet))
 import qualified Cardano.Metadata.Types as Submitter
-import qualified Cardano.Metadata.GoguenRegistry as Submitter
 import qualified Cardano.Api as Cardano
 
 import           Cardano.Metadata.Types.Common (Description, Encoded, Name,
@@ -91,7 +89,6 @@ data Policy = Policy Submitter.Policy
 verifyPolicy :: Policy -> Subject -> Either Text ()
 verifyPolicy (Policy submitterPolicy) (Subject subj) =
   Submitter.verifyPolicy submitterPolicy (Submitter.Subject subj)
-  & Bifunctor.first T.pack
 
 policyId :: Policy -> Text
 policyId (Policy policy) = T.pack . B8.unpack . Cardano.serialiseToRawBytesHex . Submitter.hashPolicy $ policy
@@ -115,7 +112,7 @@ fromWeaklyTypedMetadata (Weakly.Metadata subj props) =
     subject <- (applyValidator validateMetadataSubject subj)
     policy  <- obj .: "policy"
     applyValidator (Bifunctor.first T.unpack . verifyPolicy policy) subject
-  
+
     Metadata subject policy
       <$> (validateProp validateMetadataName =<< obj .: "name")
       <*> (validateProp validateMetadataDescription =<< obj .: "description")
@@ -246,11 +243,10 @@ instance ToJSON AssetUnit where
                                                                   ]
 
 instance ToJSON Policy where
-  toJSON (Policy (Submitter.Policy rawPolicy _script)) = Aeson.String rawPolicy
+  toJSON (Policy x) = Submitter.wellKnownToJSON x
 
 instance FromJSON Policy where
-  parseJSON = Aeson.withText "Policy" $ \t ->
-    fmap Policy $ Submitter.parseWellKnown $ Submitter.PropertyValue t (Aeson.String t)
+  parseJSON = fmap Policy . Submitter.parseWellKnown
 
 instance Show Policy where
   show (Policy (Submitter.Policy raw _script)) = T.unpack raw

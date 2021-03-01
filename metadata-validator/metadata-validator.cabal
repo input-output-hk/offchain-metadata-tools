@@ -12,21 +12,21 @@ executable metadata-validator
   main-is:             Main.hs
   build-depends:       aeson
                      , base
+                     , base64-bytestring
                      , bytestring
+                     , cardano-metadata-submitter
+                     , co-log
                      , co-log
                      , containers
-                     , base64-bytestring
                      , directory
                      , github
                      , http-client
                      , http-types
-                     , megaparsec
                      , lens
                      , lens-aeson
+                     , megaparsec
                      , metadata-lib
-                     , vector
                      , monad-logger
-                     , co-log
                      , mtl
                      , optparse-applicative
                      , safe-exceptions
@@ -37,6 +37,7 @@ executable metadata-validator
                      , text
                      , unordered-containers
                      , validation
+                     , vector
                      , wai
                      , warp
                      , wreq
