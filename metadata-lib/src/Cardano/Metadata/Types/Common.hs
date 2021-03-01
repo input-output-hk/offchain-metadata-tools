@@ -180,12 +180,12 @@ instance ToJSON value => ToJSON (Property value) where
   toJSON (Property value Nothing)     = Aeson.toJSON value
   toJSON (Property value (Just sigs)) = Aeson.Object $ HM.fromList $
     [ ("value", Aeson.toJSON value)
-    , ("anSignatures", Aeson.toJSON sigs)
+    , ("signatures", Aeson.toJSON sigs)
     ]
 
 instance FromJSON value => FromJSON (Property value) where
   parseJSON v =
-    asum [ Aeson.withObject "Weakly-typed Property" (\obj -> Property <$> obj .: "value" <*> (Just <$> obj .: "anSignatures")) v
+    asum [ Aeson.withObject "Weakly-typed Property" (\obj -> Property <$> obj .: "value" <*> (Just <$> obj .: "signatures")) v
          , Property <$> Aeson.parseJSON v <*> pure Nothing
          ]
 

@@ -42,7 +42,7 @@
           "maxLength": 50,
           "minLength": 1
         },
-        "anSignatures": {
+        "signatures": {
           "type": "array",
           "items": {
             "anyOf": [
@@ -66,7 +66,7 @@
           "maxLength": 4,
           "minLength": 2
         },
-        "anSignatures": {
+        "signatures": {
           "type": "array",
           "items": {
             "anyOf": [
@@ -105,7 +105,7 @@
             }
           }
         },
-        "anSignatures": {
+        "signatures": {
           "type": "array",
           "items": {
             "anyOf": [
@@ -130,7 +130,7 @@
           "pattern": "/^https:/",
           "maxLength": 250
         },
-        "anSignatures": {
+        "signatures": {
           "type": "array",
           "items": {
             "anyOf": [
@@ -155,7 +155,7 @@
           "maxLength": 87400,
           "description": "A `image/png` object which is 64KB in size at most."
         },
-        "anSignatures": {
+        "signatures": {
           "type": "array",
           "items": {
             "anyOf": [
@@ -178,7 +178,7 @@
           "type": "string",
           "maxLength": 500
         },
-        "anSignatures": {
+        "signatures": {
           "type": "array",
           "items": {
             "anyOf": [

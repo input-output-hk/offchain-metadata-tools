@@ -91,7 +91,7 @@ unit_batch_response_json_spec = do
                 },
                 "name": {
                     "value": "Wallet #6",
-                    "anSignatures": [
+                    "signatures": [
                         {
                             "signature": "2e27065e365d38bef19b7bec139206f99b00effc8a2ad05bd22259aa939dd5083f25da91c4cb764eb1bfbce243ec32cce112be9762e1da7a38e975ebb0cc0b08",
                             "publicKey": "44b57ee30cdb55829d0a5d4f046baef078f1e97a7f21b62d75f8e96ea139c35f"
@@ -103,7 +103,7 @@ unit_batch_response_json_spec = do
                 "subject": "7f71940915ea5fe85e840f843c929eba467e6f050475bad1f10b9c274d1888c0",
                 "description": {
                     "value": "rex",
-                    "anSignatures": [
+                    "signatures": [
                         {
                             "signature": "7ef6ed44ba9456737ef8d2e31596fdafb66d5775ac1a254086a553b666516e5895bb0c6b7ba8bef1f6b4d9bd9253b4449d1354de2f9e043ea4eb43fd42f87108",
                             "publicKey": "0ee262f062528667964782777917cd7139e19e8eb2c591767629e4200070c661"

@@ -153,13 +153,13 @@ components:
           type: string
     GenericProperty:
       required:
-      - anSignatures
+      - signatures
       - value
       type: object
       properties:
         value:
           type: string
-        anSignatures:
+        signatures:
           type: array
           items:
             $ref: '#/components/schemas/AnnotatedSignature'
@@ -213,11 +213,11 @@ components:
                   type: string
             name:
               required:
-              - anSignatures
+              - signatures
               - value
               type: object
               properties:
-                anSignatures:
+                signatures:
                   type: array
                   items:
                     $ref: '#/components/schemas/AnnotatedSignature'
@@ -225,11 +225,11 @@ components:
                   type: string
             description:
               required:
-              - anSignatures
+              - signatures
               - value
               type: object
               properties:
-                anSignatures:
+                signatures:
                   type: array
                   items:
                     $ref: '#/components/schemas/AnnotatedSignature'
@@ -282,11 +282,11 @@ components:
                   type: string
             name:
               required:
-              - anSignatures
+              - signatures
               - value
               type: object
               properties:
-                anSignatures:
+                signatures:
                   type: array
                   items:
                     $ref: '#/components/schemas/AnnotatedSignature'
@@ -294,11 +294,11 @@ components:
                   type: string
             description:
               required:
-              - anSignatures
+              - signatures
               - value
               type: object
               properties:
-                anSignatures:
+                signatures:
                   type: array
                   items:
                     $ref: '#/components/schemas/AnnotatedSignature'

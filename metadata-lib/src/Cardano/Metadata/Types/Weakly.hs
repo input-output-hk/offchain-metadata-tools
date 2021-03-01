@@ -15,10 +15,10 @@ import qualified Cardano.Metadata.Types.Common as Strongly (Property (Property))
 type Property = Strongly.Property Aeson.Value
 
 toWeaklyTypedProperty :: ToJSON value => Strongly.Property value -> Property
-toWeaklyTypedProperty (Strongly.Property value anSignatures) = (Strongly.Property (Aeson.toJSON value) anSignatures)
+toWeaklyTypedProperty (Strongly.Property value signatures) = (Strongly.Property (Aeson.toJSON value) signatures)
 
 fromWeaklyTypedProperty :: FromJSON value => Property -> Aeson.Parser (Strongly.Property value)
-fromWeaklyTypedProperty (Strongly.Property value anSignatures) = Strongly.Property <$> Aeson.parseJSON value <*> pure anSignatures
+fromWeaklyTypedProperty (Strongly.Property value signatures) = Strongly.Property <$> Aeson.parseJSON value <*> pure signatures
 
 data Metadata
   = Metadata { metaSubject    :: Subject
