@@ -18,8 +18,8 @@ import           Colog                         (pattern D, pattern E, pattern I,
                                                 msgSeverity, usingLoggerT)
 import           Control.Monad.IO.Class        (MonadIO, liftIO)
 import           Data.Aeson                    (FromJSON)
-import qualified Data.Aeson                    as Aeson
 import qualified Data.Aeson.Types              as Aeson
+import qualified Data.Aeson.Parser              as Aeson
 import qualified Data.ByteString.Base64        as Base64
 import qualified Data.ByteString.Lazy          as BSL
 import qualified Data.ByteString.Lazy.Char8    as BSLC
@@ -40,10 +40,10 @@ import           Prelude                       hiding (log)
 import           System.Exit                   (exitFailure, exitSuccess)
 import qualified Text.Megaparsec               as P
 import qualified Text.Megaparsec.Char          as P
-import Data.Validation (Validation(Success,Failure))
 
-import qualified Cardano.Metadata.Types.Wallet as Wallet (Metadata, toWeaklyTypedMetadata, metaSubject, metaPolicy, verifyPolicy)
-import Cardano.Metadata.Attestation (validateMetadataAttestationSignatures, prettyPrintAttestationError)
+import Cardano.Metadata.GoguenRegistry (parseRegistryEntry, validateEntry)
+import Cardano.Metadata.CurrentSlot (getCurrentSlot, mainnetSlotParameters)
+
 import           Config                        (AuthScheme (NoAuthScheme, OAuthScheme),
                                                 Config (Config), mkConfig, opts)
 
@@ -132,31 +132,20 @@ validatePRFile authScheme repoOwner repoName file = do
     then log E ("File size in bytes (" <> T.pack (show contentLength) <> ") greater than maximum size of " <> T.pack (show metadataJSONMaxSize) <> " bytes.") >> exitFailure'
     else log I ("Good file size ( " <> T.pack (show contentLength) <> " < " <> T.pack (show metadataJSONMaxSize) <> " bytes)")
 
-  case Aeson.eitherDecode content of
-    Left err                   -> do
-      log E $ T.pack $ "Content '" <> BSLC.unpack content <> "' is not a valid JSON value, decoding error was: '" <> show err <> "'."
+  case Aeson.decodeWith Aeson.value (Aeson.parse parseRegistryEntry) content of
+    Nothing -> do
+      log E $ T.pack $ "Content '" <> BSLC.unpack content <> "' is not a valid JSON value."
       exitFailure'
-    Right (obj :: Aeson.Value) -> do
-      case Aeson.parseEither Aeson.parseJSON obj of
-        Left err           -> do
-          log E $ T.pack $ "Failed to decode Metadata entry from JSON value '" <> show obj <> "', error was: '" <> show err <> "'."
+    Just entry -> do
+      log I $ T.pack $ "Successfully decoded entry: " <> show entry
+      log I $ T.pack "Validating attestation signatures and content..."
+      slotNo <- liftIO $ getCurrentSlot mainnetSlotParameters -- FIXME: Allow for choosing between mainnet/testnet
+      case validateEntry slotNo entry of
+        Left err -> do
+          log E $ "Failed to decode Metadata entry '" <> T.pack (show entry) <> "', error was: '" <> err <> "'."
           exitFailure'
-        Right (entry :: Wallet.Metadata) -> do
-          log I $ T.pack $ "Successfully decoded entry: " <> show entry
-          log I $ T.pack $ "Validating attestation signatures..."
-
-          case validateMetadataAttestationSignatures (Wallet.toWeaklyTypedMetadata entry) of
-            Failure errs ->
-              traverse_ (log E . prettyPrintAttestationError) errs
-            Success ()   ->
-              let
-                policy = Wallet.metaPolicy entry
-              in
-                case Wallet.verifyPolicy policy (Wallet.metaSubject entry) of
-                  Left err ->
-                    log E $ T.pack $ "Failed to verify policy '" <> show policy <> "', error was: " <> T.unpack err
-                  Right () ->
-                    log I "PR valid!"
+        Right () ->
+          log I "PR valid!"
 
 -- | Maximum size in bytes of a metadata entry.
 metadataJSONMaxSize :: Int64

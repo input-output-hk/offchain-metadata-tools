@@ -10,8 +10,7 @@ extra-source-files:  ../CHANGELOG.md
 library
   hs-source-dirs:      src
 
-  exposed-modules:     Cardano.Metadata.Attestation
-                       Cardano.Metadata.Server
+  exposed-modules:     Cardano.Metadata.Server
                        Cardano.Metadata.Server.Types
                        Cardano.Metadata.Server.API
                        Cardano.Metadata.Store.Types
@@ -131,7 +130,6 @@ test-suite unit-tests
                         Test.Cardano.Metadata.Store.Simple
                         Test.Cardano.Metadata.Types
                         Test.Cardano.Metadata.Types.Wallet
-                        Test.Cardano.Metadata.Attestation
 
   ghc-options:          -Wall
                         -Wincomplete-record-updates
