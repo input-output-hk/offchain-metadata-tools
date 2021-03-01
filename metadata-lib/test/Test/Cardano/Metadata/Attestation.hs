@@ -164,7 +164,7 @@ unit_attestation_golden = do
             },
             "name": {
                 "value": "My Goguen Script",
-                "anSignatures": [
+                "signatures": [
                     {
                         "publicKey": "5de05d0693edbdd2b6d746ecada7567ec7bba1ba8e68a3a4ccc947d108bde575",
                         "signature": "b156bee69bef3eb8c24fd43d5924e436e638378e423225384755393e977cf88e2344b899fd1575896f6ddcd9ceb1635454719b10f623f6b69c7041d047cd930c"
@@ -173,7 +173,7 @@ unit_attestation_golden = do
             },
             "description": {
                 "value": "A script I have registered on chain",
-                "anSignatures": [
+                "signatures": [
                     {
                         "publicKey": "5de05d0693edbdd2b6d746ecada7567ec7bba1ba8e68a3a4ccc947d108bde575",
                         "signature": "c0329598e4806b211a80856ce7087029bc687b0a200805b713c086cfafa85f731ebcfdca5b89d7867fec4b59355faac8a2eb243c0871617ac2bc6ef57cf98e08"

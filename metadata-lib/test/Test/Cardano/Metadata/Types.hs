@@ -48,7 +48,7 @@ tests = testGroup "Metadata type tests"
 
       , testProperty "Property/json/roundtrips" (prop_json_roundtrips Gen.weaklyTypedProperty')
       , testProperty "Property/json/matches-spec" prop_json_property_spec
-      , testCase     "Property/json/missing-anSignatures-ok" unit_property_missing_annotatedSignatures
+      , testCase     "Property/json/missing-signatures-ok" unit_property_missing_annotatedSignatures
 
       , testProperty "Name/json/roundtrips" (prop_json_roundtrips Gen.name)
       , testProperty "Description/json/roundtrips" (prop_json_roundtrips Gen.description)
@@ -134,7 +134,7 @@ prop_json_property_spec = property $ do
     Just sigs ->
       Aeson.toJSON p === Aeson.Object (HM.fromList
                                          [ ("value", propertyValue p)
-                                         , ("anSignatures", Aeson.toJSON $ sigs)
+                                         , ("signatures", Aeson.toJSON $ sigs)
                                          ]
                                       )
 
