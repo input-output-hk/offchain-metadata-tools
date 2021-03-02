@@ -30,8 +30,8 @@ import           Cardano.Metadata.Server.Types    (BatchRequest (BatchRequest),
                                                    BatchResponse (BatchResponse))
 import           Cardano.Metadata.Store.Simple    (simpleStore)
 import           Cardano.Metadata.Store.Types
-import           Cardano.Metadata.Types.Common    (Property (Property),
-                                                   Subject (Subject), unSubject, PreImage(PreImage), HashFn(SHA256))
+import           Cardano.Metadata.Types.Common    (AttestedProperty (AttestedProperty),
+                                                   Subject (Subject), unSubject, PreImage(PreImage), HashFn(SHA256), seqZero)
 import qualified Cardano.Metadata.Types.Weakly    as Weakly
 
 tests :: IO TestTree
@@ -47,10 +47,10 @@ spec_server intf@(StoreInterface { storeWrite = write }) = do
     subject1    = Subject "3"
     subject1Str = BC.pack . T.unpack . unSubject $ subject1
     subject2    = Subject "4"
-    preImg      = Property (Aeson.toJSON $ PreImage "6d792d676f6775656e2d736372697074" SHA256) Nothing
-    owner       = Property (Aeson.String "me") Nothing
-    odd1        = Property (Aeson.String "odd") (Just [])
-    random      = Property (Aeson.String "random") (Just [])
+    preImg      = (Aeson.toJSON $ AttestedProperty (PreImage "6d792d676f6775656e2d736372697074" SHA256) [] seqZero)
+    owner       = (Aeson.toJSON $ AttestedProperty (Aeson.String "me") [] seqZero)
+    odd1        = Aeson.String "odd"
+    random      = Aeson.String "random"
     entry1 = Weakly.Metadata subject1 (HM.fromList [("owner", owner), ("odd", odd1), ("preImage", preImg)])
     entry2 = Weakly.Metadata subject2 (HM.fromList [("random", random)])
 

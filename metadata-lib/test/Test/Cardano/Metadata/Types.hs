@@ -33,22 +33,20 @@ import           Test.Cardano.Helpers             (prop_json_only_has_keys,
 import qualified Test.Cardano.Metadata.Generators as Gen
 import Cardano.Crypto.DSIGN
 
-import           Cardano.Metadata.Types.Common    (HashFn (Blake2b224, Blake2b256, SHA256),
+import           Cardano.Metadata.Types.Common    (AttestedProperty(AttestedProperty), seqZero, HashFn (Blake2b224, Blake2b256, SHA256),
                                                    asPublicKey, asAttestationSignature,
-                                                   propertyValue,
-                                                   unPropertyName, unSubject, Property(Property))
+                                                   unPropertyName, unSubject)
 import qualified Cardano.Metadata.Types.Weakly    as Weakly
 
 tests :: TestTree
 tests = testGroup "Metadata type tests"
   [ testGroup "Parsers and printers"
       [
-        testProperty "Metadata/json/roundtrips" (prop_json_roundtrips Gen.weaklyTypedMetadata')
+        testProperty "Metadata/json/roundtrips" (prop_json_roundtrips Gen.weaklyMetadata)
       , testProperty "Metadata/json/matches-spec" prop_json_metadata_spec
 
-      , testProperty "Property/json/roundtrips" (prop_json_roundtrips Gen.weaklyTypedProperty')
-      , testProperty "Property/json/matches-spec" prop_json_property_spec
-      , testCase     "Property/json/missing-signatures-ok" unit_property_missing_annotatedSignatures
+      , testProperty "AttestedProperty/json/roundtrips" (prop_json_roundtrips Gen.attestedProperty')
+      , testCase     "AttestedProperty/json/missing-signatures-ok" unit_attested_property_missing_annotatedSignatures
 
       , testProperty "Name/json/roundtrips" (prop_json_roundtrips Gen.name)
       , testProperty "Description/json/roundtrips" (prop_json_roundtrips Gen.description)
@@ -76,7 +74,7 @@ tests = testGroup "Metadata type tests"
       ]
   ]
 
--- The from/to JSON instances should simply match the show/read
+-- | The from/to JSON instances should simply match the show/read
 -- instances.
 prop_json_read_show_align_spec :: forall a. (Eq a, Show a, Read a, ToJSON a, FromJSON a) => Gen a -> H.Property
 prop_json_read_show_align_spec gen = property $ do
@@ -91,16 +89,19 @@ unit_hashfn_show_spec = do
   show Blake2b224 @?= "blake2b-224"
   show SHA256     @?= "sha256"
 
-unit_property_missing_annotatedSignatures :: Assertion
-unit_property_missing_annotatedSignatures = do
+-- | Attested properties without a signature key are treated as an
+-- attested property with no signatures.
+unit_attested_property_missing_annotatedSignatures :: Assertion
+unit_attested_property_missing_annotatedSignatures = do
   let
     json = [r|
       {
-        "value": "string"
+        "value": "string",
+        "sequenceNumber": 0
       }
     |]
 
-  Aeson.eitherDecode json @?= Right (Property (Aeson.Object $ HM.fromList [("value", "string")]) Nothing)
+  Aeson.eitherDecode json @?= Right (AttestedProperty (Aeson.String "string") [] seqZero)
 
 prop_json_subject_spec :: H.Property
 prop_json_subject_spec = property $ do
@@ -124,23 +125,9 @@ prop_json_annotatedSignature_spec = property $ do
                                      ]
                                   )
 
-prop_json_property_spec :: H.Property
-prop_json_property_spec = property $ do
-  p@(Property v anSigs) <- forAllT Gen.weaklyTypedProperty'
-
-  case anSigs of
-    Nothing   -> 
-      Aeson.toJSON p === Aeson.toJSON v
-    Just sigs ->
-      Aeson.toJSON p === Aeson.Object (HM.fromList
-                                         [ ("value", propertyValue p)
-                                         , ("signatures", Aeson.toJSON $ sigs)
-                                         ]
-                                      )
-
 prop_json_metadata_spec :: H.Property
 prop_json_metadata_spec = property $ do
-  m <- forAllT Gen.weaklyTypedMetadata'
+  m <- forAllT Gen.weaklyMetadata
 
   Aeson.toJSON m === Aeson.Object (HM.fromList $
                                      [ ("subject", Aeson.String $ unSubject $ Weakly.metaSubject m) ]

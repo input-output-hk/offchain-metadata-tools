@@ -1,4 +1,6 @@
 {-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE DerivingStrategies         #-}
 {-# LANGUAGE DerivingVia                #-}
@@ -6,6 +8,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE KindSignatures             #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RankNTypes #-}
@@ -13,10 +16,11 @@
 module Cardano.Metadata.Types.Common where
 
 import           Control.DeepSeq              (NFData)
-import           Data.Foldable (asum)
 import           Data.Maybe (fromMaybe)
+import           Data.Int (Int64)
+import           Data.Scientific (toBoundedInteger)
 import           Data.Aeson                   (FromJSON, FromJSONKey, ToJSON,
-                                               ToJSONKey, (.:))
+                                               ToJSONKey, (.:), (.:?))
 import qualified Data.Aeson                   as Aeson
 import           Data.Aeson.TH                (deriveJSON)
 import qualified Data.Aeson.Types             as Aeson
@@ -33,8 +37,10 @@ import qualified Data.Text.Encoding           as T
 import           GHC.Generics                 (Generic)
 import           Quiet                        (Quiet (Quiet))
 import           Text.Casing                  (fromHumps, toCamel)
+import           System.FilePath.Posix (takeBaseName, takeExtensions)
 import           Text.ParserCombinators.ReadP (choice, string)
 import           Text.Read                    (readEither, readPrec)
+import           Numeric.Natural (Natural)
 import qualified Text.Read                    as Read (lift)
 import           Web.HttpApiData              (FromHttpApiData)
 import Cardano.Crypto.DSIGN
@@ -46,28 +52,60 @@ newtype Subject = Subject { unSubject :: Text }
   deriving newtype (IsString)
   deriving (Show) via (Quiet Subject)
 
+newtype SequenceNumber = SequenceNumber { unSequenceNumber :: Natural }
+  deriving (Generic, Eq, Ord, Hashable)
+  deriving (Show) via (Quiet SequenceNumber)
+
+seqFromIntegral :: Integral n => n -> Maybe SequenceNumber
+seqFromIntegral x | x < 0 = Nothing
+seqFromIntegral x         = Just $ SequenceNumber (fromInteger (toInteger x))
+
+seqFromNatural :: Natural -> SequenceNumber
+seqFromNatural n = SequenceNumber n
+
+seqToInteger :: SequenceNumber -> Integer
+seqToInteger (SequenceNumber n) = toInteger n
+
+seqZero :: SequenceNumber
+seqZero = SequenceNumber 0
+
+seqSucc :: SequenceNumber -> SequenceNumber
+seqSucc (SequenceNumber n) = SequenceNumber (succ n)
+
+seqPred :: SequenceNumber -> SequenceNumber
+seqPred (SequenceNumber n) = SequenceNumber (max 0 (pred n))
+
 newtype PropertyName = PropertyName { unPropertyName :: Text }
   deriving (Generic, Eq, Ord, FromHttpApiData, ToJSONKey, FromJSONKey, ToJSON, FromJSON, Hashable)
   deriving newtype (IsString)
   deriving (Show) via (Quiet PropertyName)
 
-data Property value
-  = Property { _propertyValue        :: value
-             , _propertyAnSignatures :: Maybe [AnnotatedSignature]
-             }
+data AttestedProperty a
+  = AttestedProperty { attestedValue          :: a
+                     , attestedSignatures     :: [AnnotatedSignature]
+                     , attestedSequenceNumber :: SequenceNumber
+                     }
   deriving (Eq, Show)
 
-propertyValue :: Property value -> value
-propertyValue = _propertyValue
+data PropertyType = Verifiable
+                  | Attested
 
-propertyAnSignatures :: Property value -> [AnnotatedSignature]
-propertyAnSignatures = fromMaybe [] . _propertyAnSignatures
+type family Property (propertyType :: PropertyType) a where
+  Property 'Verifiable a = a
+  Property 'Attested   a = AttestedProperty a
+
+toPropertyNameList :: [(Text, a)] -> [(PropertyName, a)]
+toPropertyNameList = fmap (\(k, v) -> (PropertyName k, v))
+
+fromPropertyNameList :: [(PropertyName, a)] -> [(Text, a)]
+fromPropertyNameList = fmap (\(k, v) -> (unPropertyName k, v))
+
 
 -- | A human-readable name for the metadata subject, suitable for use in an interface
-type Name        = Property Text
+type Name        = Property 'Attested Text
 
 -- | A human-readable description for the metadata subject, suitable for use in an interface
-type Description = Property Text
+type Description = Property 'Attested Text
 
 -- | A pair of a public key, and a signature of the metadata entry by
 -- that public key.
@@ -139,6 +177,29 @@ deserialisePublicKey t =
     Nothing -> Left . T.pack $ "Failed to parse Ed25519DSIGN verification key from '" <> BC.unpack t <> "'."
     Just x  -> pure x
 
+data File a
+  = File { fileContents :: a
+         , fileSize     :: Natural
+         , filePath     :: FilePath
+         }
+  deriving (Eq, Show)
+
+-- | Get the base name of the file, without extenstion or path
+--
+-- @
+-- fileBaseName "/directory/file.ext" == "file"
+-- @
+fileBaseName :: File a -> Text
+fileBaseName = T.pack . takeBaseName . filePath
+
+-- | Get the extensions of a file.
+--
+-- @
+-- fileExtensions "/directory/path.ext" == ".ext"
+-- fileExtensions "file.tar.gz" == ".tar.gz"
+-- @
+fileExtensions :: File a -> Text
+fileExtensions = T.pack . takeExtensions . filePath
 
 -- Instances
 
@@ -176,18 +237,20 @@ instance Read HashFn where
                                 , SHA256     <$ string "sha256"
                                 ]
 
-instance ToJSON value => ToJSON (Property value) where
-  toJSON (Property value Nothing)     = Aeson.toJSON value
-  toJSON (Property value (Just sigs)) = Aeson.Object $ HM.fromList $
-    [ ("value", Aeson.toJSON value)
-    , ("signatures", Aeson.toJSON sigs)
-    ]
+instance Aeson.ToJSON v => Aeson.ToJSON (AttestedProperty v) where
+  toJSON (AttestedProperty v sigs sequenceNumber) =
+    Aeson.Object . HM.fromList $
+      [ ("value", Aeson.toJSON v)
+      , ("signatures", Aeson.toJSON sigs)
+      , ("sequenceNumber", Aeson.toJSON sequenceNumber)
+      ]
 
-instance FromJSON value => FromJSON (Property value) where
-  parseJSON v =
-    asum [ Aeson.withObject "Weakly-typed Property" (\obj -> Property <$> obj .: "value" <*> (Just <$> obj .: "signatures")) v
-         , Property <$> Aeson.parseJSON v <*> pure Nothing
-         ]
+instance Aeson.FromJSON v => Aeson.FromJSON (AttestedProperty v) where
+  parseJSON = Aeson.withObject "AttestedProperty" $ \obj ->
+    AttestedProperty
+    <$> obj .: "value"
+    <*> (fromMaybe [] <$> obj .:? "signatures")
+    <*> obj .: "sequenceNumber"
 
 instance ToJSON AnnotatedSignature where
   toJSON (AnnotatedSignature sig pubKey) = Aeson.Object . HM.fromList $
@@ -219,6 +282,17 @@ instance FromJSON AnnotatedSignature where
         case rawDeserialiseVerKeyDSIGN t of
           Nothing -> fail $ "Failed to parse Ed25519DSIGN verification key from '" <> BC.unpack t <> "'."
           Just x  -> pure x
+
+instance Aeson.ToJSON SequenceNumber where
+  toJSON (SequenceNumber n) = Aeson.Number (fromInteger $ toInteger n)
+
+instance Aeson.FromJSON SequenceNumber where
+  parseJSON = Aeson.withScientific "SequenceNumber" $ \n ->
+    case toBoundedInteger n of
+      Nothing           -> fail "Sequence number must be an integer."
+      Just (i :: Int64) -> case seqFromIntegral i of
+        Nothing -> fail "Sequence number must be >= 0."
+        Just s  -> pure s
 
 $(deriveJSON Aeson.defaultOptions{ Aeson.fieldLabelModifier = toCamel . fromHumps . drop 3 } ''Owner)
 $(deriveJSON Aeson.defaultOptions{ Aeson.fieldLabelModifier = toCamel . fromHumps . drop 2 } ''PreImage)

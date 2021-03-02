@@ -1,11 +1,11 @@
 cabal-version:       >=1.10
 name:                metadata-server
 version:             0.1.0.0
-license-file:        ../LICENSE
+license-file:        LICENSE
 author:              Samuel Evans-Powell
 maintainer:          mail@sevanspowell.net
 build-type:          Simple
-extra-source-files:  ../CHANGELOG.md
+extra-source-files:  CHANGELOG
 
 executable metadata-server
   hs-source-dirs:      src

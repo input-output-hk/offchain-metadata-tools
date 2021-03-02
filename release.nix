@@ -71,10 +71,10 @@ let
       [
         jobs.native.metadata-server.x86_64-linux
         jobs.native.metadata-webhook.x86_64-linux
-        jobs.native.metadata-validator.x86_64-linux
+        jobs.native.metadata-validator-github.x86_64-linux
         jobs.native.haskellPackages.metadata-lib.components.library.x86_64-linux
+        jobs.native.haskellPackages.metadata-lib.components.tests.unit-tests.x86_64-linux
         jobs.native.haskellPackages.metadata-store-postgres.components.library.x86_64-linux
-        jobs.native.metadataValidatorTarball.x86_64-linux
       ]
     ))
   # Build the shell derivation in Hydra so that all its dependencies
