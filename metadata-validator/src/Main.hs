@@ -41,8 +41,10 @@ import           System.Exit                   (exitFailure, exitSuccess)
 import qualified Text.Megaparsec               as P
 import qualified Text.Megaparsec.Char          as P
 
-import Cardano.Metadata.GoguenRegistry (parseRegistryEntry, validateEntry)
-import Cardano.Metadata.CurrentSlot (getCurrentSlot, mainnetSlotParameters)
+import Cardano.Metadata.GoguenRegistry         ( _goguenRegistryEntry_subject,
+                                                 parseRegistryEntry, validateEntry)
+import Cardano.Metadata.Types                  (Subject(Subject))
+import Cardano.Metadata.CurrentSlot            (getCurrentSlot, mainnetSlotParameters)
 
 import           Config                        (AuthScheme (NoAuthScheme, OAuthScheme),
                                                 Config (Config), mkConfig, opts)
@@ -138,14 +140,27 @@ validatePRFile authScheme repoOwner repoName file = do
       exitFailure'
     Just entry -> do
       log I $ T.pack $ "Successfully decoded entry: " <> show entry
+
       log I $ T.pack "Validating attestation signatures and content..."
       slotNo <- liftIO $ getCurrentSlot mainnetSlotParameters -- FIXME: Allow for choosing between mainnet/testnet
       case validateEntry slotNo entry of
         Left err -> do
           log E $ "Failed to decode Metadata entry '" <> T.pack (show entry) <> "', error was: '" <> err <> "'."
           exitFailure'
-        Right () ->
-          log I "PR valid!"
+        Right () -> do
+          log I $ T.pack "Ensuring subject == filename..."
+          case _goguenRegistryEntry_subject entry of
+            Nothing             -> do
+              log E $ "Metadata entry is missing subject"
+              exitFailure'
+            Just (Subject subj) -> do
+              if fileName /= subj
+                then do
+                  log E $ "Metadata subject '" <> subj <> "', does not match file name '" <> fileName <> "'."
+                  exitFailure'
+                else do
+                  log I "PR valid!"
+                  exitSuccess'
 
 -- | Maximum size in bytes of a metadata entry.
 metadataJSONMaxSize :: Int64
