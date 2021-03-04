@@ -19,6 +19,7 @@ executable metadata-validator
                      , co-log
                      , containers
                      , directory
+                     , filepath
                      , github
                      , http-client
                      , http-types

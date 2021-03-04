@@ -40,6 +40,7 @@ import           Prelude                       hiding (log)
 import           System.Exit                   (exitFailure, exitSuccess)
 import qualified Text.Megaparsec               as P
 import qualified Text.Megaparsec.Char          as P
+import System.FilePath.Posix (takeBaseName)
 
 import Cardano.Metadata.GoguenRegistry         ( _goguenRegistryEntry_subject,
                                                  parseRegistryEntry, validateEntry)
@@ -107,12 +108,12 @@ validatePRFile
   -> GitHub.File
   -> m ()
 validatePRFile authScheme repoOwner repoName file = do
-  let fileName = GitHub.fileFilename file
+  let filePath = GitHub.fileFilename file
 
-  log I $ "Validating file " <> fileName
+  log I $ "Validating file " <> filePath
   log D $ "File contents: " <> T.pack (show file)
 
-  case P.runParser pFileNameHex (T.unpack fileName) fileName of
+  case P.runParser pFileNameHex (T.unpack filePath) filePath of
     Left err -> do
       log E $ T.pack $ "Failed to parse file name, error was: '" <> P.errorBundlePretty err <> "'."
       liftIO exitFailure
@@ -125,7 +126,7 @@ validatePRFile authScheme repoOwner repoName file = do
         x          -> log E ("Unknown status '" <> x <> "' is not permitted.") >> exitFailure'
 
   blob <- run' authScheme $ GitHub.blobR repoOwner repoName (GitHub.N $ fromJust $ GitHub.fileSha file)
-  log D $ "Received blob for file '" <> fileName <> "': " <> T.pack (show blob)
+  log D $ "Received blob for file '" <> filePath <> "': " <> T.pack (show blob)
   let
     content = BSL.fromStrict $ Base64.decodeLenient $ TE.encodeUtf8 $ GitHub.blobContent blob
     contentLength = BSL.length content
@@ -154,9 +155,10 @@ validatePRFile authScheme repoOwner repoName file = do
               log E $ "Metadata entry is missing subject"
               exitFailure'
             Just (Subject subj) -> do
-              if fileName /= subj
+              let baseName = T.pack $ takeBaseName $ T.unpack filePath
+              if baseName /= subj
                 then do
-                  log E $ "Metadata subject '" <> subj <> "', does not match file name '" <> fileName <> "'."
+                  log E $ "Metadata subject '" <> subj <> "', does not match file name '" <> baseName <> "'."
                   exitFailure'
                 else do
                   log I "PR valid!"
