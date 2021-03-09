@@ -45,7 +45,6 @@ import System.FilePath.Posix (takeBaseName)
 import Cardano.Metadata.GoguenRegistry         ( _goguenRegistryEntry_subject,
                                                  parseRegistryEntry, validateEntry)
 import Cardano.Metadata.Types                  (Subject(Subject))
-import Cardano.Metadata.CurrentSlot            (getCurrentSlot, mainnetSlotParameters)
 
 import           Config                        (AuthScheme (NoAuthScheme, OAuthScheme),
                                                 Config (Config), mkConfig, opts)
@@ -143,8 +142,7 @@ validatePRFile authScheme repoOwner repoName file = do
       log I $ T.pack $ "Successfully decoded entry: " <> show entry
 
       log I $ T.pack "Validating attestation signatures and content..."
-      slotNo <- liftIO $ getCurrentSlot mainnetSlotParameters -- FIXME: Allow for choosing between mainnet/testnet
-      case validateEntry slotNo entry of
+      case validateEntry entry of
         Left err -> do
           log E $ "Failed to decode Metadata entry '" <> T.pack (show entry) <> "', error was: '" <> err <> "'."
           exitFailure'
