@@ -7,7 +7,7 @@ services:
      - "8089:8089"
     volumes:
       - ./:/mnt/locust
-    command: -f /mnt/locust/locustfile.py --master --headless --run-time 5m
+    command: -f /mnt/locust/locustfile.py --master --headless --run-time 5m --csv=/mnt/locust/results
   
   worker:
     image: locustio/locust

@@ -36,6 +36,8 @@ class QueryUser(HttpUser):
         with self.client.get(f"/metadata/{subject}", catch_response=True) as response:
             if response.elapsed.total_seconds() > 1:
                 response.failure("Request took too long")
+            elif response.status_code == 404:
+                response.success()
 
     @task(1)
     def get_metadata_subject_properties(self):
@@ -56,6 +58,9 @@ class QueryUser(HttpUser):
         with self.client.get(f"/metadata/{subject}/properties", catch_response=True) as response:
             if response.elapsed.total_seconds() > 1:
                 response.failure("Request took too long")
+            elif response.status_code == 404:
+                response.success()
+
 
     @task(1)
     def get_metadata_subject_properties_property(self):
@@ -78,6 +83,8 @@ class QueryUser(HttpUser):
         with self.client.get(f"/metadata/{subject}/properties/{property}", catch_response=True) as response:
             if response.elapsed.total_seconds() > 1:
                 response.failure("Request took too long")
+            elif response.status_code == 404:
+                response.success()
 
     @task(1)
     def get_metadata_query(self):
