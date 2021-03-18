@@ -1,4 +1,5 @@
-import random
+from random import choice
+from string import ascii_uppercase
 
 subjects = ["01fb761b09aec85a63fb742c4dab2b72499bca6a6006b7594de6cb95",
             "01fb761b09aec85a63fb742c4dab2b72499bca6a6006b7594de6cb96",
@@ -32,7 +33,10 @@ subjects = ["01fb761b09aec85a63fb742c4dab2b72499bca6a6006b7594de6cb95",
             ]
 
 def get_random_subject():
-    return random.choice(subjects)
+    return choice(subjects)
+
+def get_invalid_subject():
+    return (''.join(choice(ascii_uppercase) for i in range(56)))
 
 if __name__ == '__main__':
     pass

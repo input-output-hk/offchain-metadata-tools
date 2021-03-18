@@ -7,10 +7,10 @@ services:
      - "8089:8089"
     volumes:
       - ./:/mnt/locust
-    command: -f /mnt/locust/locustfile.py --master --headless
+    command: -f /mnt/locust/locustfile.py --master --headless --run-time 5m
   
   worker:
     image: locustio/locust
     volumes:
       - ./:/mnt/locust
-    command: -f /mnt/locust/locustfile.py --worker --master-host master
+    command: -f /mnt/locust/locustfile.py --worker --master-host master --headless --users 1 --spawn-rate 3
