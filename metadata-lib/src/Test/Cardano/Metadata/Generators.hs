@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -7,17 +8,16 @@ module Test.Cardano.Metadata.Generators where
 import           Control.Monad.Except
 import qualified Data.Aeson                    as Aeson
 import           Data.Aeson.TH
-import           Data.ByteArray.Encoding       (Base (Base64), convertToBase)
-import qualified Data.ByteString               as BS
 import qualified Data.HashMap.Strict           as HM
 import           Data.List                     (intersperse)
+import           Data.Int (Int32, Int64)
 import qualified Data.Map.Strict               as M
 import           Data.Text                     (Text)
 import  Data.Functor.Identity (runIdentity)
 import qualified Data.Text                     as T
 import qualified Data.Vector                   as V
 import           Data.Word
-import           Hedgehog                      (Gen, MonadGen, fromGenT)
+import           Hedgehog                      (Gen, MonadGen, fromGenT, Opaque(Opaque))
 import Control.Monad.Morph (hoist)
 import qualified Hedgehog.Gen                  as Gen
 import qualified Hedgehog.Range                as Range
@@ -25,21 +25,21 @@ import           Network.URI                   (URI (URI), URIAuth (URIAuth))
 import qualified Cardano.Crypto.DSIGN.Class as Crypto
 import qualified Cardano.Crypto.Seed as Crypto
 import qualified Cardano.Crypto.DSIGN.Ed25519 as Crypto
-import qualified Cardano.Api as Cardano
-import qualified Test.Cardano.Api.Typed.Gen as Cardano
 
 import           Cardano.Metadata.Server.Types (BatchRequest (BatchRequest),
                                                 BatchResponse (BatchResponse))
-import           Cardano.Metadata.Types.Common (AnnotatedSignature, 
-                                                Description, Encoded (Encoded),
+import           Cardano.Metadata.Types.Common (File(File), Property, PropertyType(Verifiable), AttestedProperty(AttestedProperty), AnnotatedSignature, SequenceNumber, seqFromNatural,
+                                                Description,
                                                 HashFn (Blake2b224, Blake2b256, SHA256),
                                                 Name, Owner (Owner),
                                                 PreImage (PreImage),
-                                                Property (Property),
                                                 PropertyName (PropertyName),
                                                 Subject (Subject), unSubject, mkAnnotatedSignature)
-import qualified Cardano.Metadata.Types.Wallet as Wallet
 import qualified Cardano.Metadata.Types.Weakly as Weakly
+import qualified Cardano.Metadata.Validation.Types as Validation
+import Cardano.Metadata.Validation.Types (Difference(Added,Changed,Removed))
+import Cardano.Metadata.Transform (Transform, mkTransform)
+import qualified Cardano.Metadata.Validation.GitHub as GitHub
 
 data ComplexType = ComplexType { _ctArr :: [Int]
                                , _ctMap :: M.Map Word8 Word8
@@ -104,13 +104,26 @@ preImage = PreImage <$> Gen.text (Range.linear 0 128) Gen.hexit <*> hashFn
 owner :: MonadGen m => m Owner
 owner = Owner <$> publicKey <*> sig
 
-stronglyTypedPropertySignedWith :: (MonadGen m, Aeson.ToJSON a) => Crypto.SignKeyDSIGN Crypto.Ed25519DSIGN -> Subject -> PropertyName -> m a -> m (Property a)
-stronglyTypedPropertySignedWith skey subj pName genA = do
+sequenceNumber :: MonadGen m => m SequenceNumber
+sequenceNumber = seqFromNatural <$> Gen.integral (Range.linear 0 (fromIntegral (maxBound :: Int32)))
+
+attestedPropertySignedWith :: (MonadGen m, Aeson.ToJSON a) => Crypto.SignKeyDSIGN Crypto.Ed25519DSIGN -> Subject -> PropertyName -> m a -> m (AttestedProperty a)
+attestedPropertySignedWith skey subj pName genA = do
   a <- genA
-  Property <$> pure a <*> (Gen.maybe $ Gen.list (Range.linear 0 5) (pure $ mkAnnotatedSignature skey subj pName a))
+  AttestedProperty
+    <$> pure a
+    <*> (Gen.list (Range.linear 0 5) (pure $ mkAnnotatedSignature skey subj pName a))
+    <*> sequenceNumber
+
+attestedProperty' :: (MonadGen m, MonadIO m) => m (AttestedProperty Aeson.Value)
+attestedProperty' =
+  AttestedProperty
+    <$> propertyValue
+    <*> (Gen.list (Range.linear 0 5) annotatedSignature')
+    <*> sequenceNumber
 
 nameSignedWith :: MonadGen m => Crypto.SignKeyDSIGN Crypto.Ed25519DSIGN -> Subject -> m Name
-nameSignedWith skey subj = stronglyTypedPropertySignedWith skey subj "name" (Gen.text (Range.linear 1 256) Gen.unicodeAll)
+nameSignedWith skey subj = attestedPropertySignedWith skey subj "name" (Gen.text (Range.linear 1 256) Gen.unicodeAll)
 
 name :: (MonadIO m, MonadGen m) => m Name
 name = do
@@ -119,7 +132,7 @@ name = do
   nameSignedWith skey subj
 
 descriptionSignedWith :: MonadGen m => Crypto.SignKeyDSIGN Crypto.Ed25519DSIGN -> Subject -> m Description
-descriptionSignedWith skey subj = stronglyTypedPropertySignedWith skey subj "description" (Gen.text (Range.linear 1 256) Gen.unicodeAll)
+descriptionSignedWith skey subj = attestedPropertySignedWith skey subj "description" (Gen.text (Range.linear 1 256) Gen.unicodeAll)
 
 description :: (MonadIO m, MonadGen m) => m Description
 description = do
@@ -147,57 +160,8 @@ uriAuthority = do
                     ]
   pure $ URIAuth mempty (T.unpack $ "www." <> mid <> end) mempty
 
-assetURL :: MonadGen m => m Wallet.AssetURL
-assetURL = Wallet.AssetURL <$> httpsURI
-
-ticker :: MonadGen m => m Wallet.Ticker
-ticker = Wallet.Ticker <$> Gen.text (Range.linear 2 4) Gen.unicodeAll
-
-assetLogo :: MonadGen m => m Wallet.AssetLogo
-assetLogo = Wallet.AssetLogo . Encoded . convertToBase Base64 . BS.pack <$> Gen.list (Range.linear 0 256) (Gen.word8 Range.constantBounded)
-
-assetUnit :: MonadGen m => m Wallet.AssetUnit
-assetUnit = Wallet.AssetUnit
-  <$> Gen.text (Range.linear 1 30) Gen.unicodeAll
-  <*> Gen.integral (Range.linear 1 19)
-
 liftGen :: MonadGen m => Gen a -> m a
 liftGen = fromGenT . hoist (pure . runIdentity) 
-
-policy :: MonadGen m => m Wallet.Policy
-policy = do
-  script <- liftGen $ Cardano.genScriptInEra Cardano.MaryEra
-
-  pure $ Wallet.mkPolicy script
-
-walletMetadataSignedWith :: MonadGen m => Crypto.SignKeyDSIGN Crypto.Ed25519DSIGN -> Subject -> Wallet.Policy -> m Wallet.Metadata
-walletMetadataSignedWith skey subj pol = do
-  let
-    weakProp = do
-      pName <- propertyName 
-      prop  <- weaklyTypedPropertySignedWith skey subj pName
-      pure (pName, prop)
-
-  n      <- stronglyTypedPropertySignedWith skey subj "name" (Gen.text (Range.linear 1 50) Gen.unicodeAll)
-  desc   <- descriptionSignedWith skey subj
-  unit   <- Gen.maybe (stronglyTypedPropertySignedWith skey subj "unit" assetUnit)
-  logo   <- Gen.maybe (stronglyTypedPropertySignedWith skey subj "logo" assetLogo)
-  url    <- Gen.maybe (stronglyTypedPropertySignedWith skey subj "url" assetURL)
-  tick   <- Gen.maybe (stronglyTypedPropertySignedWith skey subj "ticker" ticker)
-  rest   <- (fmap HM.fromList $ Gen.list (Range.linear 1 5) weakProp)
-
-  pure $ Wallet.Metadata subj pol n desc unit logo url tick rest
-
-walletMetadata :: (MonadGen m, MonadIO m) => Subject -> Wallet.Policy -> m Wallet.Metadata
-walletMetadata subj pol = do
-  skey <- signingKey
-  walletMetadataSignedWith skey subj pol
-
-walletMetadata' :: (MonadGen m, MonadIO m) => m Wallet.Metadata
-walletMetadata' = do
-  pol <- policy
-  subj <- (Wallet.policyId pol <>) <$> Gen.text (Range.linear 0 200) (Gen.unicodeAll)
-  walletMetadata (Subject subj) pol
 
 batchRequest :: MonadGen m => m BatchRequest
 batchRequest =
@@ -212,7 +176,7 @@ batchRequestFor subjects = do
   pure $ BatchRequest subjs props
 
 batchResponse :: (MonadIO m, MonadGen m) => m BatchResponse
-batchResponse = BatchResponse <$> Gen.list (Range.linear 0 20) weaklyTypedMetadata'
+batchResponse = BatchResponse <$> Gen.list (Range.linear 0 20) weaklyMetadata
 
 key :: MonadGen m => m Word8
 key = Gen.word8 (Range.linear 0 maxBound)
@@ -224,43 +188,42 @@ keyVals :: MonadGen m => m [(Word8, Word8)]
 keyVals = do
   Gen.list (Range.linear 0 20) ((,) <$> key <*> val)
 
-weaklyTypedPropertySignedWith :: MonadGen m => Crypto.SignKeyDSIGN Crypto.Ed25519DSIGN -> Subject -> PropertyName -> m Weakly.Property
-weaklyTypedPropertySignedWith skey subj pName = do
-  v <- propertyValue
-  Property <$> pure v <*> (Gen.maybe $ Gen.list (Range.linear 0 5) (pure $ mkAnnotatedSignature skey subj pName v))
+verifiableProperty :: MonadGen m => m (Property 'Verifiable Aeson.Value)
+verifiableProperty = propertyValue
 
-weaklyTypedProperty :: (MonadIO m, MonadGen m) => Subject -> PropertyName -> m Weakly.Property
-weaklyTypedProperty subj pName = do
-  skey  <- signingKey
-  weaklyTypedPropertySignedWith skey subj pName
+weaklyMetadata :: MonadGen m => m (Weakly.Metadata)
+weaklyMetadata = do
+  Weakly.Metadata
+  <$> subject
+  <*> (fmap HM.fromList $ Gen.list (Range.linear 0 20) ((,) <$> propertyName <*> propertyValue))
 
-weaklyTypedProperty' :: (MonadIO m, MonadGen m) => m Weakly.Property
-weaklyTypedProperty' = do
-  subj  <- subject
-  pName <- propertyName
-  skey  <- signingKey
-  weaklyTypedPropertySignedWith skey subj pName
-
-weaklyTypedMetadataSignedWith :: MonadGen m => Crypto.SignKeyDSIGN Crypto.Ed25519DSIGN -> Subject -> m Weakly.Metadata
-weaklyTypedMetadataSignedWith skey subj = do
+validationMetadataSignedWith :: MonadGen m => Crypto.SignKeyDSIGN Crypto.Ed25519DSIGN -> Subject -> m Validation.Metadata
+validationMetadataSignedWith skey subj = do
   let
-    weakProp = do
+    attestedPropTuple = do
       pName <- propertyName
-      prop  <- weaklyTypedPropertySignedWith skey subj pName
+      prop <- attestedPropertySignedWith skey subj pName propertyValue
       pure (pName, prop)
 
-  Weakly.Metadata subj <$> (fmap HM.fromList $ Gen.list (Range.linear 0 20) weakProp)
+    verifiablePropTuple = do
+      pName <- propertyName
+      prop  <- verifiableProperty
+      pure (pName, prop)
 
-weaklyTypedMetadata :: (MonadIO m, MonadGen m) => Subject -> m Weakly.Metadata
-weaklyTypedMetadata subj = do
+  Validation.Metadata subj
+    <$> (fmap M.fromList $ Gen.list (Range.linear 0 10) attestedPropTuple)
+    <*> (fmap M.fromList $ Gen.list (Range.linear 0 10) verifiablePropTuple)
+
+validationMetadata :: (MonadIO m, MonadGen m) => Subject -> m Validation.Metadata
+validationMetadata subj = do
   skey <- signingKey
-  weaklyTypedMetadataSignedWith skey subj 
+  validationMetadataSignedWith skey subj 
 
-weaklyTypedMetadata' :: (MonadIO m, MonadGen m) => m Weakly.Metadata
-weaklyTypedMetadata' = do
+validationMetadata' :: (MonadIO m, MonadGen m) => m Validation.Metadata
+validationMetadata' = do
   skey   <- signingKey
   subj   <- subject
-  weaklyTypedMetadataSignedWith skey subj 
+  validationMetadataSignedWith skey subj 
 
 propertyName :: MonadGen m => m PropertyName
 propertyName = PropertyName <$> Gen.text (Range.linear 1 64) Gen.unicodeAll
@@ -276,5 +239,45 @@ propertyValue =
     [ Aeson.Array . V.fromList <$> Gen.list (Range.linear 0 5) propertyValue
     , Aeson.Object . HM.fromList <$> Gen.list (Range.linear 0 5) ((,) <$> Gen.text (Range.linear 1 64) Gen.unicodeAll <*> propertyValue)
     ]
+
+eitherWord8 :: MonadGen m => m (Either Word8 Word8)
+eitherWord8 = Gen.either (Gen.word8 Range.constantBounded) (Gen.word8 Range.constantBounded)
+
+transform :: MonadGen m => m (f a) -> m (Opaque (Transform r f a))
+transform genFa = Gen.choice [ (Opaque . mkTransform . const) <$> genFa ]
+
+diff :: MonadGen m => m a -> m (Difference a)
+diff genA =
+  Gen.choice [ Added <$> genA
+             , Changed <$> genA <*> genA
+             , Removed <$> genA
+             ]
+
+file :: MonadGen m => m a -> m (File a)
+file genA =
+  File
+    <$> genA
+    <*> Gen.integral (Range.exponential 0 (fromIntegral (maxBound :: Int64))) 
+    <*> Gen.string (Range.linear 0 64) Gen.unicode
+
+gitHubFileStatus :: MonadGen m => m GitHub.GitHubFileStatus
+gitHubFileStatus = Gen.choice [ pure GitHub.Added
+                              , pure GitHub.Modified
+                              , pure GitHub.Renamed
+                              , pure GitHub.Removed
+                              , GitHub.Unknown <$> Gen.text (Range.linear 0 64) Gen.unicode
+                              ]
+
+gitHubFile :: MonadGen m => m GitHub.GitHubFile
+gitHubFile =
+  GitHub.GitHubFile
+  <$> Gen.text (Range.linear 0 64) Gen.unicode
+  <*> gitHubFileStatus
+
+gitHubPullRequest :: MonadGen m => m GitHub.GitHubPullRequest
+gitHubPullRequest =
+  GitHub.GitHubPullRequest
+  <$> Gen.text (Range.linear 0 64) Gen.unicode
+  <*> Gen.int (Range.linear 1 maxBound)
 
 $(deriveJSON defaultOptions ''ComplexType)

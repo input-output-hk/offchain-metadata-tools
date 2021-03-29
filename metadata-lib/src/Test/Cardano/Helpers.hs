@@ -4,6 +4,7 @@ import           Data.Aeson          (FromJSON, ToJSON)
 import qualified Data.Aeson          as Aeson
 import qualified Data.HashMap.Strict as HM
 import           Data.List           (sort)
+import           Data.Word (Word8)
 import           Data.Text           (Text)
 import           Hedgehog            (Gen, MonadTest, failure, footnote, forAll,
                                       property, tripping, (===), toGenT, GenT)
@@ -28,6 +29,19 @@ prop_json_only_has_keys genA keys = property $ do
   a <- forAll genA
 
   a `onlyHasKeys` keys
+
+prop_functor_laws :: (Functor f, Show (f Word8), Eq a, Show a) => (f Word8 -> a) -> Gen (f Word8) -> H.Property
+prop_functor_laws obs genA = property $ do
+  fa <- forAll genA
+
+  -- Identity
+  obs (fmap id fa) === obs (id fa)
+
+  -- Composition
+  let plusTwo  = (+ 2)
+      mulThree = (* 3)
+
+  obs (fmap (mulThree . plusTwo) fa) === obs ((fmap mulThree . fmap plusTwo) fa)
 
 onlyHasKeys :: (MonadTest m, ToJSON a) => a -> [Text] -> m ()
 onlyHasKeys a ks =

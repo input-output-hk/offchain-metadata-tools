@@ -24,7 +24,7 @@ let
        ps.metadata-lib
        ps.metadata-server
        ps.metadata-store-postgres
-       ps.metadata-validator
+       ps.metadata-validator-github
        ps.metadata-webhook
     ];
     # packags = ps: pkgs.lib.attrValues (selectProjectPackages ps);

@@ -3,32 +3,37 @@ module Config where
 import qualified Colog
 import qualified Data.ByteString     as BS
 import           Data.Text           (Text)
+import qualified Data.Text as T
 import qualified GitHub
 import qualified GitHub.Data.Name    as GitHub
 import           Options.Applicative
+
+import Cardano.Metadata.Validation.GitHub (ExpectedBaseBranch(ExpectedBaseBranch))
 
 data AuthScheme = NoAuthScheme
                 | OAuthScheme BS.ByteString
 
 data Opts
-  = Opts { optAuth        :: AuthScheme
-         , optRepoOwner   :: Text
-         , optRepoName    :: Text
-         , optIssueNumber :: Int
-         , optLogSeverity :: Colog.Severity
+  = Opts { optAuth             :: AuthScheme
+         , optExpectBaseBranch :: ExpectedBaseBranch
+         , optRepoOwner        :: Text
+         , optRepoName         :: Text
+         , optIssueNumber      :: Int
+         , optLogSeverity      :: Colog.Severity
          }
 
 data Config
-  = Config { cfgAuth        :: AuthScheme
-           , cfgRepoOwner   :: GitHub.Name GitHub.Owner
-           , cfgRepoName    :: GitHub.Name GitHub.Repo
-           , cfgIssueNumber :: GitHub.IssueNumber
-           , cfgLogSeverity :: Colog.Severity
+  = Config { cfgAuth             :: AuthScheme
+           , cfgExpectBaseBranch :: ExpectedBaseBranch
+           , cfgRepoOwner        :: GitHub.Name GitHub.Owner
+           , cfgRepoName         :: GitHub.Name GitHub.Repo
+           , cfgIssueNumber      :: GitHub.IssueNumber
+           , cfgLogSeverity      :: Colog.Severity
            }
 
 mkConfig :: Opts -> Config
-mkConfig (Opts auth owner name issue severity) =
-  Config auth (GitHub.N owner) (GitHub.N name) (GitHub.IssueNumber issue) severity
+mkConfig (Opts auth expectBranch owner name issue severity) =
+  Config auth expectBranch (GitHub.N owner) (GitHub.N name) (GitHub.IssueNumber issue) severity
 
 opts :: ParserInfo Opts
 opts =
@@ -36,12 +41,13 @@ opts =
     parseOpts
     ( fullDesc
     <> progDesc "Validate a pull request against a GitHub repository."
-    <> header "metadata-validator - a tool to validate a metadata entry submitted via pull request."
+    <> header "metadata-validator-github - a tool to validate that metadata entry pull requests are in correct form."
     )
 
 parseOpts :: Parser Opts
 parseOpts = Opts
  <$> pAuthScheme
+ <*> (ExpectedBaseBranch . T.pack <$> strOption (long "expect-branch" <> help "All PRs must be against this branch." <> showDefault <> value "main"))
  <*> strArgument (metavar "REPO_OWNER" <> help "Owner of the GitHub repository")
  <*> strArgument (metavar "REPO_NAME" <> help "Name of the GitHub repository")
  <*> argument auto (metavar "ISSUE_NUMBER" <> help "ID of the GitHub pull request")

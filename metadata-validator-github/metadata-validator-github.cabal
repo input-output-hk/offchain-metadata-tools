@@ -1,21 +1,19 @@
 cabal-version:       >=1.10
-name:                metadata-validator
+name:                metadata-validator-github
 version:             0.1.0.0
-license-file:        ../LICENSE
+license-file:        LICENSE
 author:              Samuel Evans-Powell
 maintainer:          mail@sevanspowell.net
 build-type:          Simple
-extra-source-files:  ../CHANGELOG.md
+extra-source-files:  CHANGELOG
 
-executable metadata-validator
+executable metadata-validator-github
   hs-source-dirs:      src
   main-is:             Main.hs
   build-depends:       aeson
                      , base
                      , base64-bytestring
                      , bytestring
-                     , cardano-metadata-submitter
-                     , co-log
                      , co-log
                      , containers
                      , directory
@@ -53,5 +51,5 @@ executable metadata-validator
                         -Wno-unsafe
                         -threaded
 
-  other-modules:        Paths_metadata_validator
+  other-modules:        Paths_metadata_validator_github
                         Config

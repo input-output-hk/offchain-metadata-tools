@@ -14,6 +14,7 @@ import           Prelude hiding (read)
 import           Control.Exception.Safe        (catchAny)
 import           Control.Monad.IO.Class        (liftIO)
 import qualified Data.ByteString.Lazy          as BL
+import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy.Char8    as BLC
 import qualified Data.HashMap.Strict           as HM
 import           Data.Text                     (Text)
@@ -27,7 +28,7 @@ import           Cardano.Metadata.Server.Types (BatchRequest (BatchRequest),
 import           Cardano.Metadata.Store.Types
 import           Cardano.Metadata.Types.Common (PropertyName, Subject (Subject),
                                                 unPropertyName)
-import           Cardano.Metadata.Types.Weakly (Metadata (Metadata), Property,
+import           Cardano.Metadata.Types.Weakly (Metadata (Metadata),
                                                 getMetadataProperty,
                                                 metaSubject)
 
@@ -132,7 +133,7 @@ narrowProperty propName meta =
     Nothing   -> Left $ NoProperty (metaSubject meta) propName
     Just prop -> Right $ MetadataView (HM.singleton propName prop)
 
-data MetadataView = MetadataView { mvProps    :: HM.HashMap PropertyName Property
+data MetadataView = MetadataView { mvProps    :: HM.HashMap PropertyName Aeson.Value
                                  }
   deriving (Eq, Show)
 
