@@ -1,6 +1,6 @@
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE QuasiQuotes         #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -8,34 +8,57 @@ module Test.Cardano.Metadata.Validation
   ( tests
   ) where
 
-import           Data.Foldable (forM_, traverse_)
-import           Data.Int (Int64, Int32, Int8)
-import           Data.Validation (Validation(Failure))
-import qualified Data.List.NonEmpty as NE
-import qualified Data.Aeson                       as Aeson
-import           Hedgehog                         (MonadGen,
-                                                   forAll,
-                                                   property, (===))
-import           Hedgehog.Internal.Property       (forAllT)
-import qualified Hedgehog                         as H (Property)
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
-import qualified Data.Map.Strict as M
-import qualified Data.Text as T
-import           Test.Tasty                       (TestTree, testGroup)
+import qualified Data.Aeson                        as Aeson
+import           Data.Foldable                     (forM_, traverse_)
+import           Data.Int                          (Int32, Int64, Int8)
+import qualified Data.List.NonEmpty                as NE
+import qualified Data.Map.Strict                   as M
+import qualified Data.Text                         as T
+import           Data.Validation                   (Validation (Failure))
+import           Hedgehog                          (MonadGen, forAll, property,
+                                                    (===))
+import qualified Hedgehog                          as H (Property)
+import qualified Hedgehog.Gen                      as Gen
+import           Hedgehog.Internal.Property        (forAllT)
+import qualified Hedgehog.Range                    as Range
+import           Numeric.Natural                   (Natural)
+import           System.FilePath.Posix             (addExtension, dropExtension,
+                                                    takeExtension)
+import           Test.Tasty                        (TestTree, testGroup)
 import           Test.Tasty.Hedgehog
-import Numeric.Natural (Natural)
-import           Test.Tasty.HUnit                 (Assertion,
-                                                   testCase, (@?=))
-import Text.RawString.QQ (r)
-import System.FilePath.Posix (dropExtension, addExtension, takeExtension)
+import           Test.Tasty.HUnit                  (Assertion, testCase, (@?=))
+import           Text.RawString.QQ                 (r)
 
-import           Test.Cardano.Helpers             (prop_json_roundtrips)
-import qualified Test.Cardano.Metadata.Generators as Gen
+import           Test.Cardano.Helpers              (prop_json_roundtrips)
+import qualified Test.Cardano.Metadata.Generators  as Gen
 
-import           Cardano.Metadata.Types.Common    (File(File), AttestedProperty(AttestedProperty), Subject(Subject), seqFromNatural, unSequenceNumber, attestedValue, attestedSignatures, seqZero, seqSucc, AnnotatedSignature(AnnotatedSignature), deserialiseAttestationSignature, deserialiseBase16, deserialisePublicKey)
-import Cardano.Metadata.Validation.Types (metaAttestedProperties, metaVerifiableProperties, onMatchingAttestedProperties, Metadata(Metadata), valid, Difference(Added,Changed,Removed), invalid)
-import Cardano.Metadata.Validation.Rules (ValidationError_, ValidationError(ErrorMetadataFileTooBig, ErrorMetadataFileNameDoesntMatchSubject, ErrorMetadataPropertySequenceNumberMustBeLarger, ErrorMetadataFileExpectedExtension, ErrorMetadataFileBaseNameLengthBounds), maxFileSizeBytes, subjectMatchesFileName, sequenceNumber, sequenceNumbers, toAttestedPropertyDiffs, isJSONFile, baseFileNameLengthBounds)
+import           Cardano.Metadata.Types.Common     (AnnotatedSignature (AnnotatedSignature),
+                                                    AttestedProperty (AttestedProperty),
+                                                    File (File),
+                                                    Subject (Subject),
+                                                    attestedSignatures,
+                                                    attestedValue,
+                                                    deserialiseAttestationSignature,
+                                                    deserialiseBase16,
+                                                    deserialisePublicKey,
+                                                    seqFromNatural, seqSucc,
+                                                    seqZero, unSequenceNumber)
+import           Cardano.Metadata.Validation.Rules (ValidationError (ErrorMetadataFileBaseNameLengthBounds, ErrorMetadataFileExpectedExtension, ErrorMetadataFileNameDoesntMatchSubject, ErrorMetadataFileTooBig, ErrorMetadataPropertySequenceNumberMustBeLarger),
+                                                    ValidationError_,
+                                                    baseFileNameLengthBounds,
+                                                    isJSONFile,
+                                                    maxFileSizeBytes,
+                                                    sequenceNumber,
+                                                    sequenceNumbers,
+                                                    subjectMatchesFileName,
+                                                    toAttestedPropertyDiffs)
+import           Cardano.Metadata.Validation.Types (Difference (Added, Changed, Removed),
+                                                    Metadata (Metadata),
+                                                    invalid,
+                                                    metaAttestedProperties,
+                                                    metaVerifiableProperties,
+                                                    onMatchingAttestedProperties,
+                                                    valid)
 
 tests :: TestTree
 tests = testGroup "Validation tests"
@@ -65,7 +88,7 @@ prop_rules_isJSONFile = property $ do
 
   diff <- forAll $ Gen.diff genFile
 
-  isJSONFile diff 
+  isJSONFile diff
     === (valid :: Validation (NE.NonEmpty (ValidationError ())) ())
 
   -- All removed files should pass
@@ -143,7 +166,7 @@ prop_rules_maxFileSizeBytes = property $ do
                           ]
 
   -- A removed file of any size (even very large) is accepted
-  anySize <- forAll $ Gen.integral (Range.exponential 0 (fromIntegral (maxBound :: Int64))) 
+  anySize <- forAll $ Gen.integral (Range.exponential 0 (fromIntegral (maxBound :: Int64)))
   let removed = Removed $ fWithSize anySize
   maxFileSizeBytes 3 removed
     === (valid :: Validation (NE.NonEmpty (ValidationError ())) ())
@@ -162,7 +185,7 @@ prop_rules_maxFileSizeBytes = property $ do
 
 prop_rules_subjectMatchesFileName :: H.Property
 prop_rules_subjectMatchesFileName = property $ do
-  anySize     <- forAll $ Gen.integral (Range.exponential 0 (fromIntegral (maxBound :: Int64))) 
+  anySize     <- forAll $ Gen.integral (Range.exponential 0 (fromIntegral (maxBound :: Int64)))
   anyMeta     <- forAllT $ Gen.validationMetadata'
   anyFileName <- forAll $ Gen.string (Range.linear 0 64) Gen.unicode
 
@@ -233,7 +256,7 @@ prop_rules_sequenceNumbers = property $ do
 prop_helpers_toAttestedPropertyDiffs :: H.Property
 prop_helpers_toAttestedPropertyDiffs = property $ do
   anyFilePath        <- forAll $ Gen.string (Range.linear 0 64) Gen.unicode
-  anySize            <- forAll $ Gen.integral (Range.exponential 0 (fromIntegral (maxBound :: Int64))) 
+  anySize            <- forAll $ Gen.integral (Range.exponential 0 (fromIntegral (maxBound :: Int64)))
   anySubject         <- forAll $ Subject <$> Gen.text (Range.linear 0 64) Gen.unicode
   anyVerifiableProps <- forAll $ Gen.map (Range.linear 0 5) ((,) <$> Gen.propertyName <*> Gen.verifiableProperty)
 

@@ -6,8 +6,9 @@ import           Data.Aeson                    (FromJSON, ToJSON, (.:))
 import qualified Data.Aeson                    as Aeson
 import qualified Data.HashMap.Strict           as HM
 
-import           Cardano.Metadata.Types.Common (PropertyName,
-                                                Subject, toPropertyNameList, fromPropertyNameList)
+import           Cardano.Metadata.Types.Common (PropertyName, Subject,
+                                                fromPropertyNameList,
+                                                toPropertyNameList)
 
 
 data Metadata

@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Cardano.Metadata.Validation.Rules
@@ -31,34 +31,34 @@ module Cardano.Metadata.Validation.Rules
   , Transform.Transform_
   ) where
 
-import Data.Validation (Validation)
-import Data.List.NonEmpty (NonEmpty)
-import Data.Void (Void, absurd)
-import qualified Data.Text as T
-import qualified Data.Aeson as Aeson
-import qualified Data.Map.Strict as M
-import qualified Data.Map.Merge.Strict as M
-import Data.Foldable (traverse_)
-import Numeric.Natural (Natural)
-import Data.Text (Text)
-import Data.Function ((&))
-import Data.Bool (bool)
+import qualified Data.Aeson                        as Aeson
+import           Data.Bool                         (bool)
+import           Data.Foldable                     (traverse_)
+import           Data.Function                     ((&))
+import           Data.List.NonEmpty                (NonEmpty)
+import qualified Data.Map.Merge.Strict             as M
+import qualified Data.Map.Strict                   as M
+import           Data.Text                         (Text)
+import qualified Data.Text                         as T
+import           Data.Validation                   (Validation)
+import           Data.Void                         (Void, absurd)
+import           Numeric.Natural                   (Natural)
 
-import Cardano.Metadata.Types.Common 
-import Cardano.Metadata.Validation.Types 
-import Cardano.Metadata.Transform
-import qualified Cardano.Metadata.Transform as Transform
+import           Cardano.Metadata.Transform
+import qualified Cardano.Metadata.Transform        as Transform
+import           Cardano.Metadata.Types.Common
+import           Cardano.Metadata.Validation.Types
 
 data ValidationError e = ErrorMetadataFileTooBig Natural Natural
                        -- ^ Size of metadata file in bytes exceeds
                        -- maximum (maximum, actual)
-                       | ErrorMetadataFileNameDoesntMatchSubject Subject Text 
+                       | ErrorMetadataFileNameDoesntMatchSubject Subject Text
                        -- ^ Name of the file does not match the
                        -- subject (subject, fileName). This is a
                        -- requirement because otherwise an attacker
                        -- could submit conflicting entries for an
                        -- existing subject by using a different
-                       -- file name. 
+                       -- file name.
                        | ErrorMetadataPropertySequenceNumberMustBeLarger (AttestedProperty Aeson.Value) (AttestedProperty Aeson.Value) SequenceNumber SequenceNumber
                        -- ^ The value of the property changed but the
                        -- sequence number did not increase (propery
@@ -161,7 +161,7 @@ baseFileNameLengthBounds mini maxi diff =
           if len >= mini && len <= maxi
           then valid
           else invalid $ ErrorMetadataFileBaseNameLengthBounds baseName (mini, maxi) len
-          
+
 
 -- | Ensure that the size (in bytes) of a new metadata entry file does
 -- not exceed the given amount.
@@ -222,7 +222,7 @@ sequenceNumber (Changed oldProp newProp) =
     oldSeqNum = attestedSequenceNumber oldProp
     newSeqNum = attestedSequenceNumber newProp
   in
-    newSeqNum > oldSeqNum 
+    newSeqNum > oldSeqNum
     & bool
       (invalid $ ErrorMetadataPropertySequenceNumberMustBeLarger oldProp newProp oldSeqNum newSeqNum)
       valid
@@ -258,7 +258,7 @@ toAttestedPropertyDiffs (Changed old new) =
   let
     attestedOld = metaAttestedProperties $ fileContents old
     attestedNew = metaAttestedProperties $ fileContents new
-  
+
     -- Properties present in both that have been modified are considered changed
     changed = M.zipWithMaybeMatched (\_key a b -> if a == b then Nothing else Just (Changed a b))
     -- Properties present only in new have been added

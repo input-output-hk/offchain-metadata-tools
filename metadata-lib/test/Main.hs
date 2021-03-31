@@ -1,11 +1,11 @@
-import           Test.Tasty                         (defaultMain,
-                                                     testGroup)
+import           Test.Tasty                              (defaultMain,
+                                                          testGroup)
 
 import qualified Test.Cardano.Metadata.Server
 import qualified Test.Cardano.Metadata.Server.Types
 import qualified Test.Cardano.Metadata.Store.Simple
-import qualified Test.Cardano.Metadata.Types
 import qualified Test.Cardano.Metadata.Transform
+import qualified Test.Cardano.Metadata.Types
 import qualified Test.Cardano.Metadata.Validation
 import qualified Test.Cardano.Metadata.Validation.GitHub
 

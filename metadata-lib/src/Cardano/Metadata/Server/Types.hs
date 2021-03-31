@@ -31,8 +31,7 @@ import           Data.Aeson.TH
 import qualified Data.HashMap.Strict           as HM
 import           Text.Casing
 
-import           Cardano.Metadata.Types.Common (PropertyName,
-                                                Subject)
+import           Cardano.Metadata.Types.Common (PropertyName, Subject)
 import qualified Cardano.Metadata.Types.Weakly as Weakly
 
 -- | Represents the content of a batch request to the metadata system.

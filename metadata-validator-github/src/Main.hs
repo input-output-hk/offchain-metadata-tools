@@ -1,31 +1,39 @@
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE InstanceSigs               #-}
+{-# LANGUAGE KindSignatures             #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE RankNTypes                 #-}
+{-# LANGUAGE TypeSynonymInstances       #-}
 
 module Main where
 
-import Colog
-import Prelude hiding (log)
-import qualified Options.Applicative as Opt
-import Data.Aeson (FromJSON)
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Except (runExceptT, ExceptT, MonadError)
-import Control.Monad.Reader (ReaderT, MonadReader, runReaderT)
-import System.Exit (exitSuccess, exitFailure)
+import           Colog
+import           Control.Monad.Except               (ExceptT, MonadError,
+                                                     runExceptT)
+import           Control.Monad.IO.Class             (MonadIO, liftIO)
+import           Control.Monad.Reader               (MonadReader, ReaderT,
+                                                     runReaderT)
+import           Data.Aeson                         (FromJSON)
+import qualified Data.Text                          as T
+import qualified Data.Vector                        as Vector
 import qualified GitHub
-import qualified Data.Vector as Vector
-import qualified Data.Text as T
+import qualified Options.Applicative                as Opt
+import           Prelude                            hiding (log)
+import           System.Exit                        (exitFailure, exitSuccess)
 
-import Cardano.Metadata.Validation.GitHub (PullRequestValidationError, gitHubValidationRules, prettyPrintPRValidationError, fromGHFile, fromGHPullRequest)
-import Config (Config(Config), AuthScheme(NoAuthScheme, OAuthScheme), opts, mkConfig)
+import           Cardano.Metadata.Validation.GitHub (PullRequestValidationError,
+                                                     fromGHFile,
+                                                     fromGHPullRequest,
+                                                     gitHubValidationRules,
+                                                     prettyPrintPRValidationError)
+import           Config                             (AuthScheme (NoAuthScheme, OAuthScheme),
+                                                     Config (Config), mkConfig,
+                                                     opts)
 
 data Env m = Env { envLogAction  :: !(LogAction m Message) }
 

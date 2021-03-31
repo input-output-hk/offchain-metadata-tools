@@ -19,6 +19,7 @@ import           Network.HTTP.Types.Status      (ok200)
 import qualified Network.Wreq                   as Wreq
 import           Servant
 import           Servant.GitHub.Webhook         (RepoWebhookEvent (..))
+import           System.FilePath.Posix          (takeBaseName)
 
 import           Cardano.Metadata.Store.Types   (StoreInterface (..))
 import           Cardano.Metadata.Types.Common  (Subject (Subject))
@@ -102,7 +103,7 @@ pushHook intf getEntryFromFile _ ev@(PushEvent' (Commit added modified removed) 
 
     removeEntry :: StoreInterface Subject Weakly.Metadata -> Text -> IO ()
     removeEntry (StoreInterface { storeDelete = delete }) removedFile = do
-      let jsonSuffix = ".json"
-      case T.stripSuffix jsonSuffix removedFile of
-        Nothing      -> putStrLn $ "Not removing 'removedFile' because it's file extension does not match: '" <> T.unpack jsonSuffix <> "'."
-        Just subject -> delete (Subject subject)
+      let removedFileStr = T.unpack removedFile
+      case takeBaseName removedFileStr of
+        ""      -> putStrLn $ "Not removing '" <> removedFileStr <> "' because it's not a file."
+        subject -> delete (Subject $ T.pack subject)

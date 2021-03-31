@@ -1,4 +1,4 @@
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Cardano.Metadata.Validation.Types
@@ -14,18 +14,20 @@ module Cardano.Metadata.Validation.Types
   , valid
   ) where
 
-import Data.Validation (Validation(Failure))
-import Data.List.NonEmpty (NonEmpty)
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as M
-import qualified Data.Map.Merge.Strict as M
-import qualified Data.HashMap.Strict as HM
-import qualified Data.Bifunctor as Bifunctor
-import qualified Data.Aeson as Aeson
-import Data.Aeson (ToJSON, FromJSON, (.:))
+import           Data.Aeson                    (FromJSON, ToJSON, (.:))
+import qualified Data.Aeson                    as Aeson
+import qualified Data.Bifunctor                as Bifunctor
+import qualified Data.HashMap.Strict           as HM
+import           Data.List.NonEmpty            (NonEmpty)
+import qualified Data.Map.Merge.Strict         as M
+import           Data.Map.Strict               (Map)
+import qualified Data.Map.Strict               as M
+import           Data.Validation               (Validation (Failure))
 
-import Cardano.Metadata.Transform
-import Cardano.Metadata.Types.Common (Subject, PropertyName, Property, PropertyType(Attested,Verifiable), toPropertyNameList, fromPropertyNameList)
+import           Cardano.Metadata.Transform
+import           Cardano.Metadata.Types.Common (Property, PropertyName, PropertyType (Attested, Verifiable),
+                                                Subject, fromPropertyNameList,
+                                                toPropertyNameList)
 
 data Metadata
   = Metadata { metaSubject              :: Subject
@@ -68,7 +70,7 @@ parseProperties obj =
     properties :: [(PropertyName, Aeson.Value)]
     properties = toPropertyNameList $ HM.toList $ foldr HM.delete obj ["subject"]
 
-    partitioned = 
+    partitioned =
       foldr (\(name, val) (atts,vers) ->
         case Aeson.fromJSON val :: Aeson.Result (Property 'Attested Aeson.Value) of
           Aeson.Success attested -> ((name, attested):atts,             vers)

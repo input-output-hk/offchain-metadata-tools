@@ -1,14 +1,14 @@
 module Config where
 
 import qualified Colog
-import qualified Data.ByteString     as BS
-import           Data.Text           (Text)
-import qualified Data.Text as T
+import qualified Data.ByteString                    as BS
+import           Data.Text                          (Text)
+import qualified Data.Text                          as T
 import qualified GitHub
-import qualified GitHub.Data.Name    as GitHub
+import qualified GitHub.Data.Name                   as GitHub
 import           Options.Applicative
 
-import Cardano.Metadata.Validation.GitHub (ExpectedBaseBranch(ExpectedBaseBranch))
+import           Cardano.Metadata.Validation.GitHub (ExpectedBaseBranch (ExpectedBaseBranch))
 
 data AuthScheme = NoAuthScheme
                 | OAuthScheme BS.ByteString
