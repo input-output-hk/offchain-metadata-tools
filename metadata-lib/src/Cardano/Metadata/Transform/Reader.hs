@@ -1,7 +1,7 @@
-{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveAnyClass      #-}
+{-# LANGUAGE DeriveFunctor       #-}
+{-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE DeriveFunctor #-}
 
 module Cardano.Metadata.Transform.Reader
   ( Transform
@@ -10,9 +10,10 @@ module Cardano.Metadata.Transform.Reader
   , withInput
   ) where
 
-import Control.Monad.Reader (ReaderT(ReaderT), runReaderT, withReaderT)
-import Control.Applicative (empty, Alternative, (<|>))
-import Control.Comonad
+import           Control.Applicative  (Alternative, empty, (<|>))
+import           Control.Comonad
+import           Control.Monad.Reader (ReaderT (ReaderT), runReaderT,
+                                       withReaderT)
 
 data Transform r f a = Transform (ReaderT r f a)
 
@@ -32,7 +33,7 @@ instance Alternative f => Alternative (Transform r f) where
   empty = Transform empty
   (Transform f1) <|> (Transform f2) = Transform $ f1 <|> f2
 
-instance (Monoid r, Comonad f) => Comonad (Transform r f) where 
+instance (Monoid r, Comonad f) => Comonad (Transform r f) where
   extract trans = extract $ trans `apply` mempty
 
   duplicate (Transform (ReaderT f)) =

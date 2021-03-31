@@ -2,21 +2,20 @@ module Test.Cardano.Metadata.Transform
   ( tests
   ) where
 
-import Data.Validation (Validation(Success, Failure))
+import           Data.Validation                  (Validation (Failure, Success))
 import           Data.Word
-import           Hedgehog                         (forAll,
-                                                   property, (===), unOpaque)
+import           Hedgehog                         (forAll, property, unOpaque,
+                                                   (===))
 import qualified Hedgehog                         as H (Property)
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
+import qualified Hedgehog.Gen                     as Gen
+import qualified Hedgehog.Range                   as Range
 import           Test.Tasty                       (TestTree, testGroup)
 import           Test.Tasty.Hedgehog
-import           Test.Tasty.HUnit                 (Assertion,
-                                                   testCase, (@?=))
+import           Test.Tasty.HUnit                 (Assertion, testCase, (@?=))
 
 -- import           Test.Cardano.Helpers             (prop_functor_laws)
 
-import Cardano.Metadata.Transform
+import           Cardano.Metadata.Transform
 import qualified Test.Cardano.Metadata.Generators as Gen
 
 tests :: TestTree
@@ -103,7 +102,7 @@ prop_monad_laws = property $ do
   -- Left identity
   obs (return a >>= k) === obs (k a)
 
-  -- Right identity 
+  -- Right identity
   obs (m >>= return) === obs (m)
 
   -- Associativity

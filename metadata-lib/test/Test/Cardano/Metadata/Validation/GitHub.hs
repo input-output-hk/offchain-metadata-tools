@@ -1,30 +1,32 @@
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE RankNTypes          #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-} 
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Test.Cardano.Metadata.Validation.GitHub
   ( tests
   ) where
 
-import           Data.Foldable (traverse_)
-import           Colog (LoggerT(LoggerT), Message, runLoggerT, usingLoggerT)
-import           Control.Monad.Except (MonadError, throwError, catchError, Except, lift, runExcept)
-import           Hedgehog                         (forAll,
-                                                   property, (===))
-import qualified Hedgehog                         as H (Property)
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
-import           Test.Tasty                       (TestTree, testGroup)
+import           Colog                              (LoggerT (LoggerT), Message,
+                                                     runLoggerT, usingLoggerT)
+import           Control.Monad.Except               (Except, MonadError,
+                                                     catchError, lift,
+                                                     runExcept, throwError)
+import           Data.Foldable                      (traverse_)
+import           Hedgehog                           (forAll, property, (===))
+import qualified Hedgehog                           as H (Property)
+import qualified Hedgehog.Gen                       as Gen
+import qualified Hedgehog.Range                     as Range
+import           Test.Tasty                         (TestTree, testGroup)
 import           Test.Tasty.Hedgehog
 
-import qualified Test.Cardano.Metadata.Generators as Gen
+import qualified Test.Cardano.Metadata.Generators   as Gen
 
-import Cardano.Metadata.Validation.GitHub
+import           Cardano.Metadata.Validation.GitHub
 
 tests :: TestTree
 tests = testGroup "GitHub validation tests"

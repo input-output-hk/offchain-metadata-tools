@@ -1,10 +1,10 @@
-{-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE DerivingVia                #-}
+{-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE PatternSynonyms            #-}
 
 module Cardano.Metadata.Validation.GitHub
   (
@@ -34,19 +34,18 @@ module Cardano.Metadata.Validation.GitHub
   ) where
 
 
-import           Colog                         (pattern D, pattern E, pattern I, pattern W,
-                                                Message, WithLog,
-                                                log)
-import Data.String (IsString)
-import Data.Text (Text)
-import Prelude hiding (log)
-import qualified Data.Text as T
-import Control.Monad.Except (MonadError, throwError)
-import Data.Foldable (traverse_)
-import Data.Function ((&))
-import Quiet (Quiet(Quiet))
+import           Colog                (pattern D, pattern E, pattern I, Message,
+                                       pattern W, WithLog, log)
+import           Control.Monad.Except (MonadError, throwError)
+import           Data.Foldable        (traverse_)
+import           Data.Function        ((&))
+import           Data.String          (IsString)
+import           Data.Text            (Text)
+import qualified Data.Text            as T
+import           GHC.Generics         (Generic)
 import qualified GitHub
-import GHC.Generics (Generic)
+import           Prelude              hiding (log)
+import           Quiet                (Quiet (Quiet))
 
 newtype ExpectedBaseBranch = ExpectedBaseBranch Text
   deriving (Generic, Eq, Ord)
@@ -97,7 +96,7 @@ fileStatus = ghFileStatus
 data GitHubPullRequest
   = GitHubPullRequest { ghPRBaseBranch      :: Text
                       , ghPRNumChangedFiles :: Int
-                      } 
+                      }
   deriving (Eq, Show)
 
 prBaseBranch :: GitHubPullRequest -> Text
@@ -133,7 +132,7 @@ gitHubValidationRules
 gitHubValidationRules expectedBaseBranch pr files = do
   log D $ T.pack $ "Validating pull request: '" <> show pr <> "'."
 
-  _ <- validatePR expectedBaseBranch pr 
+  _ <- validatePR expectedBaseBranch pr
 
   log D $ T.pack $ "Validating pull request files: '" <> show files <> "'."
   log I $ T.pack $ "Validating " <> show (pr & prNumChangedFiles) <> " files."

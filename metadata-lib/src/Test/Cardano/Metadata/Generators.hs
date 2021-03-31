@@ -1,45 +1,52 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
 
 module Test.Cardano.Metadata.Generators where
 
+import qualified Cardano.Crypto.DSIGN.Class         as Crypto
+import qualified Cardano.Crypto.DSIGN.Ed25519       as Crypto
+import qualified Cardano.Crypto.Seed                as Crypto
 import           Control.Monad.Except
-import qualified Data.Aeson                    as Aeson
+import           Control.Monad.Morph                (hoist)
+import qualified Data.Aeson                         as Aeson
 import           Data.Aeson.TH
-import qualified Data.HashMap.Strict           as HM
-import           Data.List                     (intersperse)
-import           Data.Int (Int32, Int64)
-import qualified Data.Map.Strict               as M
-import           Data.Text                     (Text)
-import  Data.Functor.Identity (runIdentity)
-import qualified Data.Text                     as T
-import qualified Data.Vector                   as V
+import           Data.Functor.Identity              (runIdentity)
+import qualified Data.HashMap.Strict                as HM
+import           Data.Int                           (Int32, Int64)
+import           Data.List                          (intersperse)
+import qualified Data.Map.Strict                    as M
+import           Data.Text                          (Text)
+import qualified Data.Text                          as T
+import qualified Data.Vector                        as V
 import           Data.Word
-import           Hedgehog                      (Gen, MonadGen, fromGenT, Opaque(Opaque))
-import Control.Monad.Morph (hoist)
-import qualified Hedgehog.Gen                  as Gen
-import qualified Hedgehog.Range                as Range
-import           Network.URI                   (URI (URI), URIAuth (URIAuth))
-import qualified Cardano.Crypto.DSIGN.Class as Crypto
-import qualified Cardano.Crypto.Seed as Crypto
-import qualified Cardano.Crypto.DSIGN.Ed25519 as Crypto
+import           Hedgehog                           (Gen, MonadGen,
+                                                     Opaque (Opaque), fromGenT)
+import qualified Hedgehog.Gen                       as Gen
+import qualified Hedgehog.Range                     as Range
+import           Network.URI                        (URI (URI),
+                                                     URIAuth (URIAuth))
 
-import           Cardano.Metadata.Server.Types (BatchRequest (BatchRequest),
-                                                BatchResponse (BatchResponse))
-import           Cardano.Metadata.Types.Common (File(File), Property, PropertyType(Verifiable), AttestedProperty(AttestedProperty), AnnotatedSignature, SequenceNumber, seqFromNatural,
-                                                Description,
-                                                HashFn (Blake2b224, Blake2b256, SHA256),
-                                                Name, Owner (Owner),
-                                                PreImage (PreImage),
-                                                PropertyName (PropertyName),
-                                                Subject (Subject), unSubject, mkAnnotatedSignature)
-import qualified Cardano.Metadata.Types.Weakly as Weakly
-import qualified Cardano.Metadata.Validation.Types as Validation
-import Cardano.Metadata.Validation.Types (Difference(Added,Changed,Removed))
-import Cardano.Metadata.Transform (Transform, mkTransform)
+import           Cardano.Metadata.Server.Types      (BatchRequest (BatchRequest),
+                                                     BatchResponse (BatchResponse))
+import           Cardano.Metadata.Transform         (Transform, mkTransform)
+import           Cardano.Metadata.Types.Common      (AnnotatedSignature, AttestedProperty (AttestedProperty),
+                                                     Description, File (File),
+                                                     HashFn (Blake2b224, Blake2b256, SHA256),
+                                                     Name, Owner (Owner),
+                                                     PreImage (PreImage),
+                                                     Property,
+                                                     PropertyName (PropertyName),
+                                                     PropertyType (Verifiable),
+                                                     SequenceNumber,
+                                                     Subject (Subject),
+                                                     mkAnnotatedSignature,
+                                                     seqFromNatural, unSubject)
+import qualified Cardano.Metadata.Types.Weakly      as Weakly
 import qualified Cardano.Metadata.Validation.GitHub as GitHub
+import           Cardano.Metadata.Validation.Types  (Difference (Added, Changed, Removed))
+import qualified Cardano.Metadata.Validation.Types  as Validation
 
 data ComplexType = ComplexType { _ctArr :: [Int]
                                , _ctMap :: M.Map Word8 Word8
@@ -161,7 +168,7 @@ uriAuthority = do
   pure $ URIAuth mempty (T.unpack $ "www." <> mid <> end) mempty
 
 liftGen :: MonadGen m => Gen a -> m a
-liftGen = fromGenT . hoist (pure . runIdentity) 
+liftGen = fromGenT . hoist (pure . runIdentity)
 
 batchRequest :: MonadGen m => m BatchRequest
 batchRequest =
@@ -217,13 +224,13 @@ validationMetadataSignedWith skey subj = do
 validationMetadata :: (MonadIO m, MonadGen m) => Subject -> m Validation.Metadata
 validationMetadata subj = do
   skey <- signingKey
-  validationMetadataSignedWith skey subj 
+  validationMetadataSignedWith skey subj
 
 validationMetadata' :: (MonadIO m, MonadGen m) => m Validation.Metadata
 validationMetadata' = do
   skey   <- signingKey
   subj   <- subject
-  validationMetadataSignedWith skey subj 
+  validationMetadataSignedWith skey subj
 
 propertyName :: MonadGen m => m PropertyName
 propertyName = PropertyName <$> Gen.text (Range.linear 1 64) Gen.unicodeAll
@@ -257,7 +264,7 @@ file :: MonadGen m => m a -> m (File a)
 file genA =
   File
     <$> genA
-    <*> Gen.integral (Range.exponential 0 (fromIntegral (maxBound :: Int64))) 
+    <*> Gen.integral (Range.exponential 0 (fromIntegral (maxBound :: Int64)))
     <*> Gen.string (Range.linear 0 64) Gen.unicode
 
 gitHubFileStatus :: MonadGen m => m GitHub.GitHubFileStatus

@@ -11,17 +11,18 @@ module Test.Cardano.Metadata.Store
   , testKeyValueComplexTypeImplementation
   ) where
 
-import           Prelude hiding (read)
 import           Control.Monad                    (join)
 import           Data.Functor                     (void)
 import           Data.List                        (sort)
 import qualified Data.Map.Strict                  as M
 import           Data.Maybe                       (catMaybes)
 import           Data.Word
-import           Hedgehog                         (evalIO, forAll, property, (===))
+import           Hedgehog                         (evalIO, forAll, property,
+                                                   (===))
 import qualified Hedgehog                         as H (Property)
 import qualified Hedgehog.Gen                     as Gen
 import qualified Hedgehog.Range                   as Range
+import           Prelude                          hiding (read)
 import           Test.Tasty
 import           Test.Tasty.Hedgehog
 

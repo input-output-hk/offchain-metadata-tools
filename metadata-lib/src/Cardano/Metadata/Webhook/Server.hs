@@ -13,13 +13,13 @@ import           Data.List.NonEmpty             (NonEmpty)
 import qualified Data.List.NonEmpty             as NE
 import           Data.Text                      (Text)
 import qualified Data.Text                      as T
-import System.FilePath.Posix (takeBaseName)
 import           Network.HTTP.Types             (hAccept, hAuthorization,
                                                  hUserAgent)
 import           Network.HTTP.Types.Status      (ok200)
 import qualified Network.Wreq                   as Wreq
 import           Servant
 import           Servant.GitHub.Webhook         (RepoWebhookEvent (..))
+import           System.FilePath.Posix          (takeBaseName)
 
 import           Cardano.Metadata.Store.Types   (StoreInterface (..))
 import           Cardano.Metadata.Types.Common  (Subject (Subject))

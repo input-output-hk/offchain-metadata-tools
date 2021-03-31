@@ -9,11 +9,10 @@ module Test.Cardano.Metadata.Server.Types
 
 import qualified Data.Aeson                       as Aeson
 import qualified Data.HashMap.Strict              as HM
-import qualified Data.Vector as V
+import qualified Data.Vector                      as V
 import           Test.Tasty                       (TestTree, testGroup)
 import           Test.Tasty.Hedgehog
-import           Test.Tasty.HUnit                 (Assertion,
-                                                   testCase, (@?=))
+import           Test.Tasty.HUnit                 (Assertion, testCase, (@?=))
 import           Text.RawString.QQ
 
 import           Cardano.Metadata.Server.Types
@@ -140,7 +139,7 @@ unit_batch_response_json_spec = do
       , ( Weakly.Metadata
             "7f71940915ea5fe85e840f843c929eba467e6f050475bad1f10b9c274d1888c0"
             $ HM.fromList
-                [ ( "description" 
+                [ ( "description"
                   , Aeson.Object $ HM.fromList
                      [ ("value", Aeson.String "rex")
                      , ("signatures", Aeson.Array $ V.fromList
