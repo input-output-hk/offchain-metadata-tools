@@ -13,6 +13,7 @@ import           Data.List.NonEmpty             (NonEmpty)
 import qualified Data.List.NonEmpty             as NE
 import           Data.Text                      (Text)
 import qualified Data.Text                      as T
+import System.FilePath.Posix (takeBaseName)
 import           Network.HTTP.Types             (hAccept, hAuthorization,
                                                  hUserAgent)
 import           Network.HTTP.Types.Status      (ok200)
@@ -102,7 +103,7 @@ pushHook intf getEntryFromFile _ ev@(PushEvent' (Commit added modified removed) 
 
     removeEntry :: StoreInterface Subject Weakly.Metadata -> Text -> IO ()
     removeEntry (StoreInterface { storeDelete = delete }) removedFile = do
-      let jsonSuffix = ".json"
-      case T.stripSuffix jsonSuffix removedFile of
-        Nothing      -> putStrLn $ "Not removing 'removedFile' because it's file extension does not match: '" <> T.unpack jsonSuffix <> "'."
-        Just subject -> delete (Subject subject)
+      let removedFileStr = T.unpack removedFile
+      case takeBaseName removedFileStr of
+        ""      -> putStrLn $ "Not removing '" <> removedFileStr <> "' because it's not a file."
+        subject -> delete (Subject $ T.pack subject)
