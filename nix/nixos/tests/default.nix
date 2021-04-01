@@ -1,4 +1,5 @@
 { pkgs
+, haskellPackages ? (import ../../../default.nix {}).project
 , supportedSystems ? [ "x86_64-linux" ]
 }:
 
@@ -13,7 +14,11 @@ with pkgs.commonLib;
   in test ({
     inherit pkgs system config;
   } // args);
-  callTest = fn: args: forAllSystems (system: hydraJob (importTest fn args system));
+  callTest = fn: args: forAllSystems (system: let test = importTest fn args system; in hydraJob test // { inherit test; });
 in rec {
-  metadataStorePostgres = callTest ./metadata-store-postgres.nix {};
+  metadataStorePostgres = callTest ./metadata-store-postgres.nix { inherit haskellPackages; };
+  # Test will require local faucet setup
+  # asset                 = callTest ./docs/asset.nix { inherit (pkgs.commonLib) sources; };
+  noNixSetup            = callTest ./docs/no-nix-setup.nix { inherit haskellPackages; };
+  nixSetup              = callTest ./docs/nix-setup.nix {};
 }

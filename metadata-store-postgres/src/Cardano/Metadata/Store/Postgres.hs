@@ -1,16 +1,16 @@
-{-# LANGUAGE DeriveAnyClass             #-}
-{-# LANGUAGE FlexibleContexts           #-}
-{-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE IncoherentInstances        #-}
-{-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE QuasiQuotes                #-}
-{-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE TemplateHaskell            #-}
-{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE IncoherentInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Cardano.Metadata.Store.Postgres
   ( read
@@ -24,26 +24,31 @@ module Cardano.Metadata.Store.Postgres
   , PostgresKeyValueException(..)
   ) where
 
-import           Cardano.Metadata.Store.Types
-import           Control.Exception.Safe
-import           Control.Monad.Reader
-import           Data.Aeson                   (FromJSON, FromJSONKey, ToJSON,
-                                               ToJSONKey)
-import qualified Data.Aeson                   as Aeson
+import Cardano.Metadata.Store.Types
+import Control.Exception.Safe
+import Control.Monad.Reader
+import Data.Aeson
+    ( FromJSON, FromJSONKey, ToJSON, ToJSONKey )
+import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Encoding.Internal as Aeson
-import qualified Data.Aeson.Types             as Aeson
-import           Data.Coerce                  (coerce)
-import qualified Data.Map.Strict              as M
-import           Data.Pool
-import           Data.Text                    (Text)
-import qualified Data.Text.Lazy               as TL
-import qualified Data.Text.Lazy.Encoding      as TLE
-import           Data.Traversable             (for)
-import           Database.Persist             hiding (delete, update)
-import           Database.Persist.Sql         (ConnectionPool, Single (Single),
-                                               SqlBackend)
-import qualified Database.Persist.Sql         as Sql
-import           Prelude                      hiding (init, read)
+import qualified Data.Aeson.Types as Aeson
+import Data.Coerce
+    ( coerce )
+import qualified Data.Map.Strict as M
+import Data.Pool
+import Data.Text
+    ( Text )
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Lazy.Encoding as TLE
+import Data.Traversable
+    ( for )
+import Database.Persist hiding
+    ( delete, update )
+import Database.Persist.Sql
+    ( ConnectionPool, Single (Single), SqlBackend )
+import qualified Database.Persist.Sql as Sql
+import Prelude hiding
+    ( init, read )
 
 data PostgresKeyValueException = UniqueKeyConstraintViolated
                                | FailedToDecodeJSONValue String Text

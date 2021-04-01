@@ -1,0 +1,80 @@
+cabal-version:       2.2
+name:                token-metadata-creator
+version:             0.1.0.0
+synopsis:            A library and CLI for manipulating data for the Metadata Server CIP
+license:             Apache-2.0
+copyright:           2020 Input Output (Hong Kong) Ltd.
+author:              Obsidian Systems LLC
+maintainer:          operations@iohk.io
+
+flag development
+    description: Disable `-Werror`
+    default: False
+    manual: True
+
+library
+  exposed-modules: Cardano.Metadata.Types
+                 , Cardano.Metadata.GoguenRegistry
+                 , Cardano.Metadata.Validation.Wallet
+  other-modules: AesonHelpers
+  build-depends: base
+               , aeson
+               , base16-bytestring
+               , base64-bytestring
+               , bytestring
+               , text
+               , unordered-containers
+               , network-uri
+               , cardano-prelude
+               , cardano-crypto-class
+               , cardano-api
+               , cardano-crypto
+               , JuicyPixels
+               , cardano-ledger-shelley-ma
+               , ouroboros-consensus-shelley
+               , shelley-spec-ledger
+               , cardano-slotting
+               , containers
+               , cborg
+               , time
+               , co-log
+               , megaparsec
+               , mtl
+               , filepath
+               , metadata-lib
+               , validation
+  hs-source-dirs: src
+  default-language: Haskell2010
+  default-extensions: NoImplicitPrelude
+                      OverloadedStrings
+  if (!flag(development))
+    ghc-options: -Werror -Wall
+
+executable token-metadata-creator
+  main-is:             token-metadata-creator.hs
+  build-depends:       base
+                     , aeson
+                     , aeson-pretty
+                     , base64-bytestring
+                     , bytestring
+                     , cardano-prelude
+                     , token-metadata-creator
+                     , safe-exceptions
+                     , co-log
+                     , validation
+                     , directory
+                     , optparse-applicative
+                     , megaparsec
+                     , metadata-lib
+                     , text
+                     , cardano-api
+                     , cardano-cli
+                     , time
+                     , cardano-slotting
+  hs-source-dirs:      app
+  default-language:    Haskell2010
+  default-extensions: NoImplicitPrelude
+                      OverloadedStrings
+  if (!flag(development))
+    ghc-options: -Werror -Wall
+  other-modules:       Config

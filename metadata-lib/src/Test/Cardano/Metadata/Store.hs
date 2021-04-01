@@ -1,9 +1,9 @@
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE GADTs               #-}
-{-# LANGUAGE LambdaCase          #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE QuasiQuotes         #-}
-{-# LANGUAGE RankNTypes          #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Test.Cardano.Metadata.Store
@@ -11,22 +11,28 @@ module Test.Cardano.Metadata.Store
   , testKeyValueComplexTypeImplementation
   ) where
 
-import           Control.Monad                    (join)
-import           Data.Functor                     (void)
-import           Data.List                        (sort)
-import qualified Data.Map.Strict                  as M
-import           Data.Maybe                       (catMaybes)
-import           Data.Word
-import           Hedgehog                         (evalIO, forAll, property,
-                                                   (===))
-import qualified Hedgehog                         as H (Property)
-import qualified Hedgehog.Gen                     as Gen
-import qualified Hedgehog.Range                   as Range
-import           Prelude                          hiding (read)
-import           Test.Tasty
-import           Test.Tasty.Hedgehog
+import Control.Monad
+    ( join )
+import Data.Functor
+    ( void )
+import Data.List
+    ( sort )
+import qualified Data.Map.Strict as M
+import Data.Maybe
+    ( catMaybes )
+import Data.Word
+import Hedgehog
+    ( evalIO, forAll, property, (===) )
+import qualified Hedgehog as H
+    ( Property )
+import qualified Hedgehog.Gen as Gen
+import qualified Hedgehog.Range as Range
+import Prelude hiding
+    ( read )
+import Test.Tasty
+import Test.Tasty.Hedgehog
 
-import           Cardano.Metadata.Store.Types
+import Cardano.Metadata.Store.Types
 import qualified Test.Cardano.Metadata.Generators as Gen
 
 -- | Tests the ability of the given store interface to act as a

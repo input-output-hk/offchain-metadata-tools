@@ -2,13 +2,13 @@
 
 module Cardano.Metadata.Types.Weakly where
 
-import           Data.Aeson                    (FromJSON, ToJSON, (.:))
-import qualified Data.Aeson                    as Aeson
-import qualified Data.HashMap.Strict           as HM
+import Data.Aeson
+    ( FromJSON, ToJSON, (.:) )
+import qualified Data.Aeson as Aeson
+import qualified Data.HashMap.Strict as HM
 
-import           Cardano.Metadata.Types.Common (PropertyName, Subject,
-                                                fromPropertyNameList,
-                                                toPropertyNameList)
+import Cardano.Metadata.Types.Common
+    ( PropertyName, Subject, fromPropertyNameList, toPropertyNameList )
 
 
 data Metadata

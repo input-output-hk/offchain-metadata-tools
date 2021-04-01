@@ -13,50 +13,105 @@
 # pinned version of nixpkgs augmented with overlays (iohk-nix and our packages).
 , pkgs ? import ./nix { inherit system crossSystem config sourcesOverride; }
 , gitrev ? pkgs.iohkNix.commitIdFromGitRepoOrZero ./.git
+# GitHub PR number (as a string), set when building a Hydra PR jobset.
+, pr ? null
+# Bors job type (as a string), set when building a Hydra bors jobset.
+, borsBuild ? null
 }:
 with pkgs; with commonLib;
 let
 
-  haskellPackages = recRecurseIntoAttrs
-    # the Haskell.nix package set, reduced to local packages.
-    (selectProjectPackages metadataServerHaskellPackages);
-  haskellPackagesMusl64 = recRecurseIntoAttrs
-    # the Haskell.nix package set, reduced to local packages.
-    (selectProjectPackages pkgs.pkgsCross.musl64.metadataServerHaskellPackages);
-  metadataValidatorGitHubTarball = pkgs.runCommandNoCC "metadata-validator-github-tarball" { buildInputs = [ pkgs.gnutar gzip ]; } ''
-    cp ${haskellPackagesMusl64.metadata-validator-github.components.exes.metadata-validator-github}/bin/metadata-validator-github ./
-    mkdir -p $out/nix-support
-    tar -czvf $out/metadata-validator-github.tar.gz metadata-validator-github
-    echo "file binary-dist $out/metadata-validator-github.tar.gz" > $out/nix-support/hydra-build-products
-  '';
+  src = pkgs.haskell-nix.haskellLib.cleanGit {
+    name = "offchain-metadata-tools-src";
+    src = ./.;
+  };
+
+  buildHaskellProject = args: import ./nix/haskell.nix ({
+    inherit config pkgs;
+    inherit (pkgs) buildPackages lib stdenv haskell-nix;
+    inherit src gitrev pr borsBuild;
+  } // args);
+  project = addExtras (buildHaskellProject {});
+  profiledProject = buildHaskellProject { profiling = true; };
+  # the Haskell.nix package set, reduced to local packages.
+  projectPkgsOnly = recRecurseIntoAttrs (selectProjectPackages project);
+
+  addExtras = proj: proj // {
+    metadata-validator-github-tarball = pkgs.runCommandNoCC "metadata-validator-github-tarball" { buildInputs = [ pkgs.gnutar pkgs.gzip ]; } ''
+      cp ${proj.metadata-validator-github.components.exes.metadata-validator-github}/bin/metadata-validator-github ./
+      mkdir -p $out/nix-support
+      tar -czvf $out/metadata-validator-github.tar.gz metadata-validator-github
+      echo "file binary-dist $out/metadata-validator-github.tar.gz" > $out/nix-support/hydra-build-products
+    '';
+
+    token-metadata-creator-tarball = pkgs.runCommandNoCC "token-metadata-creator" { buildInputs = [ pkgs.gnutar gzip ]; } ''
+      cp ${proj.token-metadata-creator.components.exes.token-metadata-creator}/bin/token-metadata-creator ./
+      mkdir -p $out/nix-support
+      tar -czvf $out/token-metadata-creator.tar.gz token-metadata-creator
+      echo "file binary-dist $out/token-metadata-creator.tar.gz" > $out/nix-support/hydra-build-products
+    '';
+  };
+  # haskellPackagesMusl64 = recRecurseIntoAttrs
+  #   # the Haskell.nix package set, reduced to local packages.
+  #   (selectProjectPackages pkgs.pkgsCross.musl64.project);
+  # metadataValidatorGitHubTarball = pkgs.runCommandNoCC "metadata-validator-github-tarball" { buildInputs = [ pkgs.gnutar gzip ]; } ''
+  #   cp ${haskellPackagesMusl64.metadata-validator-github.components.exes.metadata-validator-github}/bin/metadata-validator-github ./
+  #   mkdir -p $out/nix-support
+  #   tar -czvf $out/metadata-validator-github.tar.gz metadata-validator-github
+  #   echo "file binary-dist $out/metadata-validator-github.tar.gz" > $out/nix-support/hydra-build-products
+  # '';
+  # tokenMetadataCreatorTarball = pkgs.runCommandNoCC "token-metadata-creator" { buildInputs = [ pkgs.gnutar gzip ]; } ''
+  #   cp ${haskellPackagesMusl64.token-metadata-creator.components.exes.token-metadata-creator}/bin/token-metadata-creator ./
+  #   mkdir -p $out/nix-support
+  #   tar -czvf $out/token-metadata-creator.tar.gz token-metadata-creator
+  #   echo "file binary-dist $out/token-metadata-creator.tar.gz" > $out/nix-support/hydra-build-products
+  # '';
+
   nixosTests = recRecurseIntoAttrs (import ./nix/nixos/tests {
     inherit pkgs;
   });
+  docScripts = pkgs.callPackage ./docs/default.nix { };
+  # Scripts for keeping Hackage and Stackage up to date, and CI tasks.
+  # The dontRecurseIntoAttrs prevents these from building on hydra
+  # as not all of them can work in restricted eval mode (as they
+  # are not pure).
+  maintainer-scripts = pkgs.dontRecurseIntoAttrs {
+    update-docs = pkgs.buildPackages.callPackage ./scripts/update-docs.nix { inherit (pkgs.haskellPackages) ghcWithPackages; };
+
+    # Because this is going to be used to test caching on hydra, it must not
+    # use the darcs package from the haskell.nix we are testing.  For that reason
+    # it uses `pkgs.buildPackages.callPackage` not `haskell.callPackage`
+    # (We could pull in darcs from a known good haskell.nix for hydra to
+    # use)
+    check-hydra = pkgs.buildPackages.callPackage ./scripts/check-hydra.nix {};
+  };
 
   self = {
-    inherit metadataServerHaskellPackages metadataValidatorGitHubTarball;
-    inherit haskellPackages hydraEvalErrors nixosTests;
+    inherit pkgs commonLib project profiledProject;
+
+    inherit (project.hsPkgs.metadata-server.identifier) version;
+    inherit (project.hsPkgs.metadata-server.components.exes) metadata-server;
+    inherit (project.hsPkgs.metadata-webhook.components.exes) metadata-webhook;
+    inherit (project.hsPkgs.metadata-validator-github.components.exes) metadata-validator-github;
+    inherit (project.hsPkgs.token-metadata-creator.components.exes) token-metadata-creator;
+    inherit (project) metadata-validator-github-tarball token-metadata-creator-tarball;
+
+    inherit maintainer-scripts;
+    # inherit metadataValidatorGitHubTarball tokenMetadataCreatorTarball;
+    inherit nixosTests docScripts;
 
     inherit (pkgs.iohkNix) checkCabalProject;
 
-    inherit (haskellPackages.metadata-server.identifier) version;
-    inherit (haskellPackages.metadata-server.components.exes) metadata-server;
-    inherit (haskellPackages.metadata-webhook.components.exes) metadata-webhook;
-    inherit (haskellPackages.metadata-validator-github.components.exes) metadata-validator-github;
-
     # `tests` are the test suites which have been built.
-    tests = collectComponents' "tests" haskellPackages;
-    # `benchmarks` (only built, not run).
-    benchmarks = collectComponents' "benchmarks" haskellPackages;
+    tests = collectComponents' "tests" projectPkgsOnly;
 
     checks = recurseIntoAttrs {
       # `checks.tests` collect results of executing the tests:
-      tests = collectChecks haskellPackages;
+      tests = collectChecks projectPkgsOnly;
     };
 
-    shell = import ./shell.nix {
-      inherit pkgs;
-      withHoogle = true;
-    };
+    shell = import ./shell.nix { inherit pkgs; metadataPackages = self; withHoogle = true; };
+    shell-prof = import ./shell.nix { inherit pkgs; metadataPackages = self; withHoogle = true; profiling = true; };
+    cabalShell = import ./nix/cabal-shell.nix { inherit pkgs; metadataPackages = self; };
   };
 in self

@@ -27,7 +27,8 @@ module Cardano.Metadata.Transform
   , apply_
   ) where
 
-import           Data.Functor.Identity             (Identity, runIdentity)
+import Data.Functor.Identity
+    ( Identity, runIdentity )
 
 import qualified Cardano.Metadata.Transform.Reader as Impl
 

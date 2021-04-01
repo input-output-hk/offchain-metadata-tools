@@ -1,7 +1,6 @@
 { config, lib, pkgs, ... }:
 let
   cfg = config.services.metadata-webhook;
-  inherit (cfg.metadataServerPkgs) metadataServerHaskellPackages metadataServerTestingHaskellPackages iohkNix;
 in {
 
   options = {
@@ -13,23 +12,16 @@ in {
       };
       metadataServerPkgs = lib.mkOption {
         type = lib.types.attrs;
-        default = import ../. {};
+        default = (import ../../. {}).project;
         defaultText = "metadata-server pkgs";
         description = ''
           The metadata-server packages and library that should be used.
         '';
         internal = true;
       };
-      testing-mode = lib.mkOption {
-        type = lib.types.bool;
-        default = false;
-        description = "enable testing APIs";
-      };
       package = lib.mkOption {
         type = lib.types.package;
-        default = if cfg.testing-mode
-          then metadataServerTestingHaskellPackages.metadata-webhook.components.exes.metadata-webhook
-          else metadataServerHaskellPackages.metadata-webhook.components.exes.metadata-webhook;
+        default = cfg.metadataServerPkgs.metadata-webhook.components.exes.metadata-webhook;
       };
       user = lib.mkOption {
         type = lib.types.str;

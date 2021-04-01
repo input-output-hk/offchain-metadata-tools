@@ -1,39 +1,44 @@
-{-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE DerivingStrategies         #-}
-{-# LANGUAGE FlexibleContexts           #-}
-{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE InstanceSigs               #-}
-{-# LANGUAGE KindSignatures             #-}
-{-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE RankNTypes                 #-}
-{-# LANGUAGE TypeSynonymInstances       #-}
+{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 module Main where
 
-import           Colog
-import           Control.Monad.Except               (ExceptT, MonadError,
-                                                     runExceptT)
-import           Control.Monad.IO.Class             (MonadIO, liftIO)
-import           Control.Monad.Reader               (MonadReader, ReaderT,
-                                                     runReaderT)
-import           Data.Aeson                         (FromJSON)
-import qualified Data.Text                          as T
-import qualified Data.Vector                        as Vector
+import Colog
+import Control.Monad.Except
+    ( ExceptT, MonadError, runExceptT )
+import Control.Monad.IO.Class
+    ( MonadIO, liftIO )
+import Control.Monad.Reader
+    ( MonadReader, ReaderT, runReaderT )
+import Data.Aeson
+    ( FromJSON )
+import qualified Data.Text as T
+import qualified Data.Vector as Vector
 import qualified GitHub
-import qualified Options.Applicative                as Opt
-import           Prelude                            hiding (log)
-import           System.Exit                        (exitFailure, exitSuccess)
+import qualified Options.Applicative as Opt
+import Prelude hiding
+    ( log )
+import System.Exit
+    ( exitFailure, exitSuccess )
 
-import           Cardano.Metadata.Validation.GitHub (PullRequestValidationError,
-                                                     fromGHFile,
-                                                     fromGHPullRequest,
-                                                     gitHubValidationRules,
-                                                     prettyPrintPRValidationError)
-import           Config                             (AuthScheme (NoAuthScheme, OAuthScheme),
-                                                     Config (Config), mkConfig,
-                                                     opts)
+import Cardano.Metadata.Validation.GitHub
+    ( PullRequestValidationError
+    , fromGHFile
+    , fromGHPullRequest
+    , gitHubValidationRules
+    , prettyPrintPRValidationError
+    )
+import Config
+    ( AuthScheme (NoAuthScheme, OAuthScheme), Config (Config), mkConfig, opts )
 
 data Env m = Env { envLogAction  :: !(LogAction m Message) }
 

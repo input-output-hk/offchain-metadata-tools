@@ -8,12 +8,13 @@
 ############################################################################
 
 # The project sources
-{ metadata-server ? { outPath = ./.; rev = "abcdef"; }
+{ metadata-server ? { outPath = ./.; rev = pkgs.commonLib.commitIdFromGitRepoOrZero ./.git; }
 
 # Function arguments to pass to the project
 , projectArgs ? {
     config = { allowUnfree = false; inHydra = true; };
-    inherit sourcesOverride;
+    gitrev = metadata-server.rev;
+    inherit pr borsBuild sourcesOverride;
   }
 
 # The systems that the jobset will be built for.
@@ -30,12 +31,37 @@
 
 # Import pkgs, including IOHK common nix lib
 , pkgs ? import ./nix { inherit sourcesOverride; }
+
+# GitHub PR number (as a string), provided as a Hydra input
+, pr ? null
+
+# Can be "staging" or "trying" to indicate that this is a bors jobset
+, borsBuild ? null
+
+# Platform filter string for jobset.
+, platform ? "all"
 }:
+
+assert pkgs.lib.asserts.assertOneOf "platform" platform
+  ["all" "linux" "macos" "windows"];
+
+let
+  buildNative  = builtins.elem builtins.currentSystem supportedSystems;
+  buildLinux   = builtins.elem "x86_64-linux" supportedSystems && buildForPlatform "linux";
+  buildMacOS   = builtins.elem "x86_64-darwin" supportedSystems && buildForPlatform "macos";
+  buildMusl    = builtins.elem "x86_64-linux" supportedCrossSystems && buildLinux;
+  buildWindows = builtins.elem builtins.currentSystem supportedCrossSystems && buildForPlatform "windows";
+  buildForPlatform = name: builtins.elem platform ["all" name];
+in
 
 with (import pkgs.commonLib.release-lib) {
   inherit pkgs;
 
-  inherit supportedSystems supportedCrossSystems scrubJobs projectArgs;
+  inherit supportedCrossSystems scrubJobs projectArgs;
+  supportedSystems =
+    pkgs.lib.optional buildLinux "x86_64-linux" ++
+    pkgs.lib.optional buildMacOS "x86_64-darwin";
+
   packageSet = import metadata-server;
   gitrev = metadata-server.rev;
 };
@@ -43,6 +69,7 @@ with (import pkgs.commonLib.release-lib) {
 with pkgs.lib;
 
 let
+  ### OLD
   nonDefaultBuildSystems = tail supportedSystems;
   # Paths or prefixes of paths of derivations to build only on the default system (ie. linux on hydra):
   onlyBuildOnDefaultSystem = [
@@ -62,22 +89,33 @@ let
 
   inherit (systems.examples) musl64;
 
+  # Jobs we want cross compiled
+  filterJobsCross = filterAttrs (n: _: (elem n [
+    "metadata-validator-github-tarball"
+    "token-metadata-creator-tarball"
+  ]));
+
   jobs = {
     native = mapTestOn filteredBuilds;
   } // (mkRequiredJob (
       collectTests jobs.native.checks.tests ++
-      collectTests jobs.native.benchmarks ++
       collectJobs jobs.native.nixosTests ++
       [
         jobs.native.metadata-server.x86_64-linux
         jobs.native.metadata-webhook.x86_64-linux
         jobs.native.metadata-validator-github.x86_64-linux
-        jobs.native.haskellPackages.metadata-lib.components.library.x86_64-linux
-        jobs.native.haskellPackages.metadata-lib.components.tests.unit-tests.x86_64-linux
-        jobs.native.haskellPackages.metadata-store-postgres.components.library.x86_64-linux
+        jobs.native.token-metadata-creator.x86_64-linux
+
+        jobs.native.shell.x86_64-linux
+        jobs.native.shell-prof.x86_64-linux
       ]
     ))
   # Build the shell derivation in Hydra so that all its dependencies
   # are cached.
-  // mapTestOn (packagePlatforms { inherit (project) shell; });
-in jobs
+  // mapTestOn (packagePlatforms { inherit (project) shell; })
+  // optionalAttrs buildMusl {
+    musl64 = mapTestOnCross musl64
+      (packagePlatformsCross (filterJobsCross project));
+  };
+in
+  jobs

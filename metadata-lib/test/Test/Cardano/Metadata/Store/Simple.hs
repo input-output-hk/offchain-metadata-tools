@@ -1,25 +1,29 @@
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE GADTs               #-}
-{-# LANGUAGE LambdaCase          #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE QuasiQuotes         #-}
-{-# LANGUAGE RankNTypes          #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Test.Cardano.Metadata.Store.Simple
   ( tests
   ) where
 
-import           Data.Text                        (Text)
-import           Data.Word
-import           Prelude                          hiding (read)
-import           Test.Tasty                       (TestTree, testGroup,
-                                                   withResource)
+import Data.Text
+    ( Text )
+import Data.Word
+import Prelude hiding
+    ( read )
+import Test.Tasty
+    ( TestTree, testGroup, withResource )
 
-import           Cardano.Metadata.Store.Simple    (simpleStore)
-import           Cardano.Metadata.Store.Types
-import           Test.Cardano.Metadata.Generators (ComplexType)
-import           Test.Cardano.Metadata.Store
+import Cardano.Metadata.Store.Simple
+    ( simpleStore )
+import Cardano.Metadata.Store.Types
+import Test.Cardano.Metadata.Generators
+    ( ComplexType )
+import Test.Cardano.Metadata.Store
 
 tests :: TestTree
 tests =

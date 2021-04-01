@@ -1,52 +1,65 @@
-{-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Test.Cardano.Metadata.Generators where
 
-import qualified Cardano.Crypto.DSIGN.Class         as Crypto
-import qualified Cardano.Crypto.DSIGN.Ed25519       as Crypto
-import qualified Cardano.Crypto.Seed                as Crypto
-import           Control.Monad.Except
-import           Control.Monad.Morph                (hoist)
-import qualified Data.Aeson                         as Aeson
-import           Data.Aeson.TH
-import           Data.Functor.Identity              (runIdentity)
-import qualified Data.HashMap.Strict                as HM
-import           Data.Int                           (Int32, Int64)
-import           Data.List                          (intersperse)
-import qualified Data.Map.Strict                    as M
-import           Data.Text                          (Text)
-import qualified Data.Text                          as T
-import qualified Data.Vector                        as V
-import           Data.Word
-import           Hedgehog                           (Gen, MonadGen,
-                                                     Opaque (Opaque), fromGenT)
-import qualified Hedgehog.Gen                       as Gen
-import qualified Hedgehog.Range                     as Range
-import           Network.URI                        (URI (URI),
-                                                     URIAuth (URIAuth))
+import qualified Cardano.Crypto.DSIGN.Class as Crypto
+import qualified Cardano.Crypto.DSIGN.Ed25519 as Crypto
+import qualified Cardano.Crypto.Seed as Crypto
+import Control.Monad.Except
+import Control.Monad.Morph
+    ( hoist )
+import qualified Data.Aeson as Aeson
+import Data.Aeson.TH
+import Data.Functor.Identity
+    ( runIdentity )
+import qualified Data.HashMap.Strict as HM
+import Data.Int
+    ( Int32, Int64 )
+import Data.List
+    ( intersperse )
+import qualified Data.Map.Strict as M
+import Data.Text
+    ( Text )
+import qualified Data.Text as T
+import qualified Data.Vector as V
+import Data.Word
+import Hedgehog
+    ( Gen, MonadGen, Opaque (Opaque), fromGenT )
+import qualified Hedgehog.Gen as Gen
+import qualified Hedgehog.Range as Range
+import Network.URI
+    ( URI (URI), URIAuth (URIAuth) )
 
-import           Cardano.Metadata.Server.Types      (BatchRequest (BatchRequest),
-                                                     BatchResponse (BatchResponse))
-import           Cardano.Metadata.Transform         (Transform, mkTransform)
-import           Cardano.Metadata.Types.Common      (AnnotatedSignature, AttestedProperty (AttestedProperty),
-                                                     Description, File (File),
-                                                     HashFn (Blake2b224, Blake2b256, SHA256),
-                                                     Name, Owner (Owner),
-                                                     PreImage (PreImage),
-                                                     Property,
-                                                     PropertyName (PropertyName),
-                                                     PropertyType (Verifiable),
-                                                     SequenceNumber,
-                                                     Subject (Subject),
-                                                     mkAnnotatedSignature,
-                                                     seqFromNatural, unSubject)
-import qualified Cardano.Metadata.Types.Weakly      as Weakly
+import Cardano.Metadata.Server.Types
+    ( BatchRequest (BatchRequest), BatchResponse (BatchResponse) )
+import Cardano.Metadata.Transform
+    ( Transform, mkTransform )
+import Cardano.Metadata.Types.Common
+    ( AnnotatedSignature
+    , AttestedProperty (AttestedProperty)
+    , Description
+    , File (File)
+    , HashFn (Blake2b224, Blake2b256, SHA256)
+    , Name
+    , Owner (Owner)
+    , PreImage (PreImage)
+    , Property
+    , PropertyName (PropertyName)
+    , PropertyType (Verifiable)
+    , SequenceNumber
+    , Subject (Subject)
+    , mkAnnotatedSignature
+    , seqFromNatural
+    , unSubject
+    )
+import qualified Cardano.Metadata.Types.Weakly as Weakly
 import qualified Cardano.Metadata.Validation.GitHub as GitHub
-import           Cardano.Metadata.Validation.Types  (Difference (Added, Changed, Removed))
-import qualified Cardano.Metadata.Validation.Types  as Validation
+import Cardano.Metadata.Validation.Types
+    ( Difference (Added, Changed, Removed) )
+import qualified Cardano.Metadata.Validation.Types as Validation
 
 data ComplexType = ComplexType { _ctArr :: [Int]
                                , _ctMap :: M.Map Word8 Word8

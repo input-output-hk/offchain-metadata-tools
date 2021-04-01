@@ -2,30 +2,41 @@
 
 module Cardano.Metadata.Webhook.Server where
 
-import           Control.Lens                   ((.~), (^.))
-import           Control.Monad.IO.Class         (liftIO)
-import qualified Data.Aeson                     as Aeson
-import qualified Data.ByteString.Char8          as C8
-import qualified Data.ByteString.Lazy.Char8     as BLC
-import           Data.Foldable                  (traverse_)
-import           Data.Function                  ((&))
-import           Data.List.NonEmpty             (NonEmpty)
-import qualified Data.List.NonEmpty             as NE
-import           Data.Text                      (Text)
-import qualified Data.Text                      as T
-import           Network.HTTP.Types             (hAccept, hAuthorization,
-                                                 hUserAgent)
-import           Network.HTTP.Types.Status      (ok200)
-import qualified Network.Wreq                   as Wreq
-import           Servant
-import           Servant.GitHub.Webhook         (RepoWebhookEvent (..))
-import           System.FilePath.Posix          (takeBaseName)
+import Control.Lens
+    ( (.~), (^.) )
+import Control.Monad.IO.Class
+    ( liftIO )
+import qualified Data.Aeson as Aeson
+import qualified Data.ByteString.Char8 as C8
+import qualified Data.ByteString.Lazy.Char8 as BLC
+import Data.Foldable
+    ( traverse_ )
+import Data.Function
+    ( (&) )
+import Data.List.NonEmpty
+    ( NonEmpty )
+import qualified Data.List.NonEmpty as NE
+import Data.Text
+    ( Text )
+import qualified Data.Text as T
+import Network.HTTP.Types
+    ( hAccept, hAuthorization, hUserAgent )
+import Network.HTTP.Types.Status
+    ( ok200 )
+import qualified Network.Wreq as Wreq
+import Servant
+import Servant.GitHub.Webhook
+    ( RepoWebhookEvent (..) )
+import System.FilePath.Posix
+    ( takeBaseName )
 
-import           Cardano.Metadata.Store.Types   (StoreInterface (..))
-import           Cardano.Metadata.Types.Common  (Subject (Subject))
-import qualified Cardano.Metadata.Types.Weakly  as Weakly
-import           Cardano.Metadata.Webhook.API
-import           Cardano.Metadata.Webhook.Types
+import Cardano.Metadata.Store.Types
+    ( StoreInterface (..) )
+import Cardano.Metadata.Types.Common
+    ( Subject (Subject) )
+import qualified Cardano.Metadata.Types.Weakly as Weakly
+import Cardano.Metadata.Webhook.API
+import Cardano.Metadata.Webhook.Types
 
 
 appSigned :: GitHubKey -> StoreInterface Subject Weakly.Metadata -> GetEntryFromFile -> Application

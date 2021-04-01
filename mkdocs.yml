@@ -1,0 +1,12 @@
+site_name: Off-chain metadata tools
+site_url: https://input-output-hk.github.io/offchain-metadata-tools/
+repo_url: https://github.com/input-output-hk/offchain-metadata-tools
+markdown_extensions:
+  - admonition
+  - footnotes
+  - toc:
+      permalink: true
+
+nav:
+  - 'Manual': index.md
+  - 'API': api/latest/index.html

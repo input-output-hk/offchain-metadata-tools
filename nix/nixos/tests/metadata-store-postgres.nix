@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, haskellPackages, ... }:
 with pkgs;
 let
   # Single source of truth for all tutorial constants
@@ -85,7 +85,7 @@ in
     server.wait_for_open_port(${toString postgresPort})
 
     server.succeed(
-        "${pkgs.metadataServerHaskellPackages.metadata-store-postgres.components.tests.integration-tests}/bin/integration-tests \
+        "${haskellPackages.metadata-store-postgres.components.tests.integration-tests}/bin/integration-tests \
         --db-user ${postgresUser} \
         --db-host /run/postgresql \
         --db-name ${database}"

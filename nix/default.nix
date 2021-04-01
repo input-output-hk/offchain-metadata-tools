@@ -36,8 +36,6 @@ let
 
         svcLib = import ./svclib.nix { inherit pkgs; };
       })
-      # And, of course, our haskell-nix-ified cabal project:
-      (import ./pkgs.nix)
     ];
 
   pkgs = import nixpkgs {

@@ -1,9 +1,10 @@
-{-# LANGUAGE GADTs      #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 
 module Cardano.Metadata.Store.Types where
 
-import           Cardano.Metadata.Types.Common (PropertyName, Subject)
+import Cardano.Metadata.Types.Common
+    ( PropertyName, Subject )
 
 data ReadError = NoSubject Subject
                | NoProperty Subject PropertyName

@@ -1,23 +1,25 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE TypeSynonymInstances  #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 module Cardano.Metadata.Webhook.Types where
 
-import           Data.Aeson                    (FromJSON, ToJSON, parseJSON,
-                                                toJSON, (.:), (.:?))
-import qualified Data.Aeson                    as Aeson
-import qualified Data.ByteString               as BS
-import qualified Data.HashMap.Strict           as HM
-import           Data.List.NonEmpty            (NonEmpty)
-import qualified Data.List.NonEmpty            as NE
-import           Data.Text                     (Text)
-import           Servant
-import qualified Servant.GitHub.Webhook        as SGH
+import Data.Aeson
+    ( FromJSON, ToJSON, parseJSON, toJSON, (.:), (.:?) )
+import qualified Data.Aeson as Aeson
+import qualified Data.ByteString as BS
+import qualified Data.HashMap.Strict as HM
+import Data.List.NonEmpty
+    ( NonEmpty )
+import qualified Data.List.NonEmpty as NE
+import Data.Text
+    ( Text )
+import Servant
+import qualified Servant.GitHub.Webhook as SGH
 
 import qualified Cardano.Metadata.Types.Weakly as Weakly
 

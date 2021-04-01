@@ -1,6 +1,6 @@
-{-# LANGUAGE DeriveAnyClass      #-}
-{-# LANGUAGE DeriveFunctor       #-}
-{-# LANGUAGE RankNTypes          #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Cardano.Metadata.Transform.Reader
@@ -10,10 +10,11 @@ module Cardano.Metadata.Transform.Reader
   , withInput
   ) where
 
-import           Control.Applicative  (Alternative, empty, (<|>))
-import           Control.Comonad
-import           Control.Monad.Reader (ReaderT (ReaderT), runReaderT,
-                                       withReaderT)
+import Control.Applicative
+    ( Alternative, empty, (<|>) )
+import Control.Comonad
+import Control.Monad.Reader
+    ( ReaderT (ReaderT), runReaderT, withReaderT )
 
 data Transform r f a = Transform (ReaderT r f a)
 

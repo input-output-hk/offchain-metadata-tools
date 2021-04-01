@@ -1,10 +1,10 @@
-{-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE DerivingStrategies         #-}
-{-# LANGUAGE DerivingVia                #-}
-{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE PatternSynonyms            #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 
 module Cardano.Metadata.Validation.GitHub
   (
@@ -34,18 +34,26 @@ module Cardano.Metadata.Validation.GitHub
   ) where
 
 
-import           Colog                (pattern D, pattern E, pattern I, Message,
-                                       pattern W, WithLog, log)
-import           Control.Monad.Except (MonadError, throwError)
-import           Data.Foldable        (traverse_)
-import           Data.Function        ((&))
-import           Data.String          (IsString)
-import           Data.Text            (Text)
-import qualified Data.Text            as T
-import           GHC.Generics         (Generic)
+import Colog
+    ( pattern D, pattern E, pattern I, Message, pattern W, WithLog, log )
+import Control.Monad.Except
+    ( MonadError, throwError )
+import Data.Foldable
+    ( traverse_ )
+import Data.Function
+    ( (&) )
+import Data.String
+    ( IsString )
+import Data.Text
+    ( Text )
+import qualified Data.Text as T
+import GHC.Generics
+    ( Generic )
 import qualified GitHub
-import           Prelude              hiding (log)
-import           Quiet                (Quiet (Quiet))
+import Prelude hiding
+    ( log )
+import Quiet
+    ( Quiet (Quiet) )
 
 newtype ExpectedBaseBranch = ExpectedBaseBranch Text
   deriving (Generic, Eq, Ord)

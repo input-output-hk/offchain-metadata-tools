@@ -1,0 +1,23 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "description": "Tests for token-metadata-creator",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha *.spec.js",
+    "test:watch": "mocha *.spec.js --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@gitub.com:input-output-hk/token-metadata-creator.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "chai": "^4.3.0",
+    "mocha": "^8.3.0"
+  },
+  "dependencies": {
+    "fs-extra": "^9.1.0"
+  }
+}

@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Cardano.Metadata.Validation.Rules
@@ -31,23 +31,31 @@ module Cardano.Metadata.Validation.Rules
   , Transform.Transform_
   ) where
 
-import qualified Data.Aeson                        as Aeson
-import           Data.Bool                         (bool)
-import           Data.Foldable                     (traverse_)
-import           Data.Function                     ((&))
-import           Data.List.NonEmpty                (NonEmpty)
-import qualified Data.Map.Merge.Strict             as M
-import qualified Data.Map.Strict                   as M
-import           Data.Text                         (Text)
-import qualified Data.Text                         as T
-import           Data.Validation                   (Validation)
-import           Data.Void                         (Void, absurd)
-import           Numeric.Natural                   (Natural)
+import qualified Data.Aeson as Aeson
+import Data.Bool
+    ( bool )
+import Data.Foldable
+    ( traverse_ )
+import Data.Function
+    ( (&) )
+import Data.List.NonEmpty
+    ( NonEmpty )
+import qualified Data.Map.Merge.Strict as M
+import qualified Data.Map.Strict as M
+import Data.Text
+    ( Text )
+import qualified Data.Text as T
+import Data.Validation
+    ( Validation )
+import Data.Void
+    ( Void, absurd )
+import Numeric.Natural
+    ( Natural )
 
-import           Cardano.Metadata.Transform
-import qualified Cardano.Metadata.Transform        as Transform
-import           Cardano.Metadata.Types.Common
-import           Cardano.Metadata.Validation.Types
+import Cardano.Metadata.Transform
+import qualified Cardano.Metadata.Transform as Transform
+import Cardano.Metadata.Types.Common
+import Cardano.Metadata.Validation.Types
 
 data ValidationError e = ErrorMetadataFileTooBig Natural Natural
                        -- ^ Size of metadata file in bytes exceeds

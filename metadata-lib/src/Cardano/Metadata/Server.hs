@@ -1,7 +1,7 @@
-{-# LANGUAGE GADTs             #-}
-{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes        #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Cardano.Metadata.Server
   ( ReadError(..)
@@ -10,27 +10,30 @@ module Cardano.Metadata.Server
   , MetadataServerAPI
   ) where
 
-import           Control.Exception.Safe        (catchAny)
-import           Control.Monad.IO.Class        (liftIO)
-import qualified Data.Aeson                    as Aeson
-import qualified Data.ByteString.Lazy          as BL
-import qualified Data.ByteString.Lazy.Char8    as BLC
-import qualified Data.HashMap.Strict           as HM
-import           Data.Text                     (Text)
-import qualified Data.Text.Lazy                as TL
-import qualified Data.Text.Lazy.Encoding       as TLE
-import           Prelude                       hiding (read)
-import           Servant
+import Control.Exception.Safe
+    ( catchAny )
+import Control.Monad.IO.Class
+    ( liftIO )
+import qualified Data.Aeson as Aeson
+import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString.Lazy.Char8 as BLC
+import qualified Data.HashMap.Strict as HM
+import Data.Text
+    ( Text )
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Lazy.Encoding as TLE
+import Prelude hiding
+    ( read )
+import Servant
 
-import           Cardano.Metadata.Server.API
-import           Cardano.Metadata.Server.Types (BatchRequest (BatchRequest),
-                                                BatchResponse (BatchResponse))
-import           Cardano.Metadata.Store.Types
-import           Cardano.Metadata.Types.Common (PropertyName, Subject (Subject),
-                                                unPropertyName)
-import           Cardano.Metadata.Types.Weakly (Metadata (Metadata),
-                                                getMetadataProperty,
-                                                metaSubject)
+import Cardano.Metadata.Server.API
+import Cardano.Metadata.Server.Types
+    ( BatchRequest (BatchRequest), BatchResponse (BatchResponse) )
+import Cardano.Metadata.Store.Types
+import Cardano.Metadata.Types.Common
+    ( PropertyName, Subject (Subject), unPropertyName )
+import Cardano.Metadata.Types.Weakly
+    ( Metadata (Metadata), getMetadataProperty, metaSubject )
 
 -- | 'Network.Wai.Application' of the metadata server.
 --

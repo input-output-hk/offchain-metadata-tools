@@ -1,7 +1,6 @@
 cabal-version:       >=1.10
 name:                metadata-lib
 version:             0.1.0.0
-license-file:        LICENSE
 author:              Samuel Evans-Powell
 maintainer:          mail@sevanspowell.net
 build-type:          Simple

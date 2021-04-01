@@ -1,27 +1,38 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeApplications  #-}
+{-# LANGUAGE TypeApplications #-}
 
-import           Control.Monad.IO.Class           (liftIO)
-import           Control.Monad.Logger             (runNoLoggingT)
-import qualified Data.Pool                        as Pool
-import           Data.Proxy                       (Proxy (Proxy))
-import           Data.Tagged                      (Tagged, unTagged)
-import           Data.Text                        (Text)
-import qualified Data.Text                        as T
-import qualified Data.Text.Encoding               as TE
-import           Data.Word                        (Word8)
-import qualified Database.Persist.Postgresql      as Postgresql
-import           Test.Tasty                       (TestTree, askOption,
-                                                   defaultIngredients,
-                                                   defaultMainWithIngredients,
-                                                   includingOptions, testGroup,
-                                                   withResource)
-import           Test.Tasty.Options
+import Control.Monad.IO.Class
+    ( liftIO )
+import Control.Monad.Logger
+    ( runNoLoggingT )
+import qualified Data.Pool as Pool
+import Data.Proxy
+    ( Proxy (Proxy) )
+import Data.Tagged
+    ( Tagged, unTagged )
+import Data.Text
+    ( Text )
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
+import Data.Word
+    ( Word8 )
+import qualified Database.Persist.Postgresql as Postgresql
+import Test.Tasty
+    ( TestTree
+    , askOption
+    , defaultIngredients
+    , defaultMainWithIngredients
+    , includingOptions
+    , testGroup
+    , withResource
+    )
+import Test.Tasty.Options
 
-import           Cardano.Metadata.Store.Postgres
-import           Cardano.Metadata.Store.Types
-import           Test.Cardano.Metadata.Generators (ComplexType)
-import           Test.Cardano.Metadata.Store
+import Cardano.Metadata.Store.Postgres
+import Cardano.Metadata.Store.Types
+import Test.Cardano.Metadata.Generators
+    ( ComplexType )
+import Test.Cardano.Metadata.Store
 
 newtype DbHost = DbHost { _dbHost :: Text }
 newtype DbName = DbName { _dbName :: Text }

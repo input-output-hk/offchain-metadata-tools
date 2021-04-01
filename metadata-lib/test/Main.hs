@@ -1,5 +1,5 @@
-import           Test.Tasty                              (defaultMain,
-                                                          testGroup)
+import Test.Tasty
+    ( defaultMain, testGroup )
 
 import qualified Test.Cardano.Metadata.Server
 import qualified Test.Cardano.Metadata.Server.Types
