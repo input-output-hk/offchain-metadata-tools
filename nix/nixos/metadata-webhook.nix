@@ -1,7 +1,7 @@
 { config, lib, pkgs, ... }:
 let
   cfg = config.services.metadata-webhook;
-  inherit (cfg.metadataServerPkgs) metadataServerHaskellPackages metadataServerTestingHaskellPackages iohkNix;
+  inherit (cfg.metadataServerPkgs) offchainMetadataToolsHaskellPackages offchainMetadataToolsTestingHaskellPackages iohkNix;
 in {
 
   options = {
@@ -28,8 +28,8 @@ in {
       package = lib.mkOption {
         type = lib.types.package;
         default = if cfg.testing-mode
-          then metadataServerTestingHaskellPackages.metadata-webhook.components.exes.metadata-webhook
-          else metadataServerHaskellPackages.metadata-webhook.components.exes.metadata-webhook;
+          then offchainMetadataToolsTestingHaskellPackages.metadata-webhook.components.exes.metadata-webhook
+          else offchainMetadataToolsHaskellPackages.metadata-webhook.components.exes.metadata-webhook;
       };
       user = lib.mkOption {
         type = lib.types.str;

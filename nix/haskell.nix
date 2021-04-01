@@ -20,7 +20,7 @@
 }:
 let
   src = haskell-nix.haskellLib.cleanGit {
-    name = "metadata-server";
+    name = "offchain-metadata-tools";
     src = ../.;
   };
 
@@ -51,6 +51,39 @@ let
           # "stm" "terminfo"
         ];
       })
+      {
+        packages.token-metadata-creator.configureFlags = [ "--ghc-option=-Werror" ];
+        enableLibraryProfiling = profiling;
+      }
+      # Misc. build fixes for dependencies
+      {
+        # Cut down iohk-monitoring deps
+        # Note that this reflects flags set in stack.yaml.
+        packages.iohk-monitoring.flags = {
+          disable-ekg = true;
+          disable-examples = true;
+          disable-graylog = true;
+          disable-gui = true;
+          disable-prometheus = true;
+          disable-systemd = true;
+        };
+
+        # Katip has Win32 (>=2.3 && <2.6) constraint
+        packages.katip.doExactConfig = true;
+
+        # split data output for ekg to reduce closure size
+        packages.ekg.components.library.enableSeparateDataOutput = true;
+
+        # some packages are missing identifier.name:
+        packages.Win32.package.identifier.name = "Win32";
+        packages.cryptonite-openssl.package.identifier.name = "cryptonite-openssl";
+        packages.file-embed-lzma.package.identifier.name = "file-embed-lzma";
+        packages.singletons.package.identifier.name = "singletons";
+        packages.terminfo.package.identifier.name = "terminfo";
+        packages.conduit.package.identifier.name = "conduit";
+        packages.ekg.package.identifier.name = "ekg";
+        packages.iohk-monitoring.package.identifier.name = "iohk-monitoring";
+      }
       {
         # Needed for the CLI tests.
         # Coreutils because we need 'paste'.

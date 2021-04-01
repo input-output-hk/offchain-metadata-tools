@@ -15,19 +15,19 @@ let
 
   # This provides a development environment that can be used with nix-shell or
   # lorri. See https://input-output-hk.github.io/haskell.nix/user-guide/development/
-  shell = metadataServerHaskellPackages.shellFor {
-    name = "metadata-server-shell";
+  shell = offchainMetadataToolsHaskellPackages.shellFor {
+    name = "offchain-metadata-tools-shell";
 
     # If shellFor local packages selection is wrong,
     # then list all local packages then include source-repository-package that cabal complains about:
-    packages = ps: with ps; [
-       ps.metadata-lib
-       ps.metadata-server
-       ps.metadata-store-postgres
-       ps.metadata-validator-github
-       ps.metadata-webhook
-    ];
+    packages = ps: lib.attrValues (haskell-nix.haskellLib.selectProjectPackages ps);
+
     # packags = ps: pkgs.lib.attrValues (selectProjectPackages ps);
+    additional = ps: [
+      ps.cardano-prelude
+      ps.cardano-crypto-class
+    ];
+
 
     tools = { cabal = "3.2.0.0"; };
 
@@ -41,7 +41,7 @@ let
       nix
       pkgconfig
       stylish-haskell
-    ]);
+    ]) ++ (with haskellPackages; [ weeder ]);
 
     # Prevents cabal from choosing alternate plans, so that
     # *all* dependencies are provided by Nix.

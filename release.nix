@@ -75,6 +75,8 @@ let
         jobs.native.haskellPackages.metadata-lib.components.library.x86_64-linux
         jobs.native.haskellPackages.metadata-lib.components.tests.unit-tests.x86_64-linux
         jobs.native.haskellPackages.metadata-store-postgres.components.library.x86_64-linux
+        jobs.native.token-metadata-creator.x86_64-linux
+        jobs.native.tokenMetadataCreatorTarball.x86_64-linux
       ]
     ))
   # Build the shell derivation in Hydra so that all its dependencies

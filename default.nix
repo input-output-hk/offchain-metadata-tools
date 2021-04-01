@@ -19,22 +19,30 @@ let
 
   haskellPackages = recRecurseIntoAttrs
     # the Haskell.nix package set, reduced to local packages.
-    (selectProjectPackages metadataServerHaskellPackages);
+    (selectProjectPackages offchainMetadataToolsHaskellPackages);
   haskellPackagesMusl64 = recRecurseIntoAttrs
     # the Haskell.nix package set, reduced to local packages.
-    (selectProjectPackages pkgs.pkgsCross.musl64.metadataServerHaskellPackages);
+    (selectProjectPackages pkgs.pkgsCross.musl64.offchainMetadataToolsHaskellPackages);
   metadataValidatorGitHubTarball = pkgs.runCommandNoCC "metadata-validator-github-tarball" { buildInputs = [ pkgs.gnutar gzip ]; } ''
     cp ${haskellPackagesMusl64.metadata-validator-github.components.exes.metadata-validator-github}/bin/metadata-validator-github ./
     mkdir -p $out/nix-support
     tar -czvf $out/metadata-validator-github.tar.gz metadata-validator-github
     echo "file binary-dist $out/metadata-validator-github.tar.gz" > $out/nix-support/hydra-build-products
   '';
+  tokenMetadataCreatorTarball = pkgs.runCommandNoCC "token-metadata-creator" { buildInputs = [ pkgs.gnutar gzip ]; } ''
+    cp ${haskellPackagesMusl64.token-metadata-creator.components.exes.token-metadata-creator}/bin/token-metadata-creator ./
+    mkdir -p $out/nix-support
+    tar -czvf $out/token-metadata-creator.tar.gz token-metadata-creator
+    echo "file binary-dist $out/token-metadata-creator.tar.gz" > $out/nix-support/hydra-build-products
+  '';
+
   nixosTests = recRecurseIntoAttrs (import ./nix/nixos/tests {
     inherit pkgs;
   });
 
   self = {
-    inherit metadataServerHaskellPackages metadataValidatorGitHubTarball;
+    inherit offchainMetadataToolsHaskellPackages;
+    inherit metadataValidatorGitHubTarball tokenMetadataCreatorTarball;
     inherit haskellPackages hydraEvalErrors nixosTests;
 
     inherit (pkgs.iohkNix) checkCabalProject;
@@ -43,6 +51,7 @@ let
     inherit (haskellPackages.metadata-server.components.exes) metadata-server;
     inherit (haskellPackages.metadata-webhook.components.exes) metadata-webhook;
     inherit (haskellPackages.metadata-validator-github.components.exes) metadata-validator-github;
+    inherit (haskellPackages.token-metadata-creator.components.exes) token-metadata-creator;
 
     # `tests` are the test suites which have been built.
     tests = collectComponents' "tests" haskellPackages;
@@ -52,11 +61,16 @@ let
     checks = recurseIntoAttrs {
       # `checks.tests` collect results of executing the tests:
       tests = collectChecks haskellPackages;
+      # Example of a linting script used by Buildkite.
+      lint-fuzz = callPackage ./nix/check-lint-fuzz.nix {};
     };
 
     shell = import ./shell.nix {
       inherit pkgs;
       withHoogle = true;
     };
+
+    # Attrset of PDF builds of LaTeX documentation.
+    docs = pkgs.callPackage ./token-metadata-creator/docs/default.nix {};
   };
 in self

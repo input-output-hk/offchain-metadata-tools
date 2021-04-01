@@ -1,9 +1,9 @@
 { config, lib, pkgs, ... }:
 let
   # "metadata-server" and "metadataServer" with "[-sS]erver" will be used where possible
-  # to avoid confusion with other similarly named services like `cardano-metadata-submitter`
+  # to avoid confusion with other similarly named services like `token-metadata-creator`
   cfg = config.services.metadata-server;
-  inherit (cfg.metadataServerPkgs) metadataServerHaskellPackages metadataServerTestingHaskellPackages iohkNix;
+  inherit (cfg.metadataServerPkgs) offchainMetadataToolsHaskellPackages offchainMetadataToolsTestingHaskellPackages iohkNix;
 in {
 
   options = {
@@ -30,8 +30,8 @@ in {
       package = lib.mkOption {
         type = lib.types.package;
         default = if cfg.testing-mode
-          then metadataServerTestingHaskellPackages.metadata-server.components.exes.metadata-server
-          else metadataServerHaskellPackages.metadata-server.components.exes.metadata-server;
+          then offchainMetadataToolsTestingHaskellPackages.metadata-server.components.exes.metadata-server
+          else offchainMetadataToolsHaskellPackages.metadata-server.components.exes.metadata-server;
       };
       user = lib.mkOption {
         type = lib.types.str;

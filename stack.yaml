@@ -1,0 +1,23 @@
+resolver: https://raw.githubusercontent.com/input-output-hk/cardano-haskell/master/snapshots/cardano-1.25.1.yaml
+
+packages:
+  - ./metadata-lib
+  - ./metadata-server
+  - ./metadata-webhook
+  - ./metadata-store-postgres
+  - ./metadata-validator-github
+  - ./token-metadata-creator
+
+extra-deps:
+  - hedgehog-1.0.3
+  - hex-text-0.1.0.2
+  - some-1.0.1
+
+flags:
+  cardano-crypto-praos:
+    external-libsodium-vrf: false
+
+nix:
+  shell-file: nix/stack-shell.nix
+
+ghc-options: {"$locals": -ddump-to-file -ddump-hi}

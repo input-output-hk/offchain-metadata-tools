@@ -4,5 +4,6 @@ packages:
   ./metadata-store-postgres
   ./metadata-webhook
   ./metadata-validator-github
+  ./token-metadata-creator
 tests: True
 benchmarks: True
