@@ -61,16 +61,11 @@ let
     checks = recurseIntoAttrs {
       # `checks.tests` collect results of executing the tests:
       tests = collectChecks haskellPackages;
-      # Example of a linting script used by Buildkite.
-      lint-fuzz = callPackage ./nix/check-lint-fuzz.nix {};
     };
 
     shell = import ./shell.nix {
       inherit pkgs;
       withHoogle = true;
     };
-
-    # Attrset of PDF builds of LaTeX documentation.
-    docs = pkgs.callPackage ./token-metadata-creator/docs/default.nix {};
   };
 in self

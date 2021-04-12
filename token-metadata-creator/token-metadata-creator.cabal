@@ -3,9 +3,6 @@ name:                token-metadata-creator
 version:             0.1.0.0
 synopsis:            A library and CLI for manipulating data for the Metadata Server CIP
 license:             Apache-2.0
-license-files:
-  LICENSE
-  NOTICE
 copyright:           2020 Input Output (Hong Kong) Ltd.
 author:              Obsidian Systems LLC
 maintainer:          operations@iohk.io
