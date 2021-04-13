@@ -1,5 +1,3 @@
-* Documentation
-
 ** Tutorials
 
 As much as possible, the commands in these tutorials are tested. The

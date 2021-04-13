@@ -49,16 +49,5 @@ This project consists of a number of components:
 
 | Link | Contents |
 | --- | --- |
-| [API Documentation]() | Specification of the metadata-server API |
-| [Manual]() | Everything else |
-
-## Development
-
-```
-# Launch a ghcid session for the given target
-make dev target=lib:metadata-lib
-make dev target=exe:metadata-server
-make dev target=exe:metadata-webhook
-# Launch a ghci session for the given target
-make repl target=lib:metadata-lib
-```
+| [API Documentation](https://input-output-hk.github.io/offchain-metadata-tools/api) | Specification of the metadata-server API |
+| [Manual](https://input-output-hk.github.io/offchain-metadata-tools/) | Everything else |

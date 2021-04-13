@@ -42,6 +42,21 @@ let
 
   updateDocsScript = pkgs.callPackage ./scripts/update-docs.nix { inherit (pkgs.haskellPackages) ghcWithPackages; };
 
+  # Scripts for keeping Hackage and Stackage up to date, and CI tasks.
+  # The dontRecurseIntoAttrs prevents these from building on hydra
+  # as not all of them can work in restricted eval mode (as they
+  # are not pure).
+  maintainer-scripts = pkgs.dontRecurseIntoAttrs {
+    update-docs = pkgs.buildPackages.callPackage ./scripts/update-docs.nix { inherit (pkgs.haskellPackages) ghcWithPackages; };
+
+    # Because this is going to be used to test caching on hydra, it must not
+    # use the darcs package from the haskell.nix we are testing.  For that reason
+    # it uses `pkgs.buildPackages.callPackage` not `haskell.callPackage`
+    # (We could pull in darcs from a known good haskell.nix for hydra to
+    # use)
+    check-hydra = pkgs.buildPackages.callPackage ./scripts/check-hydra.nix {};
+  };
+
   self = {
     inherit updateDocsScript;
     inherit offchainMetadataToolsHaskellPackages;

@@ -5,7 +5,7 @@ with stdenv.lib;
 
 let
   repo = "git@github.com:input-output-hk/offchain-metadata-tools.git";
-  # sshKey = "/run/keys/buildkite-haskell-dot-nix-ssh-private";
+  sshKey = "/run/keys/buildkite-haskell-dot-nix-ssh-private";
 
   filterName = "orgMdFilter";
   pandocOrgMdFilter = import ./mk-pandoc-filter.nix {
@@ -27,30 +27,27 @@ in
     cd $(git rev-parse --show-toplevel)
 
     echo "Preprocessing..."
-    echo "   Removing org-mode TAGS..."
-    pandoc --filter ${filterName} docs/main.org -o docs/main.md
-    rm docs/*.org
+    echo "   Removing org-mode peculiarities..."
+    pandoc --filter ${filterName} docs/index.org -o docs/index.md
 
     echo "Building..."
     rm -rf site
     mkdocs build
     touch site/.nojekyll
-    # sed -i -e '/Build Date/d' site/index.html
+    sed -i -e '/Build Date/d' site/index.html
     sed -i -e '/lastmod/d' site/sitemap.xml
     rm -f site/sitemap.xml.gz
 
-    tree ./
+    echo "Updating git index..."
+    git fetch origin
+    git checkout gh-pages
+    git reset --hard origin/gh-pages
+    GIT_WORK_TREE=$(pwd)/site git add -A
+    check_staged
+    echo "Committing changes..."
+    git commit --no-gpg-sign --message "Update gh-pages for $rev"
 
-    # echo "Updating git index..."
-    # git fetch origin
-    # git checkout gh-pages
-    # git reset --hard origin/gh-pages
-    # GIT_WORK_TREE=$(pwd)/site git add -A
-    # check_staged
-    # echo "Committing changes..."
-    # git commit --no-gpg-sign --message "Update gh-pages for $rev"
-
-    # if [ "''${BUILDKITE_BRANCH:-}" = master ]; then
-    #   git push ${repo} HEAD:gh-pages
-    # fi
+    if [ "''${BUILDKITE_BRANCH:-}" = master ]; then
+      git push ${repo} HEAD:gh-pages
+    fi
   '')

@@ -9,11 +9,11 @@ removeTags (Span (_id, classes, _kvs) xs) | "tag" `elem` classes
 removeTags x
   = x
 
-removeKVsFromCodeBlocks :: Block -> Block
-removeKVsFromCodeBlocks (CodeBlock (id, classes, kvs) contents)
-  = CodeBlock (id, classes, []) contents
-removeKVsFromCodeBlocks x
+sanitizeCodeBlocks :: Block -> Block
+sanitizeCodeBlocks (CodeBlock (_id, _classes, _kvs) contents)
+  = CodeBlock (mempty, mempty, mempty) contents
+sanitizeCodeBlocks x
   = x
 
 main :: IO ()
-main = toJSONFilter (removeKVsFromCodeBlocks . walk removeTags :: Block -> Block)
+main = toJSONFilter (sanitizeCodeBlocks . walk removeTags :: Block -> Block)
