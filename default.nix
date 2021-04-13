@@ -40,8 +40,6 @@ let
     inherit pkgs;
   });
 
-  updateDocsScript = pkgs.callPackage ./scripts/update-docs.nix { inherit (pkgs.haskellPackages) ghcWithPackages; };
-
   # Scripts for keeping Hackage and Stackage up to date, and CI tasks.
   # The dontRecurseIntoAttrs prevents these from building on hydra
   # as not all of them can work in restricted eval mode (as they
@@ -58,7 +56,7 @@ let
   };
 
   self = {
-    inherit updateDocsScript;
+    inherit maintainer-scripts;
     inherit offchainMetadataToolsHaskellPackages;
     inherit metadataValidatorGitHubTarball tokenMetadataCreatorTarball;
     inherit haskellPackages hydraEvalErrors nixosTests;
