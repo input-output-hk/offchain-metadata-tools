@@ -1,4 +1,33 @@
-# Off-chain metadata tools project
+<p align="center">
+  <big><strong>Off-chain metadata tools</strong></big>
+</p>
+
+<p align="center">
+  <img width="200" src=".github/images/cardano-logo.png"/>
+</p>
+
+## Overview
+
+In the Cardano multi-asset era, this project helps you create and
+submit metadata describing your assets, storing them off-the-chain.
+
+It provides a reference implementation for [this draft CIP](https://github.com/michaelpj/CIPs/blob/cip-metadata-server/cip-metadata-server.md).
+
+## Disambiguation
+
+This metadata is used to describe "assets" (see
+[here](https://developers.cardano.org/en/development-environments/native-tokens/native-tokens/)).
+Assets, most-often known as tokens, are represented on-the-chain by
+their asset ID, which look something like this:
+"7c8d07d69639e9413dd637a1a815a7323c69c86abbafb66dbfdb1bb6". Asset IDs
+are not very user-friendly, so this metadata is used to provide a
+mapping between the on-chain asset ID and more user-friendly
+information off-chain.
+
+This metadata is not to be confused with on-chain transaction
+metadata. Transaction metadata is included with each transaction and
+stored "on-the-chain". Transaction metadata is used for a variety of
+purposes, hence the confusion.
 
 ## Components
 
@@ -16,7 +45,12 @@ This project consists of a number of components:
   - metadata-lib
     - shared library for common metadata needs
 
-For detailed documentation on the metadata ecosystem, please see [the docs](./docs/main.org).
+## Documentation
+
+| Link | Contents |
+| --- | --- |
+| [API Documentation]() | Specification of the metadata-server API |
+| [Manual]() | Everything else |
 
 ## Development
 
