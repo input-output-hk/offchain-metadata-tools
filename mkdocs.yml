@@ -1,0 +1,15 @@
+site_name: Off-chain metadata tools
+theme: readthedocs
+site_url: null
+repo_url: https://github.com/input-output-hk/offchain-metadata-tools
+markdown_extensions:
+  - admonition
+  - footnotes
+  - toc:
+      permalink: true
+
+# this is called `nav` in more recent mkdocs versions. Mine
+# right now is 0.17.5
+nav:
+  - 'Documentation': main.md
+  - 'metadata-server API': api/index.html

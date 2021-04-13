@@ -20,9 +20,9 @@ This metadata is used to describe "assets" (see
 Assets, most-often known as tokens, are represented on-the-chain by
 their asset ID, which look something like this:
 "7c8d07d69639e9413dd637a1a815a7323c69c86abbafb66dbfdb1bb6". Asset IDs
-are not very user-friendly, so this metadata is used to provide a
-mapping between the on-chain asset ID and more user-friendly
-information off-chain.
+are not very user-friendly, so this metadata provides a mapping
+between the on-chain asset ID and more user-friendly information
+off-chain.
 
 This metadata is not to be confused with on-chain transaction
 metadata. Transaction metadata is included with each transaction and
