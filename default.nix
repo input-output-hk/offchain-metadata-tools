@@ -40,7 +40,10 @@ let
     inherit pkgs;
   });
 
+  updateDocsScript = pkgs.callPackage ./scripts/update-docs.nix { inherit (pkgs.haskellPackages) ghcWithPackages; };
+
   self = {
+    inherit updateDocsScript;
     inherit offchainMetadataToolsHaskellPackages;
     inherit metadataValidatorGitHubTarball tokenMetadataCreatorTarball;
     inherit haskellPackages hydraEvalErrors nixosTests;

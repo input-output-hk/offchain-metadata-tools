@@ -1,17 +1,4 @@
-* Documentation                                                         :TOC_3:
-  - [[#tutorials][Tutorials]]
-    - [[#minting-your-first-asset][Minting your first asset]]
-    - [[#submitting-your-first-metadata-entry][Submitting your first metadata entry]]
-    - [[#running-your-own-metadata-system][Running your own metadata system]]
-  - [[#how-to][How-to]]
-  - [[#reference][Reference]]
-    - [[#components-of-the-metadata-server-project][Components of the metadata-server project]]
-    - [[#structure-diagram][Structure diagram]]
-  - [[#explanation][Explanation]]
-    - [[#why-is-metadata-store-postgres-packaged-as-a-separate-library][Why is metadata-store-postgres packaged as a separate library?]]
-    - [[#why-are-cardano-metadata-submitter-and-metadata-server-separate-projects][Why are cardano-metadata-submitter and metadata-server separate projects?]]
-    - [[#why-are-metadata-entries-kept-in-a-separate-directory-eg-mappings][Why are metadata entries kept in a separate directory (e.g. "mappings")?]]
-    - [[#how-do-we-test-the-tutorials][How do we test the tutorials?]]
+* Documentation
 
 ** Tutorials
 
