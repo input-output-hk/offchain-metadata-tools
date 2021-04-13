@@ -1,32 +1,48 @@
 openapi: 3.0.1
 info:
-  title: ""
+  title: "Metadata Server API"
   version: ""
 servers:
-- url: /
+  - url: https://tokens.cardano.org/
+    description: Production server (uses live data)
 tags:
   - name: query
     description: Query metadata
-  - name: hashfn_model
-    x-displayName: HashFn Model
+  - name: property_model
+    x-displayName: Property
     description: |
-      <SchemaDefinition schemaRef="#/components/schemas/HashFn" />
-  - name: partialentry_model
-    x-displayName: PartialEntry_ Model
+      <SchemaDefinition schemaRef="#/components/schemas/Property" />
+  - name: ansig_model
+    x-displayName: Annotated Signature
     description: |
-      <SchemaDefinition schemaRef="#/components/schemas/PartialEntry_" />
-  - name: entry__model
-    x-displayName: Entry_ Model
+      <SchemaDefinition schemaRef="#/components/schemas/AnnotatedSignature" />
+  - name: generic_property_model
+    x-displayName: Generic Property Value
     description: |
-      <SchemaDefinition schemaRef="#/components/schemas/Entry_" />
+      <SchemaDefinition schemaRef="#/components/schemas/GenericProperty" />
+  - name: batch_req_model
+    x-displayName: Batch Request
+    description: |
+      <SchemaDefinition schemaRef="#/components/schemas/BatchRequest" />
+  - name: batch_resp_model
+    x-displayName: Batch Response
+    description: |
+      <SchemaDefinition schemaRef="#/components/schemas/BatchResponse" />
 x-tagGroups:
-  - name: Metadata
+  - name: Metadata Server
     tags:
       - query
+  - name: Models
+    tags:
+      - property_model
+      - ansig_model
+      - generic_property_model
+      - batch_req_model
+      - batch_resp_model
 paths:
   /metadata/{subject}:
     get:
-      summary: "Query Metadata"
+      summary: "Query All Properties"
       tags:
         - query
       parameters:
@@ -41,28 +57,8 @@ paths:
           content:
             application/json;charset=utf-8:
               schema:
-                $ref: '#/components/schemas/Entry_'
-        404:
-          description: '`subject` not found'
-          content: {}
-  /metadata/{subject}/properties:
-    get:
-      summary: "Query Metadata"
-      tags:
-        - query
-      parameters:
-      - name: subject
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        200:
-          description: ""
-          content:
-            application/json;charset=utf-8:
-              schema:
-                $ref: '#/components/schemas/Entry_'
+                allOf:
+                  - $ref: '#/components/schemas/Property'
         404:
           description: '`subject` not found'
           content: {}
@@ -88,7 +84,8 @@ paths:
           content:
             application/json;charset=utf-8:
               schema:
-                $ref: '#/components/schemas/AProperty'
+                oneOf:
+                  - $ref: '#/components/schemas/Property'
         404:
           description: '`subject` or `properties` not found'
           content: {}
@@ -109,52 +106,26 @@ paths:
           content:
             application/json;charset=utf-8:
               schema:
-                $ref: '#/components/schemas/BatchResponse'
+                required:
+                - subjects
+                type: object
+                properties:
+                  subjects:
+                    type: array
+                    items:
+                      anyOf:
+                        - $ref: '#/components/schemas/Property'
         400:
           description: Invalid `body`
           content: {}
       x-codegen-request-body-name: body
 components:
   schemas:
-    Entry_:
-      allOf:
-        - $ref: '#/components/schemas/Entry'
-        - required:
-            - subject
-          type: object
-          properties:
-            subject:
-              type: string
-    Entry:
-      required:
-      - description
-      - name
-      - owner
-      - preImage
-      type: object
-      properties:
-        owner:
-          $ref: '#/components/schemas/Owner'
-        name:
-          $ref: '#/components/schemas/GenericProperty'
-        description:
-          $ref: '#/components/schemas/GenericProperty'
-        preImage:
-          $ref: '#/components/schemas/PreImage'
-    Owner:
-      required:
-      - publicKey
-      - signature
-      type: object
-      properties:
-        signature:
-          type: string
-        publicKey:
-          type: string
     GenericProperty:
       required:
       - signatures
       - value
+      - sequenceNumber
       type: object
       properties:
         value:
@@ -163,6 +134,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AnnotatedSignature'
+        sequenceNumber:
+          type: number
+          minimum: 0
     AnnotatedSignature:
       required:
       - asPublicKey
@@ -173,78 +147,6 @@ components:
           type: string
         publicKey:
           type: string
-    PreImage:
-      required:
-      - hashFn
-      - value
-      type: object
-      properties:
-        value:
-          type: string
-        hashFn:
-          $ref: '#/components/schemas/HashFn'
-    HashFn:
-      type: string
-      enum:
-      - blake2b-256
-      - blake2b-224
-      - sha256
-    PartialEntry_:
-      allOf:
-        - $ref: '#/components/schemas/PartialEntry'
-        - required:
-            - subject
-          type: object
-          properties:
-            subject:
-              type: string
-    PartialEntry:
-      anyOf:
-        - properties:
-            owner:
-              required:
-              - publicKey
-              - signature
-              type: object
-              properties:
-                publicKey:
-                  type: string
-                signature:
-                  type: string
-            name:
-              required:
-              - signatures
-              - value
-              type: object
-              properties:
-                signatures:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/AnnotatedSignature'
-                value:
-                  type: string
-            description:
-              required:
-              - signatures
-              - value
-              type: object
-              properties:
-                signatures:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/AnnotatedSignature'
-                value:
-                  type: string
-            preImage:
-              required:
-              - hashFn
-              - value
-              type: object
-              properties:
-                value:
-                  type: string
-                hashFn:
-                  $ref: '#/components/schemas/HashFn'
     BatchResponse:
       required:
       - subjects
@@ -253,7 +155,8 @@ components:
         subjects:
           type: array
           items:
-            $ref: '#/components/schemas/PartialEntry_'
+            anyOf:
+              - $ref: '#/components/schemas/Property'
     BatchRequest:
       required:
       - subjects
@@ -267,50 +170,22 @@ components:
           type: array
           items:
             type: string
-    AProperty:
-      oneOf:
-        - properties:
-            owner:
-              required:
-              - publicKey
-              - signature
-              type: object
-              properties:
-                publicKey:
-                  type: string
-                signature:
-                  type: string
-            name:
-              required:
-              - signatures
-              - value
-              type: object
-              properties:
-                signatures:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/AnnotatedSignature'
-                value:
-                  type: string
-            description:
-              required:
-              - signatures
-              - value
-              type: object
-              properties:
-                signatures:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/AnnotatedSignature'
-                value:
-                  type: string
-            preImage:
-              required:
-              - hashFn
-              - value
-              type: object
-              properties:
-                value:
-                  type: string
-                hashFn:
-                  $ref: '#/components/schemas/HashFn'
+    Property:
+      type: object
+      required:
+        - subject
+      properties:
+          subject:
+            type: string
+          policy:
+            type: string
+          name:
+            $ref: '#/components/schemas/GenericProperty'
+          description:
+            $ref: '#/components/schemas/GenericProperty'
+          url:
+            $ref: '#/components/schemas/GenericProperty'
+          ticker:
+            $ref: '#/components/schemas/GenericProperty'
+          logo:
+            $ref: '#/components/schemas/GenericProperty'
