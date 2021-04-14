@@ -19,6 +19,6 @@ steps:
 
   - label: 'Check that stack build works'
     command:
-      - stack build
+      - nix-shell -p "stack" --run "stack build"
     agents:
       system: x86_64-linux
