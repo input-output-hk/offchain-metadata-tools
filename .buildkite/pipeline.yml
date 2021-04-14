@@ -16,3 +16,9 @@ steps:
       - ./check-hydra.sh 3
     agents:
       system: x86_64-linux
+
+  - label: 'Check that stack build works'
+    command:
+      - stack build
+    agents:
+      system: x86_64-linux
