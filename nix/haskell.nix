@@ -136,7 +136,4 @@ let
     else gitrev;
   haskellBuildUtils = buildPackages.haskellBuildUtils.package;
 in
-  haskell.addProjectAndPackageAttrs {
-    inherit pkg-set;
-    inherit (pkg-set.config) hsPkgs;
-  }
+  pkg-set

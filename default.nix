@@ -21,9 +21,9 @@
 with pkgs; with commonLib;
 let
 
-  src = lib.cleanSourceWith {
-    src = pkgs.haskell-nix.cleanSourceHaskell { src = ./.; };
+  src = pkgs.haskell-nix.haskellLib.cleanGit {
     name = "offchain-metadata-tools-src";
+    src = ./.;
   };
 
   buildHaskellProject = args: import ./nix/haskell.nix ({
