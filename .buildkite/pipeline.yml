@@ -30,3 +30,8 @@ steps:
     timeout_in_minutes: 120
     agents:
       system: x86_64-linux
+
+  - label: 'Check Stylish Haskell'
+    command: 'nix-shell --run .buildkite/check-stylish.sh'
+    agents:
+      system: x86_64-linux
