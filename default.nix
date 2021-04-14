@@ -1,4 +1,4 @@
-{ emacs, git, cardano-cli, cardano-metadata-submitter, runCommand, lib, coreutils, gawk, curl, jq }:
+{ emacs, git, runCommand, lib, coreutils, gawk, curl, jq }:
 
 let
   buildInputs =
