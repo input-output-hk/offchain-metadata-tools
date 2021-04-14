@@ -13,7 +13,11 @@ with pkgs.commonLib;
   in test ({
     inherit pkgs system config;
   } // args);
-  callTest = fn: args: forAllSystems (system: hydraJob (importTest fn args system));
+  callTest = fn: args: forAllSystems (system: let test = importTest fn args system; in hydraJob test // { inherit test; });
 in rec {
   metadataStorePostgres = callTest ./metadata-store-postgres.nix {};
+  # Test will require local faucet setup
+  # asset                 = callTest ./docs/asset.nix { inherit (pkgs.commonLib) sources; };
+  noNixSetup            = callTest ./docs/no-nix-setup.nix {};
+  nixSetup              = callTest ./docs/nix-setup.nix {};
 }

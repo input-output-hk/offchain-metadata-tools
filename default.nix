@@ -13,13 +13,27 @@
 # pinned version of nixpkgs augmented with overlays (iohk-nix and our packages).
 , pkgs ? import ./nix { inherit system crossSystem config sourcesOverride; }
 , gitrev ? pkgs.iohkNix.commitIdFromGitRepoOrZero ./.git
+# GitHub PR number (as a string), set when building a Hydra PR jobset.
+, pr ? null
+# Bors job type (as a string), set when building a Hydra bors jobset.
+, borsBuild ? null
 }:
 with pkgs; with commonLib;
 let
 
-  haskellPackages = recRecurseIntoAttrs
-    # the Haskell.nix package set, reduced to local packages.
-    (selectProjectPackages offchainMetadataToolsHaskellPackages);
+  src = lib.cleanSourceWith {
+    src = pkgs.haskell-nix.cleanSourceHaskell { src = ./.; };
+    name = "offchain-metadata-tools-src";
+  };
+
+  buildHaskellProject = args: import ./nix/haskell.nix ({
+    inherit config pkgs;
+    inherit (pkgs) buildPackages lib stdenv haskell-nix;
+    inherit src gitrev pr borsBuild;
+  } // args);
+  project = buildHaskellProject {};
+  profiledProject = buildHaskellProject { profiling = true; };
+
   haskellPackagesMusl64 = recRecurseIntoAttrs
     # the Haskell.nix package set, reduced to local packages.
     (selectProjectPackages pkgs.pkgsCross.musl64.offchainMetadataToolsHaskellPackages);
@@ -39,7 +53,7 @@ let
   nixosTests = recRecurseIntoAttrs (import ./nix/nixos/tests {
     inherit pkgs;
   });
-
+  docScripts = pkgs.callPackage ./docs/default.nix { };
   # Scripts for keeping Hackage and Stackage up to date, and CI tasks.
   # The dontRecurseIntoAttrs prevents these from building on hydra
   # as not all of them can work in restricted eval mode (as they
@@ -56,32 +70,32 @@ let
   };
 
   self = {
+    inherit pkgs commonLib src project profiledProject;
+
+    inherit (project.hsPkgs.metadata-server.identifier) version;
+    inherit (project.hsPkgs.metadata-server.components.exes) metadata-server;
+    inherit (project.hsPkgs.metadata-webhook.components.exes) metadata-webhook;
+    inherit (project.hsPkgs.metadata-validator-github.components.exes) metadata-validator-github;
+    inherit (project.hsPkgs.token-metadata-creator.components.exes) token-metadata-creator;
+
     inherit maintainer-scripts;
-    inherit offchainMetadataToolsHaskellPackages;
     inherit metadataValidatorGitHubTarball tokenMetadataCreatorTarball;
-    inherit haskellPackages hydraEvalErrors nixosTests;
+    inherit nixosTests docScripts;
 
     inherit (pkgs.iohkNix) checkCabalProject;
 
-    inherit (haskellPackages.metadata-server.identifier) version;
-    inherit (haskellPackages.metadata-server.components.exes) metadata-server;
-    inherit (haskellPackages.metadata-webhook.components.exes) metadata-webhook;
-    inherit (haskellPackages.metadata-validator-github.components.exes) metadata-validator-github;
-    inherit (haskellPackages.token-metadata-creator.components.exes) token-metadata-creator;
-
     # `tests` are the test suites which have been built.
-    tests = collectComponents' "tests" haskellPackages;
+    tests = collectComponents' "tests" project.hsPkgs;
     # `benchmarks` (only built, not run).
-    benchmarks = collectComponents' "benchmarks" haskellPackages;
+    benchmarks = collectComponents' "benchmarks" project.hsPkgs;
 
     checks = recurseIntoAttrs {
       # `checks.tests` collect results of executing the tests:
-      tests = collectChecks haskellPackages;
+      tests = collectChecks project.hsPkgs;
     };
 
-    shell = import ./shell.nix {
-      inherit pkgs;
-      withHoogle = true;
-    };
+    shell = import ./shell.nix { inherit pkgs; metadataPackages = self; withHoogle = true; };
+    shell-prof = import ./shell.nix { inherit pkgs; metadataPackages = self; withHoogle = true; profiling = true; };
+    cabalShell = import ./nix/cabal-shell.nix { inherit pkgs; metadataPackages = self; };
   };
 in self

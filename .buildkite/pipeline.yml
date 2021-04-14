@@ -1,7 +1,4 @@
 env:
-  BUILD_DIR: "/build/offchain-metadata-tools"
-  STACK_ROOT: "/build/offchain-metadata-tools.stack"
-  CACHE_DIR: "/cache/offchain-metadata-tools"
   LC_ALL: "en_US.UTF-8"
 
 steps:
@@ -20,14 +17,6 @@ steps:
       - ./check-hydra.sh 1
       - ./check-hydra.sh 2
       - ./check-hydra.sh 3
-    agents:
-      system: x86_64-linux
-
-  - label: 'Stack Rebuild'
-    command:
-      - "nix-build .buildkite/default.nix -o sr"
-      - "./sr/bin/rebuild --build-dir=$BUILD_DIR --cache-dir=$CACHE_DIR"
-    timeout_in_minutes: 120
     agents:
       system: x86_64-linux
 

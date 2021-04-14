@@ -5,7 +5,8 @@
 # The default shell (../shell.nix) uses the Haskell.nix shellFor to
 # also provide Haskell package dependencies in the shell environment.
 
-{ pkgs ? import ./default.nix {}
+{ metadataPackages ? import ../default.nix {}
+, pkgs ? metadataPackages.pkgs
 # optional string argument to override compiler, e.g.
 #   nix-shell nix/cabal-shell.nix --argstr compiler ghc8102
 , compiler ? null
@@ -18,7 +19,7 @@ mkShell rec {
   meta.platforms = lib.platforms.unix;
 
   ghc = if (compiler == null)
-    then offchainMetadataToolsHaskellPackages.metadata-lib.project.pkg-set.config.ghc.package
+    then metadataPackages.project.pkg-set.config.ghc.package
     else haskell-nix.compiler.${compiler};
 
   tools = [

@@ -9,4 +9,4 @@ markdown_extensions:
 
 nav:
   - 'Manual': index.md
-  - 'API': api/index.html
+  - 'API': api/latest/index.html

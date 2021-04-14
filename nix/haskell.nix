@@ -1,42 +1,95 @@
 ############################################################################
 # Builds Haskell packages with Haskell.nix
 ############################################################################
-{ pkgs
-, lib
+{ lib
 , stdenv
+, pkgs
 , haskell-nix
 , buildPackages
-# GHC attribute name
-, compiler
+, config ? {}
 # Enable profiling
-, profiling ? false
-# Link with -eventlog
-, eventlog ? false
-# Enable asserts for given packages
-, assertedPackages ? []
+, profiling ? config.haskellNix.profiling or false
+# Project top-level source tree
+, src
+# GitHub PR number (when building a PR jobset on Hydra)
+, pr ? null
+# Bors job type (when building a bors jobset on Hydra)
+, borsBuild ? null
 # Version info, to be passed when not building from a git work tree
 , gitrev ? null
 , libsodium ? pkgs.libsodium
 }:
 let
-  src = haskell-nix.haskellLib.cleanGit {
-    name = "offchain-metadata-tools";
-    src = ../.;
+  haskell = pkgs.haskell-nix;
+
+  # Chop out a subdirectory of the source, so that the package is only
+  # rebuilt when something in the subdirectory changes.
+  filterSubDir = subDir: {
+    src = haskell.haskellLib.cleanSourceWith { inherit src subDir; };
+    package.isProject = true;  # fixme: Haskell.nix
   };
 
-  projectPackages = lib.attrNames (haskell-nix.haskellLib.selectProjectPackages
-    (haskell-nix.cabalProject {
-      inherit src;
-      compiler-nix-name = compiler;
-    }));
-
-  pkgSet = haskell-nix.cabalProject ({
+  pkg-set = haskell-nix.cabalProject ({
     inherit src;
-    compiler-nix-name = compiler;
+    compiler-nix-name = "ghc8104";
     modules = [
-      # Allow reinstallation of Win32
-      ({ pkgs, ... }: lib.mkIf pkgs.stdenv.hostPlatform.isWindows {
-       nonReinstallablePkgs =
+      # Add source filtering to local packages
+      {
+        packages.metadata-lib = filterSubDir "metadata-lib";
+        packages.metadata-server = filterSubDir "metadata-server";
+        packages.metadata-webhook = filterSubDir "metadata-webhook";
+        packages.metadata-store-postgres = filterSubDir "metadata-store-postgres";
+        packages.metadata-validator-github = filterSubDir "metadata-validator-github";
+      }
+      # Enable release flag (optimization and -Werror) on all local packages
+      {
+        packages.metadata-lib.flags.release = true;
+        packages.metadata-server.flags.release = true;
+        packages.metadata-webhook.flags.release = true;
+        packages.metadata-store-postgres.flags.release = true;
+        packages.metadata-validator-github.flags.release = true;
+      }
+      {
+        packages.metadata-server.components.exes.metadata-server.postInstall = optparseCompletionPostInstall;
+        packages.metadata-webhook.components.exes.metadata-webhook.postInstall = optparseCompletionPostInstall;
+        packages.metadata-validator-github.components.exes.metadata-validator-github.postInstall = optparseCompletionPostInstall;
+      }
+      # Enable profiling on executables if the profiling argument is set.
+      (lib.optionalAttrs profiling {
+        enableLibraryProfiling = true;
+        packages.metadata-server.components.exes.metadata-server.enableExecutableProfiling = true;
+        packages.metadata-webhook.components.exes.metadata-webhook.enableExecutableProfiling = true;
+        packages.metadata-validator-github.components.exes.metadata-validator-github.enableExecutableProfiling = true;
+      })
+
+      # Musl libc fully static build
+      (lib.optionalAttrs stdenv.hostPlatform.isMusl (let
+        staticLibs = with pkgs; [ zlib openssl libffi gmp6 libsodium ];
+
+        # Module options which add GHC flags and libraries for a fully static build
+        fullyStaticOptions = {
+          enableShared = false;
+          enableStatic = true;
+          configureFlags = map (drv: "--ghc-option=-optl=-L${drv}/lib") staticLibs;
+        };
+      in {
+        # Apply fully static options to our Haskell executables
+        packages.metadata-server.components.benchmarks.restore = fullyStaticOptions;
+        packages.metadata-webhook.components.exes.cardano-wallet = fullyStaticOptions;
+        packages.metadata-validator-github.components.tests.integration = fullyStaticOptions;
+
+        # systemd can't be statically linked - disable lobemo-scribe-journal
+        packages.cardano-config.flags.systemd = false;
+        packages.cardano-node.flags.systemd = false;
+
+        # Haddock not working for cross builds and is not needed anyway
+        doHaddock = false;
+      }))
+
+      # Allow installation of a newer version of Win32 than what is
+      # included with GHC. The packages in this list are all those
+      # installed with GHC, except for Win32.
+      { nonReinstallablePkgs =
         [ "rts" "ghc-heap" "ghc-prim" "integer-gmp" "integer-simple" "base"
           "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
           # ghcjs custom packages
@@ -50,141 +103,27 @@ let
           "xhtml"
           # "stm" "terminfo"
         ];
-      })
-      {
-        packages.token-metadata-creator.configureFlags = [ "--ghc-option=-Werror" ];
-        enableLibraryProfiling = profiling;
-      }
-      # Misc. build fixes for dependencies
-      {
-        # Cut down iohk-monitoring deps
-        # Note that this reflects flags set in stack.yaml.
-        packages.iohk-monitoring.flags = {
-          disable-ekg = true;
-          disable-examples = true;
-          disable-graylog = true;
-          disable-gui = true;
-          disable-prometheus = true;
-          disable-systemd = true;
-        };
-
-        # Katip has Win32 (>=2.3 && <2.6) constraint
-        packages.katip.doExactConfig = true;
-
-        # split data output for ekg to reduce closure size
-        packages.ekg.components.library.enableSeparateDataOutput = true;
-
-        # some packages are missing identifier.name:
-        packages.Win32.package.identifier.name = "Win32";
-        packages.cryptonite-openssl.package.identifier.name = "cryptonite-openssl";
-        packages.file-embed-lzma.package.identifier.name = "file-embed-lzma";
-        packages.singletons.package.identifier.name = "singletons";
-        packages.terminfo.package.identifier.name = "terminfo";
-        packages.conduit.package.identifier.name = "conduit";
-        packages.ekg.package.identifier.name = "ekg";
-        packages.iohk-monitoring.package.identifier.name = "iohk-monitoring";
-      }
-      {
-        # Needed for the CLI tests.
-        # Coreutils because we need 'paste'.
-        packages.cardano-cli.components.tests.cardano-cli-test.build-tools =
-          lib.mkForce [buildPackages.jq buildPackages.coreutils buildPackages.shellcheck];
-        packages.cardano-cli.components.tests.cardano-cli-golden.build-tools =
-          lib.mkForce [buildPackages.jq buildPackages.coreutils buildPackages.shellcheck];
       }
       {
         packages.metadata-store-postgres.components.tests.integration-tests.doCheck = false;
       }
-      {
-        # make sure that libsodium DLLs are available for windows binaries:
-        packages = lib.genAttrs projectPackages (name: {
-          postInstall = lib.optionalString stdenv.hostPlatform.isWindows ''
-            if [ -d $out/bin ]; then
-              ${setLibSodium}
-            fi
-          '';
-        });
-      }
-      {
-        # Stamp executables with the git revision
-        packages = lib.genAttrs ["cardano-node" "cardano-cli"] (name: {
-          components.exes.${name}.postInstall = ''
-            ${lib.optionalString stdenv.hostPlatform.isWindows setLibSodium}
-            ${setGitRev}
-          '';
-        });
-      }
-      ({ pkgs, config, ... }: {
-        # Packages we wish to ignore version bounds of.
-        # This is similar to jailbreakCabal, however it
-        # does not require any messing with cabal files.
-        packages.katip.doExactConfig = true;
-
-        # split data output for ekg to reduce closure size
-        packages.ekg.components.library.enableSeparateDataOutput = true;
-
-        # cardano-cli-test depends on cardano-cli
-        packages.cardano-cli.preCheck = "export CARDANO_CLI=${config.hsPkgs.cardano-cli.components.exes.cardano-cli}/bin/cardano-cli${pkgs.stdenv.hostPlatform.extensions.executable}";
-
-        packages.cardano-node-chairman.components.tests.chairman-tests.build-tools =
-          lib.mkForce [
-            config.hsPkgs.cardano-node.components.exes.cardano-node
-            config.hsPkgs.cardano-cli.components.exes.cardano-cli
-            config.hsPkgs.cardano-node-chairman.components.exes.cardano-node-chairman];
-
-        # cardano-node-chairman depends on cardano-node and cardano-cli
-        packages.cardano-node-chairman.preCheck = "
-          export CARDANO_CLI=${config.hsPkgs.cardano-cli.components.exes.cardano-cli}/bin/cardano-cli${pkgs.stdenv.hostPlatform.extensions.executable}
-          export CARDANO_NODE=${config.hsPkgs.cardano-node.components.exes.cardano-node}/bin/cardano-node${pkgs.stdenv.hostPlatform.extensions.executable}
-          export CARDANO_NODE_CHAIRMAN=${config.hsPkgs.cardano-node-chairman.components.exes.cardano-node-chairman}/bin/cardano-node-chairman${pkgs.stdenv.hostPlatform.extensions.executable}
-          export CARDANO_NODE_SRC=${src}
-        ";
-      })
-      {
-        packages = lib.genAttrs projectPackages
-          (name: { configureFlags = [ "--ghc-option=-Werror" ]; });
-      }
-      (lib.optionalAttrs eventlog {
-        packages = lib.genAttrs ["cardano-node"]
-          (name: { configureFlags = [ "--ghc-option=-eventlog" ]; });
-      })
-      (lib.optionalAttrs profiling {
-        enableLibraryProfiling = true;
-        packages.cardano-node.components.exes.cardano-node.enableExecutableProfiling = true;
-      })
-      {
-        packages = lib.genAttrs assertedPackages
-          (name: { flags.asserts = true; });
-      }
-      ({ pkgs, ... }: lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
-        # systemd can't be statically linked
-        packages.cardano-config.flags.systemd = !pkgs.stdenv.hostPlatform.isMusl;
-        packages.cardano-node.flags.systemd = !pkgs.stdenv.hostPlatform.isMusl;
-      })
-      # Musl libc fully static build
-      (lib.optionalAttrs stdenv.hostPlatform.isMusl (let
-        # Module options which adds GHC flags and libraries for a fully static build
-        fullyStaticOptions = {
-          enableShared = false;
-          enableStatic = true;
-        };
-      in
-        {
-          packages = lib.genAttrs projectPackages (name: fullyStaticOptions);
-
-          # Haddock not working and not needed for cross builds
-          doHaddock = false;
-        }
-      ))
-
-      ({ pkgs, ... }: lib.mkIf (pkgs.stdenv.hostPlatform != pkgs.stdenv.buildPlatform) {
-        # Remove hsc2hs build-tool dependencies (suitable version will be available as part of the ghc derivation)
-        packages.Win32.components.library.build-tools = lib.mkForce [];
-        packages.terminal-size.components.library.build-tools = lib.mkForce [];
-        packages.network.components.library.build-tools = lib.mkForce [];
-      })
     ];
   });
+
+  # This exe component postInstall script adds shell completion
+  # scripts. These completion
+  # scripts will be picked up automatically if the resulting
+  # derivation is installed, e.g. by `nix-env -i`.
+  optparseCompletionPostInstall = lib.optionalString stdenv.hostPlatform.isUnix ''
+    exeName=$(ls -1 $out/bin | head -n1)  # fixme add $exeName to Haskell.nix
+    bashCompDir="$out/share/bash-completion/completions"
+    zshCompDir="$out/share/zsh/vendor-completions"
+    fishCompDir="$out/share/fish/vendor_completions.d"
+    mkdir -p "$bashCompDir" "$zshCompDir" "$fishCompDir"
+    "$out/bin/$exeName" --bash-completion-script "$out/bin/$exeName" >"$bashCompDir/$exeName"
+    "$out/bin/$exeName" --zsh-completion-script "$out/bin/$exeName" >"$zshCompDir/_$exeName"
+    "$out/bin/$exeName" --fish-completion-script "$out/bin/$exeName" >"$fishCompDir/$exeName.fish"
+  '';
 
   # setGitRev is a postInstall script to stamp executables with
   # version info. It uses the "gitrev" argument, if set. Otherwise,
@@ -197,4 +136,7 @@ let
     else gitrev;
   haskellBuildUtils = buildPackages.haskellBuildUtils.package;
 in
-  pkgSet
+  haskell.addProjectAndPackageAttrs {
+    inherit pkg-set;
+    inherit (pkg-set.config) hsPkgs;
+  }
