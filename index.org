@@ -514,7 +514,7 @@ If your asset had no name, your subject would be equal to your ~POLICY_ID~.
 We can now start creating our metadata entry:
 
 #+BEGIN_SRC shell :tangle asset.sh :tangle-mode (identity #o755)
-cardano-metadata-submitter entry --init $SUBJECT
+token-metadata-creator entry --init $SUBJECT
 #+END_SRC
 
 This will create a draft JSON file in our current directory.
@@ -540,7 +540,7 @@ Each key in the JSON map (other than the "subject") corresponds to a
 We can provide these with the following command:
 
 #+BEGIN_SRC shell :tangle asset.sh :tangle-mode (identity #o755)
-cardano-metadata-submitter entry $SUBJECT \
+token-metadata-creator entry $SUBJECT \
   --name "Quid" \
   --description "The un-offical currency of Great Britain." \
   --policy $SCRIPT
@@ -581,7 +581,7 @@ Each property may be attested to individually, but for now we can just
 attest to all properties at once using the "-a" flag:
 
 #+BEGIN_SRC shell :tangle asset.sh :tangle-mode (identity #o755)
-cardano-metadata-submitter entry $SUBJECT -a policy/policy.skey
+token-metadata-creator entry $SUBJECT -a policy/policy.skey
 
 cat $SUBJECT.json.draft
 #+END_SRC
@@ -625,7 +625,7 @@ Finally, we can run the following command to perform some final checks
 on our draft and spit out a non-draft ".json" file:
 
 #+BEGIN_SRC shell :tangle asset.sh :tangle-mode (identity #o755)
-cardano-metadata-submitter entry $SUBJECT --finalize
+token-metadata-creator entry $SUBJECT --finalize
 
 cat $SUBJECT.json
 #+END_SRC
@@ -686,8 +686,8 @@ We need to:
 
 Configuring a NixOS system to run the core services required for a
 metadata system is easy, as we've done much of the work for you! The
-metadata-server project provides a number of NixOS modules that setup
-the metadata system.
+offchain-metadata-tools project provides a number of NixOS modules
+that setup the metadata system.
 
 ****** Preamble
 #+NAME: nix-setup-preamble
@@ -715,9 +715,9 @@ export NIXOS_CONFIG_FILE="/etc/nixos/configuration.nix"
 export POSTGRES_PORT=5432
 #+END_SRC
 
-We need to make the metadata-server project available to our NixOS
-configuration. There are many ways to do this, but we'll use a package
-called niv:
+We need to make the offchain-metadata-tools project available to our
+NixOS configuration. There are many ways to do this, but we'll use a
+package called niv:
 
 #+BEGIN_SRC shell :tangle no
 cd /etc/nixos
@@ -1117,7 +1117,7 @@ webhook settings page.
 
 Letting just anyone commit metadata to your repository is likely not
 what you want. We recommend accepting pull requests to your repository
-and using [[* metadata-validator-github][metadata-validator-github]] and [[*cardano-metadata-submitter][cardano-metadata-submitter]] to
+and using [[* metadata-validator-github][metadata-validator-github]] and [[*token-metadata-creator][token-metadata-creator]] to
 automate some of the vetting of PRs.
 
 One easy way to do this is with GitHub actions. Create the following
@@ -1134,7 +1134,7 @@ This should always be the most up-to-date version of the PR validation
 script that we use.
 
 This script will automatically fetch the latest versions of the
-[[*metadata-validator-github][metadata-validator-github]] and [[*cardano-metadata-submitter][cardano-metadata-submitter]] tools and run
+[[*metadata-validator-github][metadata-validator-github]] and [[*token-metadata-creator][token-metadata-creator]] tools and run
 them on every PR to your repository.
 
 By default, the validation script ensures that metadata files are
@@ -1147,7 +1147,7 @@ Congratulations on setting up your own metadata system!
 
 ** How-to
 ** Reference
-*** Components of the metadata-server project
+*** Components of the offchain-metadata-tools project
 **** metadata-lib
 metadata-lib is a Haskell library that provides a core set of tools
 for writing metadata-related services.
@@ -1272,10 +1272,10 @@ write to the metadata storage layer. It is a GitHub webhook that
 receives information about commits to master on a metadata GitHub
 repository, and updates the storage layer to match.
 
-**** cardano-metadata-submitter
+**** token-metadata-creator
 
-An external project, concerned primarily with asset/token metadata,
-that provides:
+A project concerned primarily with asset/token metadata, that
+provides:
   - An executable to create asset metadata and validate it.
   - A Haskell library to create and validate asset metadata.
 
@@ -1296,7 +1296,7 @@ this project work together to form the metadata system:
 Our haskell.nix Nix infrastructure used to have issues with postgres,
 namely it couldn't provide us with a static musl binary if postgres
 was in the dependency tree somewhere. To be able to provide a static
-binary for the cardano-metadata-submitter tool, we removed the
+binary for the token-metadata-creator tool, we removed the
 metadata-store-postgres library from the core metadata-lib library and
 packaged it separately.
 
@@ -1305,15 +1305,6 @@ decision was made to keep metadata-store-postgres as a separate
 library, as it provides a helpful example for those wishing to
 implement their own metadata storage layer.
 
-*** Why are cardano-metadata-submitter and metadata-server separate projects?
-
-The cardano-metadata-submitter is primarily concerned about one type
-of metadata: asset metadata. The specification which this work is
-based off talks of a general kind of metadata, of which asset metadata
-is just one instance. An effort has been made to keep the projects
-separate in order for the metadata-server project to cater to the
-needs of other kinds of metadata, and provide a place where helpful
-developments in the cardano-metadata-submitter project can be shared.
 *** Why are metadata entries kept in a separate directory (e.g. "mappings")?
 
 Metadata entries on our GitHub repository are kept in a non-root level

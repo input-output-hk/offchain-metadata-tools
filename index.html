@@ -87,11 +87,10 @@
             <li><a href="#running-your-own-metadata-system">Running your own metadata system</a></li>
         <li class="main "><a href="#how-to">How-to</a></li>
         <li class="main "><a href="#reference">Reference</a></li>
-            <li><a href="#components-of-the-metadata-server-project">Components of the metadata-server project</a></li>
+            <li><a href="#components-of-the-offchain-metadata-tools-project">Components of the offchain-metadata-tools project</a></li>
             <li><a href="#structure-diagram">Structure diagram</a></li>
         <li class="main "><a href="#explanation">Explanation</a></li>
             <li><a href="#why-is-metadata-store-postgres-packaged-as-a-separate-library">Why is metadata-store-postgres packaged as a separate library?</a></li>
-            <li><a href="#why-are-cardano-metadata-submitter-and-metadata-server-separate-projects">Why are cardano-metadata-submitter and metadata-server separate projects?</a></li>
             <li><a href="#why-are-metadata-entries-kept-in-a-separate-directory-eg-mappings">Why are metadata entries kept in a separate directory (e.g. \"mappings\")?</a></li>
             <li><a href="#how-do-we-test-the-tutorials">How do we test the tutorials?</a></li>
     </ul>
@@ -537,7 +536,7 @@ echo "Subject is '$SUBJECT'"
 <li>
 <p>Properties</p>
 <p>We can now start creating our metadata entry:</p>
-<pre><code>cardano-metadata-submitter entry --init $SUBJECT
+<pre><code>token-metadata-creator entry --init $SUBJECT
 </code></pre>
 <p>This will create a draft JSON file in our current directory.</p>
 <pre><code>cat $SUBJECT.json.draft
@@ -554,7 +553,7 @@ corresponds to a \"property\". There are three required
 properties for asset metadata (the kind of metadata we are
 creating): \"name\", \"description\", and \"policy\".</p>
 <p>We can provide these with the following command:</p>
-<pre><code>cardano-metadata-submitter entry $SUBJECT \
+<pre><code>token-metadata-creator entry $SUBJECT \
   --name "Quid" \
   --description "The un-offical currency of Great Britain." \
   --policy $SCRIPT
@@ -587,7 +586,7 @@ we must sign the metadata with the keys used to define your
 asset policy.</p>
 <p>Each property may be attested to individually, but for now we
 can just attest to all properties at once using the \"-a\" flag:</p>
-<pre><code>cardano-metadata-submitter entry $SUBJECT -a policy/policy.skey
+<pre><code>token-metadata-creator entry $SUBJECT -a policy/policy.skey
 
 cat $SUBJECT.json.draft
 
@@ -627,7 +626,7 @@ manner.</p>
 <p>Finalizing</p>
 <p>Finally, we can run the following command to perform some final
 checks on our draft and spit out a non-draft \".json\" file:</p>
-<pre><code>cardano-metadata-submitter entry $SUBJECT --finalize
+<pre><code>token-metadata-creator entry $SUBJECT --finalize
 
 cat $SUBJECT.json
 </code></pre>
@@ -683,8 +682,8 @@ creating, you can refer to the <em>Structure diagram</em>.</p>
 <p>NixOS (recommended)</p>
 <p>Configuring a NixOS system to run the core services required for
 a metadata system is easy, as we\'ve done much of the work for
-you! The metadata-server project provides a number of NixOS
-modules that setup the metadata system.</p>
+you! The offchain-metadata-tools project provides a number of
+NixOS modules that setup the metadata system.</p>
 <ol>
 <li>
 <p>Preamble</p>
@@ -707,9 +706,9 @@ export METADATA_WEBHOOK_SECRET="secret"
 export NIXOS_CONFIG_FILE="/etc/nixos/configuration.nix"
 export POSTGRES_PORT=5432
 </code></pre>
-<p>We need to make the metadata-server project available to our
-NixOS configuration. There are many ways to do this, but
-we\'ll use a package called niv:</p>
+<p>We need to make the offchain-metadata-tools project
+available to our NixOS configuration. There are many ways to
+do this, but we\'ll use a package called niv:</p>
 <pre><code>cd /etc/nixos
 niv init
 niv add input-output-hk/metadata-server -b master
@@ -1050,8 +1049,7 @@ the webhook settings page.</p>
 <p>Letting just anyone commit metadata to your repository is likely
 not what you want. We recommend accepting pull requests to your
 repository and using <em>metadata-validator-github</em> and
-<em>cardano-metadata-submitter</em> to automate some of the vetting of
-PRs.</p>
+<em>token-metadata-creator</em> to automate some of the vetting of PRs.</p>
 <p>One easy way to do this is with GitHub actions. Create the
 following file in your repository:</p>
 <pre><code>mkdir -p .github/workflows
@@ -1062,8 +1060,8 @@ touch .github/workflows/ci.yaml
 This should always be the most up-to-date version of the PR
 validation script that we use.</p>
 <p>This script will automatically fetch the latest versions of the
-<em>metadata-validator-github</em> and <em>cardano-metadata-submitter</em>
-tools and run them on every PR to your repository.</p>
+<em>metadata-validator-github</em> and <em>token-metadata-creator</em> tools
+and run them on every PR to your repository.</p>
 <p>By default, the validation script ensures that metadata files
 are written to the \"mappings\" directory, so when adding
 metadata from now on, make sure to add it to the \"mappings\"
@@ -1075,7 +1073,7 @@ directory. See <em>here</em> for an explanation of why this is.</p>
 </ul>
 <h2 id="how-to">How-to<a class="headerlink" href="#how-to" title="Permanent link">&para;</a></h2>
 <h2 id="reference">Reference<a class="headerlink" href="#reference" title="Permanent link">&para;</a></h2>
-<h3 id="components-of-the-metadata-server-project">Components of the metadata-server project<a class="headerlink" href="#components-of-the-metadata-server-project" title="Permanent link">&para;</a></h3>
+<h3 id="components-of-the-offchain-metadata-tools-project">Components of the offchain-metadata-tools project<a class="headerlink" href="#components-of-the-offchain-metadata-tools-project" title="Permanent link">&para;</a></h3>
 <ol>
 <li>
 <p>metadata-lib</p>
@@ -1210,9 +1208,9 @@ receives information about commits to master on a metadata GitHub
 repository, and updates the storage layer to match.</p>
 </li>
 <li>
-<p>cardano-metadata-submitter</p>
-<p>An external project, concerned primarily with asset/token metadata,
-that provides:</p>
+<p>token-metadata-creator</p>
+<p>A project concerned primarily with asset/token metadata, that
+provides:</p>
 <ul>
 <li>An executable to create asset metadata and validate it.</li>
 <li>A Haskell library to create and validate asset metadata.</li>
@@ -1229,21 +1227,13 @@ system" src="structure-diagram.svg" title="structure-diagram" /></p>
 <p>Our haskell.nix Nix infrastructure used to have issues with postgres,
 namely it couldn\'t provide us with a static musl binary if postgres was
 in the dependency tree somewhere. To be able to provide a static binary
-for the cardano-metadata-submitter tool, we removed the
+for the token-metadata-creator tool, we removed the
 metadata-store-postgres library from the core metadata-lib library and
 packaged it separately.</p>
 <p>The haskell.nix Nix infrastructure has since been fixed but the decision
 was made to keep metadata-store-postgres as a separate library, as it
 provides a helpful example for those wishing to implement their own
 metadata storage layer.</p>
-<h3 id="why-are-cardano-metadata-submitter-and-metadata-server-separate-projects">Why are cardano-metadata-submitter and metadata-server separate projects?<a class="headerlink" href="#why-are-cardano-metadata-submitter-and-metadata-server-separate-projects" title="Permanent link">&para;</a></h3>
-<p>The cardano-metadata-submitter is primarily concerned about one type of
-metadata: asset metadata. The specification which this work is based off
-talks of a general kind of metadata, of which asset metadata is just one
-instance. An effort has been made to keep the projects separate in order
-for the metadata-server project to cater to the needs of other kinds of
-metadata, and provide a place where helpful developments in the
-cardano-metadata-submitter project can be shared.</p>
 <h3 id="why-are-metadata-entries-kept-in-a-separate-directory-eg-mappings">Why are metadata entries kept in a separate directory (e.g. \"mappings\")?<a class="headerlink" href="#why-are-metadata-entries-kept-in-a-separate-directory-eg-mappings" title="Permanent link">&para;</a></h3>
 <p>Metadata entries on our GitHub repository are kept in a non-root level
 directory to ensure that our GitHub page loads quickly even if we have
