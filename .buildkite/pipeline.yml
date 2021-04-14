@@ -1,3 +1,9 @@
+env:
+  BUILD_DIR: "/build/offchain-metadata-tools"
+  STACK_ROOT: "/build/offchain-metadata-tools.stack"
+  CACHE_DIR: "/cache/offchain-metadata-tools"
+  LC_ALL: "en_US.UTF-8"
+
 steps:
   - label: 'Update docs'
     command:
@@ -17,8 +23,10 @@ steps:
     agents:
       system: x86_64-linux
 
-  - label: 'Check that stack build works'
+  - label: 'Stack Rebuild'
     command:
-      - nix-shell -p "stack" --run "stack build"
+      - "nix-build .buildkite/default.nix -o sr"
+      - "./sr/bin/rebuild --build-dir=$BUILD_DIR --cache-dir=$CACHE_DIR"
+    timeout_in_minutes: 120
     agents:
       system: x86_64-linux
