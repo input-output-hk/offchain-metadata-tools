@@ -86,6 +86,8 @@
             <li><a href="#submitting-your-first-metadata-entry">Submitting your first metadata entry</a></li>
             <li><a href="#running-your-own-metadata-system">Running your own metadata system</a></li>
         <li class="main "><a href="#how-to">How-to</a></li>
+            <li><a href="#set-up-the-nix-cache">Set up the Nix cache</a></li>
+            <li><a href="#build-the-project-from-source">Build the project from source</a></li>
         <li class="main "><a href="#reference">Reference</a></li>
             <li><a href="#components-of-the-offchain-metadata-tools-project">Components of the offchain-metadata-tools project</a></li>
             <li><a href="#structure-diagram">Structure diagram</a></li>
@@ -1072,6 +1074,50 @@ directory. See <em>here</em> for an explanation of why this is.</p>
 </li>
 </ul>
 <h2 id="how-to">How-to<a class="headerlink" href="#how-to" title="Permanent link">&para;</a></h2>
+<h3 id="set-up-the-nix-cache">Set up the Nix cache<a class="headerlink" href="#set-up-the-nix-cache" title="Permanent link">&para;</a></h3>
+<p>For both building with <code>nix-build</code> and using <code>nix-shell</code>, it might take
+a very long time if you do not have the Cardano binary cache set up.
+Adding the IOHK binary cache to your Nix configuration will speed up
+builds a lot, since many things will have been built already by our CI.</p>
+<p>If you find you are building packages that are not defined in this
+repository, or if the build seems to take a very long time then you may
+not have this set up properly.</p>
+<p>To set up the cache:</p>
+<ol>
+<li>
+<p>On non-NixOS, edit /etc/nix/nix.conf and add the following lines:</p>
+<pre><code>substituters        = https://hydra.iohk.io https://iohk.cachix.org https://cache.nixos.org/
+trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= iohk.cachix.org-1:DpRUyj7h7V830dp/i6Nti+NEO2/nhblbov/8MW7Rqoo= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+</code></pre>
+</li>
+<li>
+<p>On NixOS, set the following NixOS options:</p>
+<pre><code>nix = {
+  binaryCaches          = [ "https://hydra.iohk.io" "https://iohk.cachix.org" ];
+  binaryCachePublicKeys = [ "hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=" "iohk.cachix.org-1:DpRUyj7h7V830dp/i6Nti+NEO2/nhblbov/8MW7Rqoo=" ];
+};
+</code></pre>
+</li>
+</ol>
+<h3 id="build-the-project-from-source">Build the project from source<a class="headerlink" href="#build-the-project-from-source" title="Permanent link">&para;</a></h3>
+<ol>
+<li>
+<p>Using Nix</p>
+<p>From the root directory of the project <code>nix-build -A project</code> will
+build all project components, including test suites.</p>
+<p>To build a particular executable, say <code>token-metadata-creator</code>, use
+<code>nix-build -A token-metadata-creator</code>.</p>
+<p>To enter a development shell, use <code>nix-shell default.nix -A shell</code>.
+This will enter a development shell for which
+<a href="https://github.com/input-output-hk/haskell.nix/">haskell.nix</a>
+provides all dependencies.</p>
+<p>To enter a development shell with a compiler, build tools, and
+system libraries, but without Haskell packages, use
+<code>nix-shell default.nix -A
+cabal-shell</code>. You can then use cabal to build all Haskell package
+dependencies.</p>
+</li>
+</ol>
 <h2 id="reference">Reference<a class="headerlink" href="#reference" title="Permanent link">&para;</a></h2>
 <h3 id="components-of-the-offchain-metadata-tools-project">Components of the offchain-metadata-tools project<a class="headerlink" href="#components-of-the-offchain-metadata-tools-project" title="Permanent link">&para;</a></h3>
 <ol>
