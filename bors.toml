@@ -3,8 +3,10 @@ status = [
   "buildkite/offchain-metadata-tools",
   # Hydra: build for required jobset
   "ci/hydra:Cardano:offchain-metadata-tools:required",
+  "ci/hydra-eval",
+  "ci/hydra-build:required",
 ]
-timeout_sec = 3600
+timeout_sec = 7200
 required_approvals = 1
 delete_merged_branches = true
-block_labels = [ "DO NOT MERGE", "wip" ]
+block_labels = [ "WIP", "DO NOT MERGE", "wip" ]
