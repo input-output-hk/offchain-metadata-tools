@@ -1236,6 +1236,9 @@ dependencies.
   - [ ] Run locally automated scenarios from
     https://github.com/input-output-hk/offchain-metadata-tools/tree/master/token-metadata-creator/test
 
+  - [ ] Run pre-release load tests from
+    https://github.com/input-output-hk/offchain-metadata-tools/tree/master/test/load
+
   #+begin_example
     $ npm install
     $ npm test
