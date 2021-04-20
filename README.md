@@ -6,6 +6,10 @@
   <img width="200" src=".github/images/cardano-logo.png"/>
 </p>
 
+<p align="center">
+  <a href="https://buildkite.com/input-output-hk/offchain-metadata-tools"><img src="https://badge.buildkite.com/7df25c563faffd8c7b09db8d802a73bd2ebc14ace98a432761.svg" alt="Build status"></a>
+</p>
+
 ## Overview
 
 In the Cardano multi-asset era, this project helps you create and

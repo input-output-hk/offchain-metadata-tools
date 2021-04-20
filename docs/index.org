@@ -1193,6 +1193,65 @@ libraries, but without Haskell packages, use =nix-shell default.nix -A
 cabal-shell=. You can then use cabal to build all Haskell package
 dependencies.
 
+*** Make a release
+
+  Follow this checklist when making a release.
+
+**** Preparing the release
+     :PROPERTIES:
+     :CUSTOM_ID: preparing-the-release
+     :END:
+
+  - [ ] Deploy offchain-metadata-tools to testnet such that
+    metadata-server is available at
+    https://metadata.cardano-testnet.iohkdev.io/ and new metadata can be
+    added in https://github.com/input-output-hk/metadata-registry-testnet
+
+**** Create the release notes
+     :PROPERTIES:
+     :CUSTOM_ID: create-the-release-notes
+     :END:
+
+  - [ ] Add a draft release to
+    https://github.com/input-output-hk/offchain-metadata-tools/releases,
+    so that the release notes can be reviewed.
+
+**** Acceptance tests
+     :PROPERTIES:
+     :CUSTOM_ID: acceptance-tests
+     :END:
+  /It is assumed that offchain-metadata-tools have been deployed to
+  testnet infrastructure prior to the release so e2e acceptance tests can
+  be executed./
+
+  - [ ] Verify the release notes point to relevant API documentation and
+    manual.
+
+  - [ ] Download release artifacts from the release page and make them
+    available on =$PATH=.
+
+  - [ ] Go over e2e acceptance tests ->
+    https://github.com/input-output-hk/offchain-metadata-tools/tree/master/test/Acceptance.md
+
+  - [ ] Run locally automated scenarios from
+    https://github.com/input-output-hk/offchain-metadata-tools/tree/master/token-metadata-creator/test
+
+  - [ ] Run pre-release load tests from
+    https://github.com/input-output-hk/offchain-metadata-tools/tree/master/test/load
+
+  #+begin_example
+    $ npm install
+    $ npm test
+  #+end_example
+
+**** Publication
+     :PROPERTIES:
+     :CUSTOM_ID: publication
+     :END:
+
+  - [ ] Once everyone has signed off (i.e. Tech lead, QA, Ops & Release
+    manager), publish the release.
+
 ** Reference
 *** Components of the offchain-metadata-tools project
 **** metadata-lib
