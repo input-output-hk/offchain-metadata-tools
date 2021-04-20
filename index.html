@@ -88,6 +88,7 @@
         <li class="main "><a href="#how-to">How-to</a></li>
             <li><a href="#set-up-the-nix-cache">Set up the Nix cache</a></li>
             <li><a href="#build-the-project-from-source">Build the project from source</a></li>
+            <li><a href="#make-a-release">Make a release</a></li>
         <li class="main "><a href="#reference">Reference</a></li>
             <li><a href="#components-of-the-offchain-metadata-tools-project">Components of the offchain-metadata-tools project</a></li>
             <li><a href="#structure-diagram">Structure diagram</a></li>
@@ -1116,6 +1117,67 @@ system libraries, but without Haskell packages, use
 <code>nix-shell default.nix -A
 cabal-shell</code>. You can then use cabal to build all Haskell package
 dependencies.</p>
+</li>
+</ol>
+<h3 id="make-a-release">Make a release<a class="headerlink" href="#make-a-release" title="Permanent link">&para;</a></h3>
+<p>Follow this checklist when making a release.</p>
+<ol>
+<li>
+<p>Preparing the release</p>
+<ul>
+<li>[ ] Deploy offchain-metadata-tools to testnet such that
+    metadata-server is available at
+    <a href="https://metadata.cardano-testnet.iohkdev.io/">https://metadata.cardano-testnet.iohkdev.io/</a> and new metadata
+    can be added in
+    <a href="https://github.com/input-output-hk/metadata-registry-testnet">https://github.com/input-output-hk/metadata-registry-testnet</a></li>
+</ul>
+</li>
+<li>
+<p>Create the release notes</p>
+<ul>
+<li>[ ] Add a draft release to
+    <a href="https://github.com/input-output-hk/offchain-metadata-tools/releases">https://github.com/input-output-hk/offchain-metadata-tools/releases</a>,
+    so that the release notes can be reviewed.</li>
+</ul>
+</li>
+<li>
+<p>Acceptance tests</p>
+<p>/It is assumed that offchain-metadata-tools have been deployed to
+testnet infrastructure prior to the release so e2e acceptance tests
+can be executed./</p>
+<ul>
+<li>
+<p>[ ] Verify the release notes point to relevant API
+    documentation and manual.</p>
+</li>
+<li>
+<p>[ ] Download release artifacts from the release page and make
+    them available on <code>$PATH</code>.</p>
+</li>
+<li>
+<p>[ ] Go over e2e acceptance tests ->
+    <a href="https://github.com/input-output-hk/offchain-metadata-tools/tree/master/test/Acceptance.md">https://github.com/input-output-hk/offchain-metadata-tools/tree/master/test/Acceptance.md</a></p>
+</li>
+<li>
+<p>[ ] Run locally automated scenarios from
+    <a href="https://github.com/input-output-hk/offchain-metadata-tools/tree/master/token-metadata-creator/test">https://github.com/input-output-hk/offchain-metadata-tools/tree/master/token-metadata-creator/test</a></p>
+</li>
+<li>
+<p>[ ] Run pre-release load tests from
+    <a href="https://github.com/input-output-hk/offchain-metadata-tools/tree/master/test/load">https://github.com/input-output-hk/offchain-metadata-tools/tree/master/test/load</a></p>
+</li>
+</ul>
+<p><code>{=html}
+&lt;!-- --&gt;</code>
+    $ npm install
+    $ npm test</p>
+</li>
+<li>
+<p>Publication</p>
+<ul>
+<li>[ ] Once everyone has signed off (i.e. Tech lead, QA, Ops &amp;
+    Release manager), publish the release.</li>
+</ul>
 </li>
 </ol>
 <h2 id="reference">Reference<a class="headerlink" href="#reference" title="Permanent link">&para;</a></h2>
