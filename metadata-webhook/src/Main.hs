@@ -39,10 +39,9 @@ main = do
 
   let pgConnString = pgConnectionString options
   putStrLn $ "Connecting to database using connection string: " <> C8.unpack pgConnString
-  runStdoutLoggingT $
-    Postgresql.withPostgresqlPool pgConnString numDbConns $ \pool -> liftIO $ do
-      putStrLn $ "Initializing table '" <> tableName <> "'."
-      intf <- Store.postgresStore pool (T.pack tableName)
+  Store.withConnectionPool pgConnString numDbConns $ \pool -> do
+    putStrLn $ "Initializing table '" <> tableName <> "'."
+    intf <- Store.postgresStore pool (T.pack tableName)
 
-      putStrLn $ "Metadata webhook is starting on port " <> show port <> "."
-      liftIO $ Warp.run port (appSigned (gitHubKey $ pure key) intf (getFileContent githubToken))
+    putStrLn $ "Metadata webhook is starting on port " <> show port <> "."
+    liftIO $ Warp.run port (appSigned (gitHubKey $ pure key) intf (getFileContent githubToken))

@@ -11,13 +11,14 @@ module Main where
 
 import Control.Monad.IO.Class
     ( liftIO )
-import Control.Monad.Logger
-    ( runStdoutLoggingT )
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.Text as T
-import qualified Database.Persist.Postgresql as Postgresql
 import qualified Network.Wai.Handler.Warp as Warp
 import qualified Options.Applicative as Opt
+import Control.Exception (bracket)
+import Database.PostgreSQL.Simple (Connection, connectPostgreSQL, close)
+import Data.Pool (Pool, createPool, destroyAllResources)
+import Data.Time.Clock (NominalDiffTime)
 
 import Cardano.Metadata.Server
     ( webApp )
@@ -36,10 +37,9 @@ main = do
 
   let pgConnString = pgConnectionString options
   putStrLn $ "Connecting to database using connection string: " <> BC.unpack pgConnString
-  runStdoutLoggingT $
-    Postgresql.withPostgresqlPool pgConnString numDbConns $ \pool -> liftIO $ do
-      putStrLn $ "Initializing table '" <> tableName <> "'."
-      intf <- Store.postgresStore pool (T.pack tableName)
+  Store.withConnectionPool pgConnString numDbConns $ \pool -> do
+    putStrLn $ "Initializing table '" <> tableName <> "'."
+    intf <- Store.postgresStore pool (T.pack tableName)
 
-      putStrLn $ "Metadata server is starting on port " <> show port <> "."
-      liftIO $ Warp.run port (webApp intf)
+    putStrLn $ "Metadata server is starting on port " <> show port <> "."
+    liftIO $ Warp.run port (webApp intf)

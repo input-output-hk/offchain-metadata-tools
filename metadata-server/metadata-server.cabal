@@ -25,10 +25,13 @@ executable metadata-server
                      , persistent-postgresql
                      , optparse-applicative
                      , persistent
+                     , postgresql-simple
+                     , resource-pool
                      , safe-exceptions
                      , scientific
                      , servant
                      , text
+                     , time
                      , warp
 
   ghc-options:          -Wall

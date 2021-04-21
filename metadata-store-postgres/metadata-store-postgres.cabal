@@ -29,12 +29,14 @@ library
                      , persistent
                      , persistent-postgresql
                      , persistent-template
+                     , postgresql-simple
                      , resource-pool
                      , safe-exceptions
                      , scientific
                      , servant
                      , servant-server
                      , text
+                     , time
                      , unordered-containers
                      , wai
                      , warp
@@ -72,6 +74,7 @@ test-suite integration-tests
                 , metadata-lib
                 , metadata-store-postgres
                 , monad-logger
+                , postgresql-simple
                 , persistent-postgresql
                 , mtl
                 , raw-strings-qq

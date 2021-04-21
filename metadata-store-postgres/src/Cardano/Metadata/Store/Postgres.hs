@@ -11,6 +11,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Cardano.Metadata.Store.Postgres
   ( read
@@ -22,15 +23,21 @@ module Cardano.Metadata.Store.Postgres
   , init
   , postgresStore
   , PostgresKeyValueException(..)
+  , mkConnectionPool
+  , withConnectionPool
   ) where
 
 import Cardano.Metadata.Store.Types
+import Data.Time (NominalDiffTime)
 import Control.Exception.Safe
 import Control.Monad.Reader
+import qualified Data.ByteString.Char8 as BC
+import Data.Foldable (foldl', foldMap')
 import Data.Aeson
     ( FromJSON, FromJSONKey, ToJSON, ToJSONKey )
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Encoding.Internal as Aeson
+import qualified Data.Aeson.Text as Aeson
 import qualified Data.Aeson.Types as Aeson
 import Data.Coerce
     ( coerce )
@@ -38,15 +45,14 @@ import qualified Data.Map.Strict as M
 import Data.Pool
 import Data.Text
     ( Text )
+import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TLE
 import Data.Traversable
     ( for )
-import Database.Persist hiding
-    ( delete, update )
-import Database.Persist.Sql
-    ( ConnectionPool, Single (Single), SqlBackend )
-import qualified Database.Persist.Sql as Sql
+import Database.PostgreSQL.Simple (Connection, ConnectInfo(..), In(..), query, Only(..))
+import Database.PostgreSQL.Simple.Types (Identifier(..), Binary(..))
+import qualified Database.PostgreSQL.Simple as Sql
 import Prelude hiding
     ( init, read )
 
@@ -54,30 +60,55 @@ data PostgresKeyValueException = UniqueKeyConstraintViolated
                                | FailedToDecodeJSONValue String Text
   deriving (Eq, Show, Exception)
 
-data KeyValue k v = KeyValue { _kvConnPool    :: Pool SqlBackend
+data KeyValue k v = KeyValue { _kvConnPool    :: Pool Connection
                              , _kvDbTableName :: Text
                              }
 
+mkConnectionPool
+  :: BC.ByteString
+  -- ^ Libpq connection string
+  -> Int
+  -- ^ Maximum number of postgresql connections to allow
+  -> IO (Pool Connection)
+mkConnectionPool connectionStr numConns =
+  createPool
+    (Sql.connectPostgreSQL connectionStr)
+    Sql.close
+    1                       -- Number of sub-pools
+    (10 :: NominalDiffTime) -- Amount of time for which an unused connection is kept open
+    numConns
+
+withConnectionPool
+  :: BC.ByteString
+  -- ^ Libpq connection string
+  -> Int
+  -- ^ Maximum number of postgresql connections to allow
+  -> (Pool Connection -> IO r)
+  -> IO r
+withConnectionPool connectionInfo numConns f = bracket
+  (mkConnectionPool connectionInfo numConns)
+  destroyAllResources
+  f
+
 createTable
-  :: ( BackendCompatible SqlBackend backend
-     , MonadIO m
-     )
-  => Text
+  :: Connection
+  -- ^ Connection to database
+  -> Text
   -- ^ Table name
-  -> ReaderT backend m ()
-createTable tableName =
-  Sql.rawExecute ("CREATE TABLE IF NOT EXISTS " <> tableName <> "(\"key\" VARCHAR PRIMARY KEY UNIQUE, \"value\" JSONB NOT NULL)") []
+  -> IO ()
+createTable conn tableName =
+  void $ Sql.execute conn ("CREATE TABLE IF NOT EXISTS ? (\"key\" VARCHAR PRIMARY KEY UNIQUE, \"value\" JSONB NOT NULL)") (Only $ Identifier tableName)
 
 init
-  :: ConnectionPool
+  :: Pool Connection
   -- ^ Database connection pool
   -> Text
   -- ^ Database table name
   -> IO (KeyValue k v)
   -- ^ Resulting key-value store
 init pool tableName =
-  withBackendFromPool pool $ do
-    createTable tableName
+  withConnectionFromPool pool $ \conn -> do
+    createTable conn tableName
 
     pure $ KeyValue pool tableName
 
@@ -87,7 +118,7 @@ postgresStore
      , FromJSONKey k
      , FromJSON v
      )
-  => ConnectionPool
+  => Pool Connection
   -- ^ Database connection pool
   -> Text
   -- ^ Database table name
@@ -102,55 +133,46 @@ postgresStore pool tableName = do
                         (toList kvs)
                         (empty kvs)
 
-withBackendFromPool :: Pool r -> ReaderT r IO b -> IO b
-withBackendFromPool pool action = withResource pool (runReaderT action)
+withConnectionFromPool :: Pool Connection -> (Connection -> IO b) -> IO b
+withConnectionFromPool pool action = withResource pool $ action
 
 read :: (ToJSONKey k, FromJSON v) => k -> KeyValue k v -> IO (Maybe v)
 read k (KeyValue pool tableName) = do
-  results <- withBackendFromPool pool $
-    Sql.rawSql
-      ("SELECT value FROM " <> tableName <> " WHERE \"key\" = ?")
-      [toPersistValueJSONKey k]
+  (results :: [Only Aeson.Value]) <- withConnectionFromPool pool $ \conn ->
+    Sql.query conn ("SELECT value FROM ? WHERE \"key\" = ?") (Identifier tableName, toJSONKeyText k)
   case results of
     []            -> pure Nothing
-    (Single x):[] -> handleJSONDecodeError x $ decodeJSONValue x
-    _xs           -> throw UniqueKeyConstraintViolated
+    (Only v):[]   -> fromValue v
+    _vs           -> throw UniqueKeyConstraintViolated
 
 readBatch :: (ToJSONKey k, FromJSON v) => [k] -> KeyValue k v -> IO [v]
 readBatch [] (KeyValue _pool _tableName) = pure []
 readBatch ks (KeyValue pool tableName) = do
-  results <- fmap (fmap (\(k, v) -> (Sql.unSingle k, Sql.unSingle v))) $  withBackendFromPool pool $
-    Sql.rawSql
-      ("SELECT key, value FROM " <> tableName <> " WHERE \"key\" IN " <> toSqlList ks)
-      []
-  resultMap <- flip foldMap results $ \(k, v) -> do
-    v' <- handleJSONDecodeError v $ decodeJSONValue v
+  (results :: [(Text, Aeson.Value)]) <- withConnectionFromPool pool $ \conn ->
+    Sql.query conn
+      ("SELECT key, value FROM ? WHERE \"key\" IN ?")
+      (Identifier tableName, In $ toJSONKeyText <$> ks)
+
+  resultMap <- flip foldMap' results $ \(k, v) -> do
+    v' <- fromValue v
     pure $ M.singleton k v'
 
-  pure $ flip foldMap ks $ \k ->
+  pure $ flip foldMap' ks $ \k ->
     case M.lookup (toJSONKeyText k) resultMap of
       Nothing -> []
       Just v  -> [v]
 
-  where
-    toSqlList []     = "()"
-    toSqlList (x:xs) = foldr (\x' acc -> acc <> ", " <> toSqlKey x') ("(" <> toSqlKey x) xs <> ")"
-
-    toSqlKey x = "'" <> toJSONKeyText x <> "'"
-
 write :: (ToJSONKey k, ToJSON v) => k -> v -> KeyValue k v -> IO ()
-write k v (KeyValue pool tableName) = withBackendFromPool pool $ do
-  Sql.rawExecute
-    ("INSERT INTO " <> tableName <> " (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value")
-    [ toPersistValueJSONKey k
-    , toPersistValueJSON v
-    ]
+write k v (KeyValue pool tableName) = withConnectionFromPool pool $ \conn ->
+  void $ Sql.execute conn
+    ("INSERT INTO ? (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value")
+    (Identifier tableName, toJSONKeyText k, Aeson.toJSON v)
 
 delete :: ToJSONKey k => k -> KeyValue k v -> IO ()
-delete k (KeyValue pool tableName) = withBackendFromPool pool $ do
-  Sql.rawExecute
-    ("DELETE FROM " <> tableName <> " WHERE \"key\" = ?")
-    [toPersistValueJSONKey k]
+delete k (KeyValue pool tableName) = withConnectionFromPool pool $ \conn ->
+  void $ Sql.execute conn
+    ("DELETE FROM ? WHERE \"key\" = ?")
+    (Identifier tableName, toJSONKeyText k)
 
 update :: (ToJSONKey k, ToJSON v, FromJSON v) => (v -> Maybe v) -> k -> KeyValue k v -> IO ()
 update fv k kvs = do
@@ -163,21 +185,18 @@ update fv k kvs = do
 
 toList :: (FromJSONKey k, FromJSON v) => KeyValue k v -> IO [(k, v)]
 toList (KeyValue pool tableName) = do
-  results <- withBackendFromPool pool $
-    Sql.rawSql
-      ("SELECT key, value FROM " <> tableName)
-      []
-  for results $ \(Single kText, Single vText) -> do
-    k <- handleJSONDecodeError kText $ decodeJSONKey kText
-    v <- handleJSONDecodeError vText $ decodeJSONValue vText
+  (results :: [(Text, Aeson.Value)]) <- withConnectionFromPool pool $ \conn ->
+    Sql.query conn
+      ("SELECT key, value FROM ?")
+      (Only $ Identifier tableName)
+  for results $ \(kText, v) -> do
+    k <- handleJSONDecodeError (Aeson.String kText) $ decodeJSONKey kText
+    v <- fromValue v
     pure (k, v)
 
 empty :: KeyValue k v -> IO ()
-empty (KeyValue pool tableName) = withBackendFromPool pool $
-  Sql.rawExecute ("TRUNCATE " <> tableName) []
-
-decodeJSONValue :: FromJSON v => Text -> Either String v
-decodeJSONValue = Aeson.eitherDecode . TLE.encodeUtf8 . TL.fromStrict
+empty (KeyValue pool tableName) = withConnectionFromPool pool $ \conn ->
+  void $ Sql.execute conn ("TRUNCATE ?") (Only $ Identifier tableName)
 
 decodeJSONKey :: FromJSONKey k => Text -> Either String k
 decodeJSONKey t = case Aeson.fromJSONKey of
@@ -188,14 +207,14 @@ decodeJSONKey t = case Aeson.fromJSONKey of
     (v :: Aeson.Value) <- Aeson.eitherDecode (TLE.encodeUtf8 . TL.fromStrict $ t)
     Aeson.parseEither pv v
 
-handleJSONDecodeError :: Text -> Either String a -> IO a
-handleJSONDecodeError t = either (\err -> throw $ FailedToDecodeJSONValue err t) pure
-
-toPersistValueJSONKey :: ToJSONKey k => k -> PersistValue
-toPersistValueJSONKey = toPersistValue . toJSONKeyText
+handleJSONDecodeError :: Aeson.Value -> Either String a -> IO a
+handleJSONDecodeError v = either (\err -> throw $ FailedToDecodeJSONValue err (TL.toStrict $ Aeson.encodeToLazyText v)) pure
 
 toJSONKeyText :: ToJSONKey k => k -> Text
 toJSONKeyText k =
   case Aeson.toJSONKey of
     Aeson.ToJSONKeyText  f _ -> f k
     Aeson.ToJSONKeyValue _ f -> TL.toStrict $ TLE.decodeUtf8 $ Aeson.encodingToLazyByteString $ f k
+
+fromValue :: Aeson.FromJSON a => Aeson.Value -> IO a
+fromValue v = handleJSONDecodeError v $ Aeson.eitherDecode $ Aeson.encode v

@@ -3,8 +3,6 @@
 
 import Control.Monad.IO.Class
     ( liftIO )
-import Control.Monad.Logger
-    ( runNoLoggingT )
 import qualified Data.Pool as Pool
 import Data.Proxy
     ( Proxy (Proxy) )
@@ -16,7 +14,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Data.Word
     ( Word8 )
-import qualified Database.Persist.Postgresql as Postgresql
+import qualified Database.PostgreSQL.Simple as Postgresql
 import Test.Tasty
     ( TestTree
     , askOption
@@ -75,8 +73,8 @@ testsWithPosgresConn =
   askOption $ \(DbName dbName) ->
   askOption $ \(DbUser dbUser) ->
     withResource
-      (runNoLoggingT $ do
-         pool <- Postgresql.createPostgresqlPool (TE.encodeUtf8 $ "host=" <> dbHost <> " dbname=" <> dbName <> " user=" <> dbUser) 1
+      (do
+         pool <- mkConnectionPool (TE.encodeUtf8 $ "host=" <> dbHost <> " dbname=" <> dbName <> " user=" <> dbUser) 1
          postgresIntf1 <- liftIO $ postgresStore pool "record"
          postgresIntf2 <- liftIO $ postgresStore pool "record"
 
@@ -86,7 +84,7 @@ testsWithPosgresConn =
       tests
 
 tests
-  :: IO ( Pool.Pool Postgresql.SqlBackend
+  :: IO ( Pool.Pool Postgresql.Connection
         , StoreInterface Word8 Word8
         , StoreInterface Text ComplexType
         )
