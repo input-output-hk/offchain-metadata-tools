@@ -45,6 +45,14 @@ in
         authentication = ''
           local all all ident map=metadata-server-users
         '';
+        settings =
+          {
+            log_connections = true;
+            log_statement = "all";
+            logging_collector = true;
+            log_disconnections = true;
+            log_destination = lib.mkForce "syslog";
+          };
       };
 
       users = {
