@@ -60,6 +60,7 @@ let
       # Enable profiling on executables if the profiling argument is set.
       (lib.optionalAttrs profiling {
         enableLibraryProfiling = true;
+        packages.metadata-store-postgres.components.library.enableLibraryProfiling = true;
         packages.metadata-server.components.exes.metadata-server.enableExecutableProfiling = true;
         packages.metadata-webhook.components.exes.metadata-webhook.enableExecutableProfiling = true;
         packages.metadata-sync.components.exes.metadata-sync.enableExecutableProfiling = true;
