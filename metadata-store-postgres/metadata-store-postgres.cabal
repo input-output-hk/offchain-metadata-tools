@@ -48,6 +48,7 @@ library
                         -Wredundant-constraints
                         -Wpartial-fields
                         -Wcompat
+                        -rtsopts
 
 test-suite integration-tests 
   hs-source-dirs:       test

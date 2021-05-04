@@ -33,7 +33,7 @@ in
 
       virtualisation.memorySize = totalMem;
 
-      environment.systemPackages = [ pkgs.vegeta pkgs.htop vegetaGo pkgs.haskellPackages.hp2pretty ];
+      environment.systemPackages = [ pkgs.vegeta pkgs.htop vegetaGo pkgs.haskellPackages.hp2pretty pkgs.haskellPackages.profiteur ];
 
       services.postgresql = {
         enable = true;
@@ -93,11 +93,13 @@ in
           database = database;
         };
 
-        extraFlags = ["+RTS" "-h" "-RTS"];
+        extraFlags = ["+RTS" "-h" "-p" "-RTS"];
 
         metadataServerPkgs = (import ../../../. {}).profiledProject;
       };
       systemd.services.metadata-server.serviceConfig.WorkingDirectory = metadataWorkingDir;
+      systemd.services.metadata-server.serviceConfig.RuntimeDirectoryPreserve = true;
+      systemd.services.metadata-server.serviceConfig.ExecStop = "${pkgs.coreutils}/bin/kill -s SIGINT $MAINPID";
 
       systemd.tmpfiles.rules = [
         "L /root/vegeta.atk - - - - ${vegetaCommands}"
@@ -115,9 +117,14 @@ in
 
     server.wait_for_open_port(${toString postgresPort})
     server.wait_for_open_port(${toString metadataServerPort})
-    server.succeed("cat ${vegetaCommands} | vegeta attack -duration 10s -connections 1 -rate 100/s")
+    server.succeed("cat ${vegetaCommands} | vegeta attack -duration 1s -connections 1 -rate 10/s")
+    # Stop metadata-server.service so GHC writes out .prof file contents
+    server.succeed("systemctl stop metadata-server.service")
+    server.succeed("sleep 10")
     server.succeed("cd ${metadataWorkingDir} && hp2pretty metadata-server.hp")
+    server.succeed("cd ${metadataWorkingDir} && profiteur metadata-server.prof")
     server.copy_from_vm("${metadataWorkingDir}/metadata-server.svg")
+    server.copy_from_vm("${metadataWorkingDir}/metadata-server.prof.html")
 
     def write_hydra_build_products(data):
       out_dir = pathlib.Path(os.environ.get("out", os.getcwd()))
@@ -127,5 +134,6 @@ in
         f.write(data.format(out_dir) + "\n")
 
     write_hydra_build_products("file svg {}/metadata-server.svg")
+    write_hydra_build_products("file html {}/metadata-server.prof.html")
     '';
 }

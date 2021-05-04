@@ -1,5 +1,6 @@
 dist-newstyle/
 dist/
+dist-prof/
 result*
 *.local
 *.local~
