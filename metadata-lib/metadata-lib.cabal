@@ -37,6 +37,7 @@ library
                      , bytestring
                      , canonical-json
                      , cardano-api
+                     , cardano-cli
                      , cardano-api-test
                      , co-log
                      , filepath

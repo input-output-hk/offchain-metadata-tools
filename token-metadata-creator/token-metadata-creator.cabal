@@ -36,6 +36,7 @@ library
                , cardano-slotting
                , containers
                , cborg
+               , scientific
                , time
                , co-log
                , megaparsec
@@ -78,3 +79,62 @@ executable token-metadata-creator
   if (!flag(development))
     ghc-options: -Werror -Wall
   other-modules:       Config
+
+test-suite unit-tests
+  hs-source-dirs:       test
+  main-is:              Main.hs
+  type:                 exitcode-stdio-1.0
+
+  build-depends:  HUnit
+                , QuickCheck
+                , aeson
+                , aeson-pretty
+                , base >=4.12 && <5
+                , base64-bytestring
+                , bytestring
+                , cardano-api
+                , cardano-crypto-class
+                , co-log
+                , containers
+                , filepath
+                , hedgehog
+                , hspec
+                , hspec-wai
+                , http-client
+                , http-types
+                , memory
+                , metadata-lib
+                , monad-logger
+                , mtl
+                , network-uri
+                , raw-strings-qq
+                , servant
+                , servant-client
+                , smallcheck
+                , tasty
+                , tasty-hedgehog
+                , tasty-hspec
+                , tasty-hunit
+                , tasty-quickcheck
+                , text
+                , unordered-containers
+                , validation
+                , vector
+                , wai-extra
+                , warp
+                , token-metadata-creator
+                , lens
+                , scientific
+                , lens-aeson
+                , aeson-qq
+                , base16-bytestring
+
+  other-modules:        Test.Cardano.Metadata
+
+  ghc-options:          -Wall
+                        -Wincomplete-record-updates
+                        -Wincomplete-uni-patterns
+                        -Wincomplete-patterns
+                        -Wredundant-constraints
+                        -Wpartial-fields
+                        -Wcompat

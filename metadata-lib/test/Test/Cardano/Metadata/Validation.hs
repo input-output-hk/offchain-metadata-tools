@@ -11,6 +11,7 @@ module Test.Cardano.Metadata.Validation
 import qualified Data.Aeson as Aeson
 import Data.Foldable
     ( forM_, traverse_ )
+import Data.Maybe (fromJust)
 import Data.Int
     ( Int32, Int64, Int8 )
 import qualified Data.List.NonEmpty as NE
@@ -48,6 +49,7 @@ import Cardano.Metadata.Types.Common
     , File (File)
     , Subject (Subject)
     , attestedSignatures
+    , attestedSequenceNumber
     , attestedValue
     , deserialiseAttestationSignature
     , deserialiseBase16
@@ -60,6 +62,8 @@ import Cardano.Metadata.Types.Common
 import Cardano.Metadata.Validation.Rules
     ( ValidationError (ErrorMetadataFileBaseNameLengthBounds, ErrorMetadataFileExpectedExtension, ErrorMetadataFileNameDoesntMatchSubject, ErrorMetadataFileTooBig, ErrorMetadataPropertySequenceNumberMustBeLarger)
     , ValidationError_
+    , defaultRules
+    , apply
     , baseFileNameLengthBounds
     , isJSONFile
     , maxFileSizeBytes
@@ -93,6 +97,7 @@ tests = testGroup "Validation tests"
       , testProperty "Validation/rules/isJSONFile" prop_rules_isJSONFile
       , testProperty "Validation/rules/baseFileNameLengthBounds" prop_rules_baseFileNameLengthBounds
       , testProperty "Validation/helpers/toAttestedPropertyDiffs" prop_helpers_toAttestedPropertyDiffs
+      , testCase "Unknown but well-formed properties have sequence numbers validated" unit_sequence_number_of_unknown_property_validated
       ]
   ]
 
@@ -231,6 +236,34 @@ prop_rules_subjectMatchesFileName = property $ do
   goodDiff <- forAll $ asDiff (File goodMeta anySize filePath)
   subjectMatchesFileName goodDiff
     === (valid :: Validation (NE.NonEmpty (ValidationError ())) ())
+
+unit_sequence_number_of_unknown_property_validated :: Assertion
+unit_sequence_number_of_unknown_property_validated = do
+  let
+    before :: Metadata
+    before = fromJust $ Aeson.decode' [r|
+                  {
+                    "subject": "1234",
+                    "prop": {
+                      "value": "hello",
+                      "sequenceNumber": 0
+                    }
+                  }
+                  |]
+    after :: Metadata
+    after = fromJust $ Aeson.decode' [r|
+                  {
+                    "subject": "1234",
+                    "prop": {
+                      "value": "goodbye",
+                      "sequenceNumber": 0
+                    }
+                  }
+                  |]
+    diff = Changed (File before undefined undefined) (File after undefined undefined)
+  
+  defaultRules `apply` diff
+   @?= (Failure (ErrorMetadataPropertySequenceNumberMustBeLarger (AttestedProperty {attestedValue = Aeson.String "hello", attestedSignatures = [], attestedSequenceNumber = seqFromNatural 0}) (AttestedProperty {attestedValue = Aeson.String "goodbye", attestedSignatures = [], attestedSequenceNumber = seqFromNatural 0}) (seqFromNatural 0) (seqFromNatural 0) NE.:| []) :: Validation (NE.NonEmpty (ValidationError ())) ())
 
 prop_rules_sequenceNumber :: H.Property
 prop_rules_sequenceNumber = property $ do

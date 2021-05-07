@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -33,6 +34,7 @@ module Cardano.Metadata.Types
     , Logo (..)
     , Url(..)
     , Ticker(..)
+    , Decimals(..)
 
       -- * Attestation
     , Attested (..)
@@ -96,6 +98,7 @@ import Control.Category
     ( id )
 import Control.Monad.Fail
     ( fail )
+import Data.Scientific (toBoundedInteger, Scientific)
 import Data.Aeson
     ( FromJSON (..), ToJSON (..), (.:), (.=) )
 import Data.Maybe
@@ -131,7 +134,7 @@ import qualified Shelley.Spec.Ledger.Keys as Shelley
 --
 
 newtype Subject = Subject { unSubject :: Text }
-    deriving stock Show
+    deriving stock (Eq, Show)
     deriving newtype (ToJSON)
 
 hashSubject :: Subject -> Hash Blake2b_256 Subject
@@ -158,10 +161,23 @@ newtype Property = Property { unProperty :: Text }
 hashProperty :: Property -> Hash Blake2b_256 Property
 hashProperty = hashWith (CBOR.toStrictByteString . CBOR.encodeString . unProperty)
 
+newtype Decimals = Decimals { unDecimals :: Int }
+  deriving (Eq, Show)
+
+instance WellKnownProperty Decimals where
+  wellKnownPropertyName _ =
+    Property "decimals"
+  wellKnownToBytes =
+    CBOR.encodeInt . unDecimals
+  wellKnownToJSON =
+    toJSON . unDecimals
+  parseWellKnown =
+    Aeson.withScientific "decimals" validateMetadataDecimals
+
 data Policy = Policy
     { rawPolicy :: Text
     , getPolicy :: ScriptInEra MaryEra
-    } deriving Show
+    } deriving (Eq, Show)
 
 instance WellKnownProperty Policy where
     wellKnownPropertyName _ =
@@ -372,6 +388,13 @@ validateMetadataDescription :: MonadFail f => Text -> f Description
 validateMetadataDescription = fmap Description .
     validateMaxLength 500
 
+validateMetadataDecimals :: MonadFail f => Scientific -> f Decimals
+validateMetadataDecimals s =
+  case toBoundedInteger s of
+    Nothing                     -> fail $ "Expected integral, but encountered float: " <> show s
+    Just i | i >= 0 && i <= 255 -> pure $ Decimals i
+    Just _ | otherwise          -> fail $ "Decimal value must be in the range [0, 255] (inclusive)"
+
 validateMetadataLogo :: MonadFail f => ByteString -> f Logo
 validateMetadataLogo bytes
     | len <= maxLen =
@@ -404,7 +427,7 @@ data Attested a = Attested
     { _attested_signatures :: [AttestationSignature]
     , _attested_sequence_number :: SequenceNumber
     , _attested_property :: a
-    } deriving (Functor, Show)
+    } deriving (Eq, Functor, Show)
 
 instance ToJSON a => ToJSON (Attested a) where
     toJSON a = Aeson.object
@@ -466,7 +489,7 @@ parseWithAttestation = Aeson.withObject "property with attestation" $ \o -> do
 data AttestationSignature = AttestationSignature
     { _attestationSignature_publicKey :: VerKeyDSIGN Ed25519DSIGN
     , _attestationSignature_signature :: SigDSIGN Ed25519DSIGN
-    } deriving Show
+    } deriving (Eq, Show)
 
 instance ToJSON AttestationSignature where
     toJSON a = Aeson.object
@@ -513,9 +536,11 @@ hashSequenceNumber =
 
 data SomeSigningKey where
     SomeSigningKey
-        :: forall keyrole. (MakeAttestationSignature keyrole)
+        :: forall keyrole. (MakeAttestationSignature keyrole, Show (SigningKey keyrole))
         => SigningKey keyrole
         -> SomeSigningKey
+
+deriving instance Show (SomeSigningKey)
 
 -- | Hashes required to produce a message for attestation purposes
 data HashesForAttestation = HashesForAttestation

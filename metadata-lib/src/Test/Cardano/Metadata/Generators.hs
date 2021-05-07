@@ -8,6 +8,8 @@ module Test.Cardano.Metadata.Generators where
 import qualified Cardano.Crypto.DSIGN.Class as Crypto
 import qualified Cardano.Crypto.DSIGN.Ed25519 as Crypto
 import qualified Cardano.Crypto.Seed as Crypto
+import Cardano.CLI.Shelley.Run.Key
+import Cardano.Api (SigningKey(PaymentSigningKey))
 import Control.Monad.Except
 import Control.Monad.Morph
     ( hoist )
