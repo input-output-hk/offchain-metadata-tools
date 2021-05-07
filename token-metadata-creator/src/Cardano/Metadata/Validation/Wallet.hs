@@ -13,7 +13,7 @@ module Cardano.Metadata.Validation.Wallet
   ) where
 
 import Cardano.Metadata.GoguenRegistry
-    ( PartialGoguenRegistryEntry, parseRegistryEntry, validateEntry )
+    ( parseRegistryEntry, validateEntry )
 import Cardano.Metadata.Types.Common
     ( File, fileContents )
 import Cardano.Metadata.Validation.Rules
@@ -36,17 +36,18 @@ import qualified Data.Aeson.Types as Aeson
 import qualified Data.Text as T
 
 data WalletValidationError
-  = WalletFailedToParseRegistryEntry Aeson.Value String
+  = WalletFailedToParseRegistryEntry String
   -- ^ Failed to parse a metadata entry from the file contents (json value, err)
-  | WalletFailedToValidate PartialGoguenRegistryEntry Text
+  | WalletFailedToValidate Text
   -- ^ Failed to validate the metadata entry (json value, err)
+  deriving (Eq, Show)
 
 -- | Pretty print a wallet-specific validation error.
 prettyPrintWalletValidationError :: WalletValidationError -> Text
-prettyPrintWalletValidationError (WalletFailedToParseRegistryEntry val err) =
-  "Failed to parse wallet metadata entry from JSON: '" <> T.pack (show val) <> "', error was: " <> T.pack err <> "."
-prettyPrintWalletValidationError (WalletFailedToValidate val err) =
-  "Failed to validate wallet metadata entry '" <> T.pack (show val) <> "', error was: '" <> err <> "'."
+prettyPrintWalletValidationError (WalletFailedToParseRegistryEntry err) =
+  "Failed to parse wallet metadata entry from JSON, error was: " <> T.pack err <> "."
+prettyPrintWalletValidationError (WalletFailedToValidate err) =
+  "Failed to validate wallet metadata entry, error was: '" <> err <> "'."
 
 -- | The wallet validation rules consist of the default validation
 -- rules for metadata, as well as some wallet-specific validation (see
@@ -81,11 +82,11 @@ walletValidation diff = do
       let json = Aeson.toJSON newMeta
       case Aeson.parseEither parseRegistryEntry json of
         Left e      ->
-          invalid (ErrorCustom $ WalletFailedToParseRegistryEntry json e)
+          invalid (ErrorCustom $ WalletFailedToParseRegistryEntry e)
         Right entry -> do
           case validateEntry entry of
             Left e -> do
-              invalid (ErrorCustom $ WalletFailedToValidate entry e)
+              invalid (ErrorCustom $ WalletFailedToValidate e)
             Right () ->
               valid
 

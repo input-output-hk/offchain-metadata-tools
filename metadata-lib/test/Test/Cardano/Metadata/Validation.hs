@@ -9,6 +9,10 @@ module Test.Cardano.Metadata.Validation
   ) where
 
 import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.Encode.Pretty as Aeson
+import Data.Aeson.QQ
+    ( aesonQQ )
+import qualified Data.ByteString.Lazy as BSL
 import Data.Foldable
     ( forM_, traverse_ )
 import Data.Int
@@ -47,6 +51,7 @@ import Cardano.Metadata.Types.Common
     , AttestedProperty (AttestedProperty)
     , File (File)
     , Subject (Subject)
+    , attestedSequenceNumber
     , attestedSignatures
     , attestedValue
     , deserialiseAttestationSignature
@@ -56,11 +61,14 @@ import Cardano.Metadata.Types.Common
     , seqSucc
     , seqZero
     , unSequenceNumber
+    , unSubject
     )
 import Cardano.Metadata.Validation.Rules
     ( ValidationError (ErrorMetadataFileBaseNameLengthBounds, ErrorMetadataFileExpectedExtension, ErrorMetadataFileNameDoesntMatchSubject, ErrorMetadataFileTooBig, ErrorMetadataPropertySequenceNumberMustBeLarger)
     , ValidationError_
+    , apply
     , baseFileNameLengthBounds
+    , defaultRules
     , isJSONFile
     , maxFileSizeBytes
     , sequenceNumber
@@ -73,6 +81,7 @@ import Cardano.Metadata.Validation.Types
     , Metadata (Metadata)
     , invalid
     , metaAttestedProperties
+    , metaSubject
     , metaVerifiableProperties
     , onMatchingAttestedProperties
     , valid
@@ -93,8 +102,24 @@ tests = testGroup "Validation tests"
       , testProperty "Validation/rules/isJSONFile" prop_rules_isJSONFile
       , testProperty "Validation/rules/baseFileNameLengthBounds" prop_rules_baseFileNameLengthBounds
       , testProperty "Validation/helpers/toAttestedPropertyDiffs" prop_helpers_toAttestedPropertyDiffs
+      , testCase "Unknown but well-formed properties have sequence numbers validated" unit_sequence_number_of_unknown_property_validated
       ]
   ]
+
+-- | From a JSON value, parse some Metadata and use the length of the
+-- pretty encoded JSON value and parsed Subject to make a well-formed
+-- File.
+asMetadataFile :: Aeson.Value -> File Metadata
+asMetadataFile json =
+  let
+    -- Prettily print the JSON to get a realistic and consistent file size
+    fileSize = BSL.length (Aeson.encodePretty json)
+    metadata = case Aeson.fromJSON json of
+      Aeson.Error err -> error err
+      Aeson.Success a -> a
+    fileName = unSubject (metaSubject metadata) <> ".json"
+  in
+    File metadata (fromIntegral fileSize) (T.unpack fileName)
 
 prop_rules_isJSONFile :: H.Property
 prop_rules_isJSONFile = property $ do
@@ -231,6 +256,32 @@ prop_rules_subjectMatchesFileName = property $ do
   goodDiff <- forAll $ asDiff (File goodMeta anySize filePath)
   subjectMatchesFileName goodDiff
     === (valid :: Validation (NE.NonEmpty (ValidationError ())) ())
+
+unit_sequence_number_of_unknown_property_validated :: Assertion
+unit_sequence_number_of_unknown_property_validated = do
+  let
+    before = [aesonQQ|
+                  {
+                    "subject": "1234",
+                    "prop": {
+                      "value": "hello",
+                      "sequenceNumber": 0
+                    }
+                  }
+                  |]
+    after = [aesonQQ|
+                  {
+                    "subject": "1234",
+                    "prop": {
+                      "value": "goodbye",
+                      "sequenceNumber": 0
+                    }
+                  }
+                  |]
+    diff = Changed (asMetadataFile before) (asMetadataFile after)
+  
+  defaultRules `apply` diff
+   @?= (Failure (ErrorMetadataPropertySequenceNumberMustBeLarger (AttestedProperty {attestedValue = Aeson.String "hello", attestedSignatures = [], attestedSequenceNumber = seqFromNatural 0}) (AttestedProperty {attestedValue = Aeson.String "goodbye", attestedSignatures = [], attestedSequenceNumber = seqFromNatural 0}) (seqFromNatural 0) (seqFromNatural 0) NE.:| []) :: Validation (NE.NonEmpty (ValidationError ())) ())
 
 prop_rules_sequenceNumber :: H.Property
 prop_rules_sequenceNumber = property $ do

@@ -12,6 +12,7 @@ import Cardano.Prelude
 
 import Cardano.Metadata.Types
     ( Attested (..)
+    , Decimals (..)
     , Description (..)
     , Logo (..)
     , Logo (..)
@@ -53,6 +54,7 @@ data GoguenRegistryEntry f = GoguenRegistryEntry
     , _goguenRegistryEntry_logo :: f (Attested Logo)
     , _goguenRegistryEntry_url :: f (Attested Url)
     , _goguenRegistryEntry_ticker :: f (Attested Ticker)
+    , _goguenRegistryEntry_decimals :: f (Attested Decimals)
     }
 
 deriving instance
@@ -63,7 +65,19 @@ deriving instance
     , Show (f (Attested Logo))
     , Show (f (Attested Url))
     , Show (f (Attested Ticker))
+    , Show (f (Attested Decimals))
     ) => Show (GoguenRegistryEntry f)
+
+deriving instance
+    ( Eq (f Subject)
+    , Eq (f Policy)
+    , Eq (f (Attested Name))
+    , Eq (f (Attested Description))
+    , Eq (f (Attested Logo))
+    , Eq (f (Attested Url))
+    , Eq (f (Attested Ticker))
+    , Eq (f (Attested Decimals))
+    ) => Eq (GoguenRegistryEntry f)
 
 instance ToJSON (GoguenRegistryEntry Maybe) where
     toJSON r = Aeson.object $ mconcat
@@ -82,6 +96,8 @@ instance ToJSON (GoguenRegistryEntry Maybe) where
                 <$> (_goguenRegistryEntry_url r)
           , (\x -> unProperty (wellKnownPropertyName (Proxy @Ticker)) .= fmap wellKnownToJSON x)
                 <$> (_goguenRegistryEntry_ticker r)
+          , (\x -> unProperty (wellKnownPropertyName (Proxy @Decimals)) .= fmap wellKnownToJSON x)
+                <$> (_goguenRegistryEntry_decimals r)
           ]
         ]
 
@@ -96,17 +112,19 @@ parseRegistryEntry = Aeson.withObject "GoguenRegistryEntry" $ \o -> do
     policyRaw <- o .:? unProperty (wellKnownPropertyName $ Proxy @Policy)
     policy <- mapM parseWellKnown policyRaw
 
-    nameField   <- o .:? unProperty (wellKnownPropertyName $ Proxy @Name)
-    descField   <- o .:? unProperty (wellKnownPropertyName $ Proxy @Description)
-    logoField   <- o .:? unProperty (wellKnownPropertyName $ Proxy @Logo)
-    urlField    <- o .:? unProperty (wellKnownPropertyName $ Proxy @Url)
-    tickerField <- o .:? unProperty (wellKnownPropertyName $ Proxy @Ticker)
+    nameField     <- o .:? unProperty (wellKnownPropertyName $ Proxy @Name)
+    descField     <- o .:? unProperty (wellKnownPropertyName $ Proxy @Description)
+    logoField     <- o .:? unProperty (wellKnownPropertyName $ Proxy @Logo)
+    urlField      <- o .:? unProperty (wellKnownPropertyName $ Proxy @Url)
+    tickerField   <- o .:? unProperty (wellKnownPropertyName $ Proxy @Ticker)
+    decimalsField <- o .:? unProperty (wellKnownPropertyName $ Proxy @Decimals)
 
     nameAnn   <- mapM parseWithAttestation nameField
     descAnn   <- mapM parseWithAttestation descField
     logoAnn   <- mapM parseWithAttestation logoField
     urlAnn    <- mapM parseWithAttestation urlField
     tickerAnn <- mapM parseWithAttestation tickerField
+    decimalsAnn <- mapM parseWithAttestation decimalsField
 
     pure $ GoguenRegistryEntry
         { _goguenRegistryEntry_subject = Subject <$> subject
@@ -116,6 +134,7 @@ parseRegistryEntry = Aeson.withObject "GoguenRegistryEntry" $ \o -> do
         , _goguenRegistryEntry_logo = logoAnn
         , _goguenRegistryEntry_url = urlAnn
         , _goguenRegistryEntry_ticker = tickerAnn
+        , _goguenRegistryEntry_decimals = decimalsAnn
         }
 
 validateEntry
@@ -151,6 +170,7 @@ validateEntry record = do
     forM_ (_goguenRegistryEntry_logo record) $ verifyLocalAttestations "logo"
     forM_ (_goguenRegistryEntry_url record) $ verifyLocalAttestations "url"
     forM_ (_goguenRegistryEntry_ticker record) $ verifyLocalAttestations "ticker"
+    forM_ (_goguenRegistryEntry_decimals record) $ verifyLocalAttestations "decimals"
   where
     verifyField :: (PartialGoguenRegistryEntry -> Maybe a) -> Either Text a
     verifyField field = maybe (Left missingFields) Right (field record)
@@ -159,7 +179,7 @@ validateEntry record = do
     missingFields = mconcat
         [ missingField "Missing field subject"
             _goguenRegistryEntry_subject
-        , missingField "Missing field policy: Use -p to speciy"
+        , missingField "Missing field policy: Use -p to specify"
             _goguenRegistryEntry_policy
         , missingField "Missing field name: Use -n to specify"
             _goguenRegistryEntry_name

@@ -98,14 +98,16 @@ describe("token-metadata-creator", () => {
       const url = `https://finalfantasy.fandom.com/wiki/Gil`;
       const logo = `testData/icon.png`
       const logoSerialized = "iVBORw0KGgoAAAANSUhEUgAAABkAAAAeCAYAAADZ7LXbAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACbUlEQVRIie3Vy0tUURzA8e855965c8lXUhlhEQVBSEmQRAURQbSIEqFl4N6/oHYtAhdtonatK8hVBCERZC+0jbZpIRVkIeagTJrO3Nd5tBhDMHOcGiHCA2dxHvDh9zs/fkc45xwbPORGA5tI/RFdGCL9MgAm/mNEVKuuaHA3OW+RlDb8zjt4O07VjFRPV8NBZC5PGMxj3/YQv7uGs7p+iJ5+ipgfIZr7hnWSXBjgT98iHr6IS+fqg7h0Dl8ZQpmQFKdJSmWkkuSj10TD3WCzv0f89m6S8BjWQehbVDpPWiojsASlEeLxG3WIJFtANneQei3EqpnMeWRxgtMahYGP/dhoqiry2+rKJh9i3l8l2KIRUlVQazDlRXTpOzIr43uQ7LlCvrO/9kjisT7Ehz6CBgtCki4sEC+ALpdQQUC+qQmXC3EO3NQAsHaP/QVx1mBnh5BKYpOYON2L6npJ/sw4svMRacmCc+TyOQwKGX/CRl9rQ4SQyPZeFqM27L7bhCcHUY37AVCtR7EtZ8EZhLN4vkIKhy1N1Ibo4ijq83UavAl04QmIFVekB1aDNQhnQFBZ14KABauRaFThHrrwbPmkPImYeQw6A5OBNRjnIxsPrIl4KzdUcwep9SFL8JVHNnqJeFcvyBCm7hJQBKPBZJWH334eGe5cE1m1hKM3l8nP3kcICVLiEEuXLfycQKpBnnhRtWmuWsLBkZtEucNYa8BkCJMiTFrJ/RLgHJjWc+vqyqsiMthGePo5SWsP2ohKWpamdZBqQbz1AvnjD6oCsI7/RM+8whTHljf8RrzWLlTLoXUB60LqMf6NP34T+T+RH/HOKLJ+ho1iAAAAAElFTkSuQmCC"
+      const decimals = 255;
 
       copyTestData();
-      cli(alice, "--ticker", ticker, "--url", url, "--logo", logo);
+      cli(alice, "--ticker", ticker, "--url", url, "--logo", logo, "--decimals", decimals);
 
       const empty = { sequenceNumber: 0, signatures: [] };
       assert.deepEqual(getDraft(alice).ticker, { ...empty, value: ticker });
       assert.deepEqual(getDraft(alice).url, { ...empty, value: url });
       assert.deepEqual(getDraft(alice).logo, { ...empty, value: logoSerialized });
+      assert.deepEqual(getDraft(alice).decimals, { ...empty, value: decimals});
     });
 
     it("No other fields are supported!", () => {
@@ -283,6 +285,14 @@ describe("token-metadata-creator", () => {
   });
 });
 
+function rawOrQuoted(arg) {
+  if ((typeof arg) == "string") {
+    return arg.startsWith("-") ? arg : `"${arg}"`;
+  } else {
+    return arg;
+  }
+}
+
 function fixture(done) {
   mkdtemp(path.join(os.tmpdir(), "token-metadata-creator"))
     .then(cwd => {
@@ -291,7 +301,7 @@ function fixture(done) {
       };
 
       cli = function cli(subject, ...args) {
-        const prepared = args.map(arg => arg.startsWith("-") ? arg : `"${arg}"`);
+        const prepared = args.map(arg => rawOrQuoted(arg));
         const opts = { cwd, stdio: 'ignore'  }
         // const opts = { cwd }
         return execSync(`token-metadata-creator entry ${subject} ${prepared.join(" ")}`, opts);

@@ -17,12 +17,7 @@ let
   mkShell = name: project: project.shellFor rec {
     inherit name;
     packages = ps: lib.attrValues (selectProjectPackages ps);
-    buildInputs = (with metadataPackages; [
-      metadata-server
-      metadata-validator-github
-      metadata-webhook
-      token-metadata-creator
-    ]) ++ (with pkgs; [
+    buildInputs = (with pkgs; [
       haskellPackages.ghcid
       git
       hlint
