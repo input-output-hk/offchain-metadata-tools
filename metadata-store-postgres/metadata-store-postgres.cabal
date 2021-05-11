@@ -4,7 +4,6 @@ version:             0.1.0.0
 author:              Samuel Evans-Powell
 maintainer:          mail@sevanspowell.net
 build-type:          Simple
-extra-source-files:  CHANGELOG
 
 library
   hs-source-dirs:      src
