@@ -96,6 +96,8 @@ instance ToJSON (GoguenRegistryEntry Maybe) where
                 <$> (_goguenRegistryEntry_url r)
           , (\x -> unProperty (wellKnownPropertyName (Proxy @Ticker)) .= fmap wellKnownToJSON x)
                 <$> (_goguenRegistryEntry_ticker r)
+          , (\x -> unProperty (wellKnownPropertyName (Proxy @Decimals)) .= fmap wellKnownToJSON x)
+                <$> (_goguenRegistryEntry_decimals r)
           ]
         ]
 

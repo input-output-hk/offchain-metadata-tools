@@ -1,18 +1,21 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE EmptyCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Test.Cardano.Metadata
+module Test.Cardano.Metadata.Validation.Wallet
   ( tests
   ) where
 
-import Cardano.Metadata.Types (hashPolicy, Subject(Subject), HashesForAttestation, SequenceNumber(SequenceNumber), Name(Name), hashesForAttestation, SomeSigningKey(..), makeAttestationSignature, Description(..), Policy(..))
+import Cardano.Metadata.Types (hashPolicy, Subject(Subject), HashesForAttestation, SequenceNumber(SequenceNumber), Name(Name), hashesForAttestation, SomeSigningKey(..), makeAttestationSignature, Description(..), Policy(..), WellKnownProperty, parseWellKnown, Decimals(..), Logo(..), Url(..), Ticker(..), unProperty, wellKnownPropertyName) 
 import Cardano.Metadata.GoguenRegistry (GoguenRegistryEntry(..))
 import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.Types as Aeson
 import Data.Scientific
+import Data.Proxy
 import Data.Foldable
     ( forM_, traverse_ )
 import Data.Maybe (fromJust, maybeToList, fromMaybe)
@@ -23,6 +26,7 @@ import qualified Data.List.NonEmpty as NE
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Base16 as B16
 import qualified Data.Map.Strict as M
+import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Control.Lens
@@ -62,6 +66,8 @@ import qualified Cardano.Crypto.Hash as Crypto
 import qualified Cardano.Crypto.Seed as Crypto
 
 import Test.Cardano.Metadata.Generators (signingKey)
+import Cardano.Metadata.View.JSON
+import Cardano.Metadata.View.JSON.Lens
 import Cardano.Metadata.Types.Common
     ( AnnotatedSignature (AnnotatedSignature)
     , AttestedProperty (AttestedProperty)
@@ -103,24 +109,6 @@ import Cardano.Metadata.Validation.Types
     )
 import Cardano.Metadata.Validation.Wallet
 
-genVerificationKey :: Key keyrole => AsType keyrole -> Gen (VerificationKey keyrole)
-genVerificationKey roletoken = getVerificationKey <$> genSigningKey roletoken
-
-genSeed :: Int -> Gen Crypto.Seed
-genSeed n = Crypto.mkSeedFromBytes <$> Gen.bytes (Range.singleton n)
-
-genSigningKey :: Key keyrole => AsType keyrole -> Gen (SigningKey keyrole)
-genSigningKey roletoken = do
-    seed <- genSeed (fromIntegral seedSize)
-    let sk = deterministicSigningKey roletoken seed
-    return sk
-  where
-    seedSize :: Word
-    seedSize = deterministicSigningKeySeedSize roletoken
-
-genSlotNo :: Gen SlotNo
-genSlotNo = SlotNo <$> Gen.word64 Range.constantBounded
-
 someSigningKey :: MonadIO m => m (SigningKey PaymentKey)
 someSigningKey = PaymentSigningKey <$> signingKey
 
@@ -139,40 +127,58 @@ asMetadataFile json =
   in
     File metadata (fromIntegral fileSize) (T.unpack fileName)
 
-
-propValue :: T.Text -> Traversal' Aeson.Value Aeson.Value
-propValue propName = key propName . key "value"
-
-propSeqNum :: T.Text -> Traversal' Aeson.Value SequenceNumber
-propSeqNum propName = key propName . key "sequenceNumber" . _Number . lens (SequenceNumber . fromJust . toBoundedInteger) (\sci (SequenceNumber seq) -> fromIntegral seq)
-
--- sequenceNumberL :: Prism' SequenceNumber Aeson.Value 
--- sequenceNumberL :: Lens' Aeson.Value (Maybe SequenceNumber)
--- sequenceNumberL :: Lens' Aeson.Value (Maybe SequenceNumber)
--- sequenceNumberL = _Object . at "sequenceNumber" . traverse . _
-
-
 signWellKnownProperties :: SomeSigningKey -> Aeson.Value -> Aeson.Value
-signWellKnownProperties (SomeSigningKey skey) v =
-  let
-    subject = Subject $ v ^?! key "subject" . _String
+signWellKnownProperties skey =
+  signPropertyWith (unProperty (wellKnownPropertyName (Proxy @Name))) skey
+  . signPropertyWith (unProperty (wellKnownPropertyName (Proxy @Description))) skey
+  . signPropertyWith (unProperty (wellKnownPropertyName (Proxy @Logo))) skey
+  . signPropertyWith (unProperty (wellKnownPropertyName (Proxy @Url))) skey
+  . signPropertyWith (unProperty (wellKnownPropertyName (Proxy @Ticker))) skey
+  . signPropertyWith (unProperty (wellKnownPropertyName (Proxy @Decimals))) skey
 
-    nameAttest =
-      makeAttestationSignature skey
-      $ hashesForAttestation
-          subject
-          (Name $ v ^?! propValue "name" . _String)
-          (v ^?! propSeqNum "name")
-    descriptionAttest =
-      makeAttestationSignature skey
-      $ hashesForAttestation
-          subject
-          (Description $ v ^?! propValue "description" . _String)
-          (v ^?! propSeqNum "description")
-  in
-    v
-      & key "name" . _Object . at "signatures" ?~ Aeson.toJSON [nameAttest]
-      & key "description" . _Object . at "signatures" ?~ Aeson.toJSON [descriptionAttest]
+signPropertyWith :: Text -> SomeSigningKey -> Aeson.Value -> Aeson.Value
+signPropertyWith propName (SomeSigningKey skey) v =
+  case getHashesForAttestation propName v of
+    Nothing -> v
+    Just hashes ->
+      v & _Object . at propName . non (Aeson.Object mempty) . _Object . at "signatures" ?~ Aeson.toJSON [makeAttestationSignature skey hashes]
+
+getHashesForAttestation :: Text -> Aeson.Value -> Maybe HashesForAttestation
+getHashesForAttestation propName v =
+  case propName of
+    x | x == unProperty (wellKnownPropertyName (Proxy @Name))
+      -> hashesForWellKnown (Proxy @Name)
+    x | x == unProperty (wellKnownPropertyName (Proxy @Description))
+      -> hashesForWellKnown (Proxy @Description)
+    x | x == unProperty (wellKnownPropertyName (Proxy @Logo))
+      -> hashesForWellKnown (Proxy @Logo)
+    x | x == unProperty (wellKnownPropertyName (Proxy @Url))
+      -> hashesForWellKnown (Proxy @Url)
+    x | x == unProperty (wellKnownPropertyName (Proxy @Ticker))
+      -> hashesForWellKnown (Proxy @Ticker)
+    x | x == unProperty (wellKnownPropertyName (Proxy @Decimals))
+      -> hashesForWellKnown (Proxy @Decimals)
+    otherwise     -> Nothing
+    
+  where
+    hashesForWellKnown :: forall a p. WellKnownProperty p => Proxy p -> Maybe HashesForAttestation
+    hashesForWellKnown _ =
+      let
+        propName :: Text
+        propName = unProperty $ wellKnownPropertyName (Proxy @p)
+
+        mValue :: Maybe p
+        mValue = do
+          val <- getPropertyValue propName v ^? _Just
+          Aeson.parseMaybe parseWellKnown val
+    
+        mSubject :: Maybe Subject
+        mSubject = Subject <$> v ^? key "subject" . _String
+    
+        mSequenceNumber :: Maybe SequenceNumber
+        mSequenceNumber = SequenceNumber . fromIntegral <$> getSequenceNumber propName v
+      in
+        hashesForAttestation <$> mSubject <*> mValue <*> mSequenceNumber
 
 addSubjectPolicy :: ScriptInEra MaryEra -> T.Text -> Aeson.Value -> Aeson.Value
 addSubjectPolicy script assetName v =
@@ -196,52 +202,12 @@ addSubjectPolicy' skey =
 validate :: Difference (File Metadata) -> Validation (NE.NonEmpty (ValidationError WalletValidationError)) ()
 validate = apply walletValidationRules
 
-genScript :: ScriptLanguage lang -> Gen (Script lang)
-genScript (SimpleScriptLanguage lang) =
-    SimpleScript lang <$> genSimpleScript lang
-
-genScript (PlutusScriptLanguage lang) = case lang of {}
-
-genSimpleScript :: SimpleScriptVersion lang -> Gen (SimpleScript lang)
-genSimpleScript lang =
-    genTerm
-  where
-    genTerm = Gen.recursive Gen.choice nonRecursive recursive
-
-    -- Non-recursive generators
-    nonRecursive =
-         (RequireSignature . verificationKeyHash <$>
-             genVerificationKey AsPaymentKey)
-
-      : [ RequireTimeBefore supported <$> genSlotNo
-        | supported <- maybeToList (timeLocksSupported lang) ]
-
-     ++ [ RequireTimeAfter supported <$> genSlotNo
-        | supported <- maybeToList (timeLocksSupported lang) ]
-
-    -- Recursive generators
-    recursive =
-      [ RequireAllOf <$> Gen.list (Range.linear 0 10) genTerm
-
-      , RequireAnyOf <$> Gen.list (Range.linear 0 10) genTerm
-
-      , do ts <- Gen.list (Range.linear 0 10) genTerm
-           m  <- Gen.integral (Range.constant 0 (length ts))
-           return (RequireMOf m ts)
-      ]
-
-genScriptInEra :: CardanoEra era -> Gen (ScriptInEra era)
-genScriptInEra era =
-    Gen.choice
-      [ ScriptInEra langInEra <$> genScript lang
-      | AnyScriptLanguage lang <- [minBound..maxBound]
-      , Just langInEra <- [scriptLanguageSupportedInEra era lang] ]
-
 tests :: TestTree
 tests = testGroup "High-level acceptance criteria"
   [ testCase "Required fields" unit_required_fields
-  , testProperty "Good decimal value" prop_decimal_field_good
-  , testProperty "Bad decimal value" prop_decimal_field_bad
+  , testProperty "Good decimal value" prop_decimals_field_good
+  , testProperty "Bad decimal value" prop_decimals_field_bad
+  , testProperty "Decimals is signed" prop_decimals_field_isSigned
   ]
 
 shouldPass :: Difference (File Metadata) -> Assertion
@@ -286,22 +252,13 @@ minimalMetadata skey assetName = [aesonQQ|
       }
       |]
       & addSubjectPolicy' skey assetName
-      & sequenceNumbersL ?~ Aeson.Number 0
+      & setSequenceNumbers 0
 
 printMetadata :: File Metadata -> String
 printMetadata (File meta _ _) = BSLC8.unpack . encodePretty $ meta
 
 printFileDetails :: File Metadata -> String
 printFileDetails (File _ size fileName) = "File ( _meta (" <> show size <> " bytes) (" <> fileName <> ") )"
-
-sequenceNumberL :: T.Text -> Traversal' Aeson.Value (Maybe Aeson.Value)
-sequenceNumberL propName = _Object . at propName . non (Aeson.Object mempty) . _Object . at "sequenceNumber"
-
-propValueL :: T.Text -> Traversal' Aeson.Value (Maybe Aeson.Value)
-propValueL propName = _Object . at propName . non (Aeson.Object mempty) . _Object . at "value"
-
-sequenceNumbersL :: Traversal' Aeson.Value (Maybe Aeson.Value)
-sequenceNumbersL = members . _Object . at "sequenceNumber"
 
 unit_required_fields :: Assertion
 unit_required_fields = do
@@ -315,14 +272,14 @@ unit_required_fields = do
   shouldPass $ Changed meta meta
   shouldPass $ Removed meta
 
-prop_decimal_field_good :: H.Property
-prop_decimal_field_good = property $ do
+prop_decimals_field_good :: H.Property
+prop_decimals_field_good = property $ do
   skey <- someSigningKey
-  decimalValue <- forAll $ Gen.integral (Range.constant 0 255)
+  decimalValue <- forAll $ Gen.int (Range.constant 0 255)
   let
     meta = minimalMetadata skey "quid"
-           & propValueL "decimal" ?~ Aeson.Number (fromIntegral decimalValue)
-           & sequenceNumbersL ?~ Aeson.Number 0
+           & setPropertyValue  "decimals" (Just . Aeson.Number . fromIntegral $ decimalValue)
+           & setSequenceNumber "decimals" (Just 0)
            & signWellKnownProperties (SomeSigningKey skey)
            & asMetadataFile
 
@@ -333,16 +290,16 @@ prop_decimal_field_good = property $ do
   propShouldPass $ Changed meta meta
   propShouldPass $ Removed meta
 
-prop_decimal_field_bad :: H.Property
-prop_decimal_field_bad = property $ do
+prop_decimals_field_bad :: H.Property
+prop_decimals_field_bad = property $ do
   skey <- someSigningKey
   decimalValue <- forAll $ Gen.choice [ Gen.int (Range.constant minBound (0 - 1))
                                       , Gen.int (Range.constant (255 + 1) maxBound)
                                       ]
   let
     meta = minimalMetadata skey "quid"
-           & propValueL "decimals" ?~ Aeson.Number (fromIntegral decimalValue)
-           & sequenceNumbersL ?~ Aeson.Number 0
+           & setPropertyValue  "decimals" (Just . Aeson.Number . fromIntegral $ decimalValue)
+           & setSequenceNumber "decimals" (Just 0)
            & signWellKnownProperties (SomeSigningKey skey)
            & asMetadataFile
 
@@ -353,4 +310,22 @@ prop_decimal_field_bad = property $ do
   propShouldFailWith (ErrorCustom (WalletFailedToParseRegistryEntry "Error in $: Decimal value must be in the range [0, 255] (inclusive)")) $ Changed meta meta
   propShouldPass $ Removed meta
 
+prop_decimals_field_isSigned :: H.Property
+prop_decimals_field_isSigned = property $ do
+  skey <- someSigningKey
+  decimalValue <- forAll $ Gen.int (Range.constant 0 255)
+  let
+    meta = minimalMetadata skey "quid"
+           & setPropertyValue  "decimals" (Just . Aeson.Number . fromIntegral $ decimalValue)
+           & setSequenceNumber "decimals" (Just 0)
+           & signWellKnownProperties (SomeSigningKey skey)
 
+  annotate (BSLC8.unpack $ encodePretty meta)
+
+  case (meta ^? key "decimals" . key "signatures") of
+    Nothing               -> annotate "decimals.signatures not present" *> failure
+    Just (Aeson.Array xs) ->
+      case V.toList xs of
+        [] -> annotate "decimals.signatures is empty" *> failure
+        xs -> pure ()
+    Just (x)              -> annotate "decimals.signatures is not an array" *> failure

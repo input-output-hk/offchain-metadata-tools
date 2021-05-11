@@ -8,6 +8,7 @@ import qualified Test.Cardano.Metadata.Transform
 import qualified Test.Cardano.Metadata.Types
 import qualified Test.Cardano.Metadata.Validation
 import qualified Test.Cardano.Metadata.Validation.GitHub
+import qualified Test.Cardano.Metadata.View.JSON
 
 main :: IO ()
 main = do
@@ -20,5 +21,6 @@ main = do
       , Test.Cardano.Metadata.Transform.tests
       , Test.Cardano.Metadata.Validation.tests
       , Test.Cardano.Metadata.Validation.GitHub.tests
+      , Test.Cardano.Metadata.View.JSON.tests
       , serverSpec
       ]

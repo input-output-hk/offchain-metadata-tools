@@ -24,6 +24,8 @@ library
                        Cardano.Metadata.Validation.GitHub
                        Cardano.Metadata.Validation.Rules
                        Cardano.Metadata.Validation.Types
+                       Cardano.Metadata.View.JSON
+                       Cardano.Metadata.View.JSON.Lens
                        Test.Cardano.Metadata.Store
                        Test.Cardano.Metadata.Generators
                        Test.Cardano.Helpers
@@ -33,6 +35,8 @@ library
                      , aeson
                      , aeson-pretty
                      , base
+                     , lens
+                     , lens-aeson
                      , base64-bytestring
                      , bytestring
                      , canonical-json
@@ -104,6 +108,7 @@ test-suite unit-tests
                 , QuickCheck
                 , aeson
                 , aeson-pretty
+                , aeson-qq
                 , base >=4.12 && <5
                 , base64-bytestring
                 , bytestring
@@ -145,6 +150,7 @@ test-suite unit-tests
                         Test.Cardano.Metadata.Validation
                         Test.Cardano.Metadata.Validation.GitHub
                         Test.Cardano.Metadata.Server.Types
+                        Test.Cardano.Metadata.View.JSON
 
   ghc-options:          -Wall
                         -Wincomplete-record-updates

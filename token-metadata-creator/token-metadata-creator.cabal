@@ -129,7 +129,7 @@ test-suite unit-tests
                 , aeson-qq
                 , base16-bytestring
 
-  other-modules:        Test.Cardano.Metadata
+  other-modules:        Test.Cardano.Metadata.Validation.Wallet
 
   ghc-options:          -Wall
                         -Wincomplete-record-updates
