@@ -2,6 +2,7 @@ packages:
   ./metadata-lib
   ./metadata-server
   ./metadata-store-postgres
+  ./metadata-store-file
   ./metadata-webhook
   ./metadata-validator-github
   ./token-metadata-creator

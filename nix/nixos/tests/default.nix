@@ -18,6 +18,7 @@ with pkgs.commonLib;
 in rec {
   metadataStorePostgres = callTest ./metadata-store-postgres.nix { inherit haskellPackages; };
   metadataSync = callTest ./metadata-sync.nix { inherit haskellPackages; };
+  metadataStoreFile = callTest ./metadata-store-file.nix { inherit haskellPackages; };
   memUsage = callTest ./mem-usage.nix {};
   # Test will require local faucet setup
   # asset                 = callTest ./docs/asset.nix { inherit (pkgs.commonLib) sources; };

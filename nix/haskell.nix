@@ -40,6 +40,7 @@ let
         packages.metadata-webhook = filterSubDir "metadata-webhook";
         packages.metadata-sync = filterSubDir "metadata-sync";
         packages.metadata-store-postgres = filterSubDir "metadata-store-postgres";
+        packages.metadata-store-file = filterSubDir "metadata-store-file";
         packages.metadata-validator-github = filterSubDir "metadata-validator-github";
       }
       # Enable release flag (optimization and -Werror) on all local packages
@@ -49,6 +50,7 @@ let
         packages.metadata-webhook.flags.release = true;
         packages.metadata-sync.flags.release = true;
         packages.metadata-store-postgres.flags.release = true;
+        packages.metadata-store-file.flags.release = true;
         packages.metadata-validator-github.flags.release = true;
       }
       {
@@ -61,6 +63,7 @@ let
       (lib.optionalAttrs profiling {
         enableLibraryProfiling = true;
         packages.metadata-store-postgres.components.library.enableLibraryProfiling = true;
+        packages.metadata-store-file.components.library.enableLibraryProfiling = true;
         packages.metadata-server.components.exes.metadata-server.enableExecutableProfiling = true;
         packages.metadata-webhook.components.exes.metadata-webhook.enableExecutableProfiling = true;
         packages.metadata-sync.components.exes.metadata-sync.enableExecutableProfiling = true;
@@ -110,8 +113,8 @@ let
         ];
       }
       {
-        packages.metadata-store-postgres.components.tests.integration-tests.doCheck = false;
         packages.metadata-sync.components.tests.integration-tests.doCheck = false;
+        packages.metadata-store-file.components.tests.integration-tests.doCheck = false;
       }
     ];
   });

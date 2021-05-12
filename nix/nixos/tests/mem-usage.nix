@@ -86,12 +86,7 @@ in
         user = user;
         port = metadataServerPort;
 
-       postgres = {
-          port     = postgresPort;
-          table    = table;
-          user     = postgresUser;
-          database = database;
-        };
+        fileStore.folder = "/";
 
         extraFlags = ["+RTS" "-h" "-p" "-RTS"];
 
@@ -116,7 +111,6 @@ in
 
     start_all()
 
-    server.wait_for_open_port(${toString postgresPort})
     server.wait_for_open_port(${toString metadataServerPort})
     server.succeed("cat ${vegetaCommands} | vegeta attack -duration 10s -connections 1 -rate 10/s")
     # Stop metadata-server.service so GHC writes out .prof file contents
