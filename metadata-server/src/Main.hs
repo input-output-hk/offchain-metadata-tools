@@ -21,25 +21,19 @@ import qualified Options.Applicative as Opt
 
 import Cardano.Metadata.Server
     ( webApp )
-import qualified Cardano.Metadata.Store.Postgres as Store
-import Cardano.Metadata.Store.Postgres.Config
-    ( Opts (..), pgConnectionString )
+import qualified Cardano.Metadata.Store.File as Store
+import Cardano.Metadata.Store.File.Config
+    ( Opts (..) )
 import Config
     ( opts )
 
 main :: IO ()
 main = do
-  options@(Opts { optDbConnections = numDbConns
-                , optDbMetadataTableName = tableName
+  options@(Opts { optMetadataLocation = folder
                 , optServerPort = port
                 }) <- Opt.execParser opts
 
-  let pgConnString = pgConnectionString options
-  putStrLn $ "Connecting to database using connection string: " <> BC.unpack pgConnString
-  runStdoutLoggingT $
-    Postgresql.withPostgresqlPool pgConnString numDbConns $ \pool -> liftIO $ do
-      putStrLn $ "Initializing table '" <> tableName <> "'."
-      intf <- Store.postgresStore pool (T.pack tableName)
-
-      putStrLn $ "Metadata server is starting on port " <> show port <> "."
-      liftIO $ Warp.run port (webApp intf)
+  putStrLn $ "Using file store at: " <> folder
+  intf <- Store.fileStore folder
+  putStrLn $ "Metadata server is starting on port " <> show port <> "."
+  liftIO $ Warp.run port (webApp intf)

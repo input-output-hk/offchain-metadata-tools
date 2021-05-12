@@ -5,6 +5,7 @@ packages:
   ./metadata-server
   ./metadata-webhook
   ./metadata-store-postgres
+  ./metadata-store-file
   ./metadata-validator-github
   ./token-metadata-creator
   ./metadata-sync

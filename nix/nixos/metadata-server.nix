@@ -44,38 +44,10 @@ in {
         '';
         example = ["+RTS" "-M500M" "-RTS"];
       };
-      postgres = {
-        socketdir = lib.mkOption {
+      fileStore = {
+        folder = lib.mkOption {
           type = lib.types.str;
-          default = "/run/postgresql";
-          description = "the path to the postgresql socket";
-        };
-        port = lib.mkOption {
-          type = lib.types.int;
-          default = 5432;
-          description = "the postgresql port";
-        };
-        database = lib.mkOption {
-          type = lib.types.str;
-          # Postgresql cannot have a hyphen (`-`)
-          default = "metadata_server";
-          description = "the postgresql database to use";
-        };
-        table = lib.mkOption {
-          type = lib.types.str;
-          default = "metadata";
-          description = "the postgresql database table to use";
-        };
-        user = lib.mkOption {
-          type = lib.types.str;
-          # Postgresql cannot have a hyphen (`-`)
-          default = "metadata_user";
-          description = "the postgresql user to use";
-        };
-        numConnections = lib.mkOption {
-          type = lib.types.int;
-          default = 1;
-          description = "the number of connections to open to the postgresql database";
+          description = "The path to the folder where the metadata entries are stored.";
         };
       };
     };
@@ -85,12 +57,7 @@ in {
       exec = "metadata-server";
       cmd = builtins.filter (x: x != "") ([
           "${cfg.package}/bin/${exec}"
-          "--db ${config.services.metadata-server.postgres.database}"
-          "--db-user ${config.services.metadata-server.postgres.user}"
-          "--db-host ${config.services.metadata-server.postgres.socketdir}"
-          "--db-table ${config.services.metadata-server.postgres.table}"
-          "--db-conns ${toString config.services.metadata-server.postgres.numConnections}"
-          "--port ${toString config.services.metadata-server.port}"
+          "--folder ${config.services.metadata-server.fileStore.folder}"
       ] ++ cfg.extraFlags);
     in pkgs.writeShellScript "metadata-server" ''
       set -euo pipefail
@@ -99,17 +66,8 @@ in {
       echo "${toString cmd}"
       exec ${toString cmd}
     '';
-    environment.systemPackages = [ cfg.package config.services.postgresql.package ];
     systemd.services.metadata-server = {
-      path = [ cfg.package pkgs.netcat pkgs.postgresql ];
-      preStart = ''
-        for x in {1..60}; do
-          nc -z localhost ${toString config.services.metadata-server.postgres.port} && break
-          echo loop $x: waiting for postgresql 2 sec...
-          sleep 2
-        done
-        sleep 1
-      '';
+      path = [ cfg.package ];
       serviceConfig = {
         ExecStart = config.services.metadata-server.script;
         DynamicUser = true;
@@ -119,8 +77,6 @@ in {
       };
 
       wantedBy = [ "multi-user.target" ];
-      after = [ "postgres.service" ];
-      requires = [ "postgresql.service" ];
     };
   };
 }
