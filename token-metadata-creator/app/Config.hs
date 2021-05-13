@@ -35,6 +35,7 @@ import qualified Options.Applicative as OA
 
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson
+import qualified Data.ByteString.Char8 as BC8
 import qualified Data.Text as T
 import qualified Text.Megaparsec as P
 
@@ -56,6 +57,7 @@ data AttestationField
     | AttestationFieldLogo
     | AttestationFieldUrl
     | AttestationFieldTicker
+    | AttestationFieldDecimals
     deriving (Show, Eq, Ord)
 
 data FileInfo = FileInfo
@@ -110,12 +112,14 @@ entryUpdateArgumentParser defaultSubject = EntryUpdateArguments
         , OA.flag' [AttestationFieldLogo] $ OA.long "attest-logo" <> OA.short 'L'
         , OA.flag' [AttestationFieldUrl] $ OA.long "attest-url" <> OA.short 'H'
         , OA.flag' [AttestationFieldTicker] $ OA.long "attest-ticker" <> OA.short 'T'
+        , OA.flag' [AttestationFieldDecimals] $ OA.long "attest-decimals"
         , pure
             [ AttestationFieldName
             , AttestationFieldDescription
             , AttestationFieldLogo
             , AttestationFieldUrl
             , AttestationFieldTicker
+            , AttestationFieldDecimals
             ]
        ]
 
@@ -150,6 +154,7 @@ entryUpdateArgumentParser defaultSubject = EntryUpdateArguments
         <*> pure Nothing -- logo
         <*> optional (emptyAttested <$> wellKnownOption (OA.long "url" <> OA.short 'h' <> OA.metavar "URL"))
         <*> optional (emptyAttested <$> wellKnownOption (OA.long "ticker" <> OA.short 't' <> OA.metavar "TICKER"))
+        <*> optional (emptyAttested <$> OA.option (OA.eitherReader ((Aeson.parseEither parseWellKnown =<<) . Aeson.eitherDecodeStrict . BC8.pack)) (OA.long "decimals" <>  OA.metavar "DECIMALS"))
 
 pLogSeverity :: OA.Parser Colog.Severity
 pLogSeverity = pDebug <|> pInfo <|> pWarning <|> pError <|> pure I

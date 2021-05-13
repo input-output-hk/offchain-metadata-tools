@@ -73,7 +73,7 @@ import Cardano.Metadata.Validation.Wallet
 
 import Config
     ( Arguments (ArgumentsEntryUpdate, ArgumentsValidate)
-    , AttestationField (AttestationFieldDescription, AttestationFieldLogo, AttestationFieldName, AttestationFieldTicker, AttestationFieldUrl)
+    , AttestationField (AttestationFieldDecimals, AttestationFieldDescription, AttestationFieldLogo, AttestationFieldName, AttestationFieldTicker, AttestationFieldUrl)
     , DraftStatus (DraftStatusDraft, DraftStatusFinal)
     , EntryOperation (EntryOperationInitialize, EntryOperationRevise)
     , EntryUpdateArguments (EntryUpdateArguments)
@@ -123,6 +123,8 @@ combineRegistryEntries new old = GoguenRegistryEntry
         _goguenRegistryEntry_url new `combineAttestedEntry` _goguenRegistryEntry_url old
     , _goguenRegistryEntry_ticker =
         _goguenRegistryEntry_ticker new `combineAttestedEntry` _goguenRegistryEntry_ticker old
+    , _goguenRegistryEntry_decimals =
+        _goguenRegistryEntry_decimals new `combineAttestedEntry` _goguenRegistryEntry_decimals old
     }
   where
     combineAttestedEntry a b = case (a, b) of
@@ -153,6 +155,8 @@ attestFields (SomeSigningKey someSigningKey) props old = do
             attestField AttestationFieldUrl subj <$> _goguenRegistryEntry_url old
         , _goguenRegistryEntry_ticker =
             attestField AttestationFieldTicker subj <$> _goguenRegistryEntry_ticker old
+        , _goguenRegistryEntry_decimals =
+            attestField AttestationFieldDecimals subj <$> _goguenRegistryEntry_decimals old
         }
   where
     attestField
@@ -189,6 +193,7 @@ handleEntryUpdateArguments (EntryUpdateArguments fInfo keyfile props newEntryInf
             , _goguenRegistryEntry_logo = Nothing
             , _goguenRegistryEntry_url = Nothing
             , _goguenRegistryEntry_ticker = Nothing
+            , _goguenRegistryEntry_decimals = Nothing
             }
 
     policy <- case policyM of
