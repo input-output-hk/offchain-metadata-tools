@@ -138,6 +138,31 @@ describe("token-metadata-creator", () => {
       assert.isNull(getDraft(alice).name);
     });
 
+    it("Decimals range = [0,255]", () => {
+      try {
+        cli(alice, "--decimals ", -1);
+        assert.fail("should have thrown.");
+      } catch (e) {}
+
+      try {
+        cli(alice, "--decimals ", 256);
+        assert.fail("should have thrown.");
+      } catch (e) {}
+
+      cli(alice, "--decimals ", 25)
+      assert.equal(getDraft(alice).decimals.value, 25);
+      assert.equal(getDraft(alice).decimals.sequenceNumber, 0);
+
+      try {
+        cli(alice, "--decimals ", "potato");
+        assert.fail("should have thrown.");
+      } catch (e) {}
+
+      cli(alice, "--decimals ", 0)
+      assert.equal(getDraft(alice).decimals.value, 0);
+      assert.equal(getDraft(alice).decimals.sequenceNumber, 1);
+    });
+
     it("Edit property on successive calls", () => {
       let name = "SuperCoin"
       cli(alice, "--name", "foo");
