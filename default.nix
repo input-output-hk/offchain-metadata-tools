@@ -92,6 +92,7 @@ let
     inherit (project.hsPkgs.metadata-server.identifier) version;
     inherit (project.hsPkgs.metadata-server.components.exes) metadata-server;
     inherit (project.hsPkgs.metadata-webhook.components.exes) metadata-webhook;
+    inherit (project.hsPkgs.metadata-sync.components.exes) metadata-sync;
     inherit (project.hsPkgs.metadata-validator-github.components.exes) metadata-validator-github;
     inherit (project.hsPkgs.token-metadata-creator.components.exes) token-metadata-creator;
     inherit (project) metadata-validator-github-tarball token-metadata-creator-tarball;

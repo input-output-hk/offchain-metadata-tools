@@ -246,12 +246,12 @@ validationMetadata' = do
   validationMetadataSignedWith skey subj
 
 propertyName :: MonadGen m => m PropertyName
-propertyName = PropertyName <$> Gen.text (Range.linear 1 64) Gen.unicodeAll
+propertyName = PropertyName <$> Gen.text (Range.linear 1 64) Gen.unicode
 
 propertyValue :: MonadGen m => m Aeson.Value
 propertyValue =
   Gen.recursive Gen.choice
-    [ Aeson.String <$> Gen.text (Range.linear 1 64) Gen.unicodeAll
+    [ Aeson.String <$> Gen.text (Range.linear 1 64) Gen.unicode
     , Aeson.Number <$> fromIntegral <$> Gen.word8 Range.constantBounded
     , Aeson.Bool <$> Gen.bool
     , pure $ Aeson.Null
