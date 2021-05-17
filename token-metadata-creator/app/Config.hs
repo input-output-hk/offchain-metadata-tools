@@ -210,7 +210,7 @@ wellKnownOption =
     asJSONValue = (Aeson.parseEither parseWellKnown =<<) . Aeson.eitherDecodeStrict' . BC8.pack
     -- Presume we got a string (i.e. "3" or "potato").
     asJSONString :: String -> Either String p
-    asJSONString = Aeson.parseEither parseWellKnown . Aeson.toJSON
+    asJSONString = Aeson.parseEither parseWellKnown . Aeson.String . T.pack
 
     -- A program called with the arguments "--arg hello" will pass the
     -- value "hello" to the JSON parser. "hello" is not a valid JSON
