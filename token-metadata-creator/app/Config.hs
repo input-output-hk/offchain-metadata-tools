@@ -219,8 +219,11 @@ wellKnownOption =
     -- To handle the cases of both JSON strings and any other JSON
     -- value, we first try to parse it as a raw value, then if that
     -- fails with an error like "not a valid json value", then we
-    -- treat the input as a string and try to parse that.
+    -- treat the input as a string and try to parse that. This at the
+    -- very least gives us a better error message.
     isPotentiallyString :: forall x. Either String x -> Bool
     isPotentiallyString (Left err) | "not a valid json value" `isSuffixOf` err = True
+    isPotentiallyString (Left err) | "endOfInput" `isSuffixOf` err             = True
+    isPotentiallyString (Left err) | "takeWhile1" `isSuffixOf` err             = True
     isPotentiallyString (Left _)                                               = False
     isPotentiallyString (Right _)                                              = False
