@@ -38,6 +38,7 @@ let
         packages.metadata-lib = filterSubDir "metadata-lib";
         packages.metadata-server = filterSubDir "metadata-server";
         packages.metadata-webhook = filterSubDir "metadata-webhook";
+        packages.metadata-sync = filterSubDir "metadata-sync";
         packages.metadata-store-postgres = filterSubDir "metadata-store-postgres";
         packages.metadata-validator-github = filterSubDir "metadata-validator-github";
       }
@@ -46,12 +47,14 @@ let
         packages.metadata-lib.flags.release = true;
         packages.metadata-server.flags.release = true;
         packages.metadata-webhook.flags.release = true;
+        packages.metadata-sync.flags.release = true;
         packages.metadata-store-postgres.flags.release = true;
         packages.metadata-validator-github.flags.release = true;
       }
       {
         packages.metadata-server.components.exes.metadata-server.postInstall = optparseCompletionPostInstall;
         packages.metadata-webhook.components.exes.metadata-webhook.postInstall = optparseCompletionPostInstall;
+        packages.metadata-sync.components.exes.metadata-sync.postInstall = optparseCompletionPostInstall;
         packages.metadata-validator-github.components.exes.metadata-validator-github.postInstall = optparseCompletionPostInstall;
       }
       # Enable profiling on executables if the profiling argument is set.
@@ -59,6 +62,7 @@ let
         enableLibraryProfiling = true;
         packages.metadata-server.components.exes.metadata-server.enableExecutableProfiling = true;
         packages.metadata-webhook.components.exes.metadata-webhook.enableExecutableProfiling = true;
+        packages.metadata-sync.components.exes.metadata-sync.enableExecutableProfiling = true;
         packages.metadata-validator-github.components.exes.metadata-validator-github.enableExecutableProfiling = true;
       })
 
@@ -106,6 +110,7 @@ let
       }
       {
         packages.metadata-store-postgres.components.tests.integration-tests.doCheck = false;
+        packages.metadata-sync.components.tests.integration-tests.doCheck = false;
       }
     ];
   });

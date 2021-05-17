@@ -17,6 +17,7 @@ with pkgs.commonLib;
   callTest = fn: args: forAllSystems (system: let test = importTest fn args system; in hydraJob test // { inherit test; });
 in rec {
   metadataStorePostgres = callTest ./metadata-store-postgres.nix { inherit haskellPackages; };
+  metadataSync = callTest ./metadata-sync.nix { inherit haskellPackages; };
   # Test will require local faucet setup
   # asset                 = callTest ./docs/asset.nix { inherit (pkgs.commonLib) sources; };
   noNixSetup            = callTest ./docs/no-nix-setup.nix { inherit haskellPackages; };
