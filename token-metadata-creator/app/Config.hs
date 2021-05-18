@@ -225,5 +225,6 @@ wellKnownOption =
     isPotentiallyString (Left err) | "not a valid json value" `isSuffixOf` err = True
     isPotentiallyString (Left err) | "endOfInput" `isSuffixOf` err             = True
     isPotentiallyString (Left err) | "takeWhile1" `isSuffixOf` err             = True
+    isPotentiallyString (Left err) | "string" `isSuffixOf` err                 = True
     isPotentiallyString (Left _)                                               = False
     isPotentiallyString (Right _)                                              = False
