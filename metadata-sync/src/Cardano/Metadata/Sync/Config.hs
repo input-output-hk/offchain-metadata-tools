@@ -2,19 +2,38 @@
 
 module Cardano.Metadata.Sync.Config where
 
-import Data.Text (Text)
+import Control.Exception
+    ( bracket )
+import qualified Data.ByteString.Char8 as BC
+import Data.Pool
+    ( Pool, createPool, destroyAllResources )
+import qualified Data.Pool as Pool
+import Data.Text
+    ( Text )
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
-import Options.Applicative (Parser, ParserInfo)
-import qualified Options.Applicative as Opt
-import Options.Applicative (strOption, long, metavar, help, showDefault, value, option, auto, info, fullDesc, progDesc, header)
-import Data.Pool (Pool, createPool, destroyAllResources)
-import Database.PostgreSQL.Simple (Connection)
-import Data.Time.Clock (NominalDiffTime)
+import Data.Time.Clock
+    ( NominalDiffTime )
+import Database.PostgreSQL.Simple
+    ( Connection )
 import qualified Database.PostgreSQL.Simple as Sql
-import qualified Data.Pool as Pool
-import qualified Data.ByteString.Char8 as BC
-import Control.Exception (bracket)
+import Options.Applicative
+    ( Parser, ParserInfo )
+import Options.Applicative
+    ( auto
+    , fullDesc
+    , header
+    , help
+    , info
+    , long
+    , metavar
+    , option
+    , progDesc
+    , showDefault
+    , strOption
+    , value
+    )
+import qualified Options.Applicative as Opt
 
 data Opts = Opts
     { optDbName              :: Text
