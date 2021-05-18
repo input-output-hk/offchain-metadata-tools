@@ -3,10 +3,18 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 
+import Control.Exception
+    ( SomeException, catch )
+import Control.Monad
+    ( join, void )
 import Control.Monad.IO.Class
     ( liftIO )
 import Control.Monad.Logger
     ( runNoLoggingT )
+import qualified Data.Aeson as Aeson
+import qualified Data.HashMap.Strict as HM
+import Data.Pool
+    ( Pool, destroyAllResources )
 import Data.Proxy
     ( Proxy (Proxy) )
 import Data.Tagged
@@ -15,11 +23,14 @@ import Data.Text
     ( Text )
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
-import qualified Data.Aeson as Aeson
 import Data.Word
     ( Word8 )
-import Data.Pool (Pool, destroyAllResources)
-import Control.Monad (join, void)
+import Hedgehog
+    ( MonadGen, evalIO, forAll, property, (===) )
+import qualified Hedgehog as H
+    ( Property )
+import qualified Hedgehog.Gen as Gen
+import qualified Hedgehog.Range as Range
 import Test.Tasty
     ( TestTree
     , askOption
@@ -29,28 +40,25 @@ import Test.Tasty
     , testGroup
     , withResource
     )
-import Test.Tasty.Options
-import Hedgehog
-    ( evalIO, forAll, property, (===), MonadGen )
-import qualified Hedgehog as H
-    ( Property )
-import Control.Exception (catch, SomeException)
-import qualified Hedgehog.Gen as Gen
-import qualified Data.HashMap.Strict as HM
-import qualified Hedgehog.Range as Range
 import Test.Tasty
 import Test.Tasty.Hedgehog
+import Test.Tasty.Options
 
 import Cardano.Metadata.Store.Types
-import Cardano.Metadata.Types.Common (Subject(..), unPropertyName)
-import Cardano.Metadata.Sync.Config (mkConnectionPool, withConnectionFromPool)
-import Cardano.Metadata.Sync (write)
+import Cardano.Metadata.Sync
+    ( write )
+import Cardano.Metadata.Sync.Config
+    ( mkConnectionPool, withConnectionFromPool )
+import Cardano.Metadata.Types.Common
+    ( Subject (..), unPropertyName )
+import Database.PostgreSQL.Simple
+    ( Connection, execute, executeMany, query, withTransaction )
+import Database.PostgreSQL.Simple.Types
+    ( Identifier (..), Only (..) )
 import Test.Cardano.Metadata.Generators
     ( ComplexType )
 import qualified Test.Cardano.Metadata.Generators as Gen
 import Test.Cardano.Metadata.Store
-import Database.PostgreSQL.Simple (query, withTransaction, execute, executeMany, Connection)
-import Database.PostgreSQL.Simple.Types (Only(..), Identifier(..))
 
 newtype DbHost = DbHost { _dbHost :: Text }
 newtype DbName = DbName { _dbName :: Text }
