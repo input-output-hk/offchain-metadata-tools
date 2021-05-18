@@ -19,8 +19,7 @@ $ cd metadata-registry-testnet/registry
 ```
 
 ```
-$ token-metadata-creator entry --init bb59e0d0065c3368e0b7add747f
-795026a93489b550bf0ddfbd6dc636f6666636861696e546f6f6c7354657374696e67
+$ token-metadata-creator entry --init bb59e0d0065c3368e0b7add747f795026a93489b550bf0ddfbd6dc636f6666636861696e546f6f6c7354657374696e67
 
 $ token-metadata-creator entry bb59e0d0065c3368e0b7add747f795026a93489b550bf0ddfbd6dc636f6666636861696e546f6f6c7354657374696e67 \
   --name "OffchainToolsCoin" \
@@ -30,7 +29,8 @@ $ token-metadata-creator entry bb59e0d0065c3368e0b7add747f795026a93489b550bf0ddf
 $ token-metadata-creator entry bb59e0d0065c3368e0b7add747f795026a93489b550bf0ddfbd6dc636f6666636861696e546f6f6c7354657374696e67 \
   --ticker "OTC" \
   --url "https://github.com/input-output-hk/offchain-metadata-tools/" \
-  --logo "/home/piotr/wb/offchain-metadata-tools/token-metadata-creator/test/testData/icon.png"
+  --logo "/home/piotr/wb/offchain-metadata-tools/token-metadata-creator/test/testData/icon.png" \
+  --decimals 5 \
 
 $ token-metadata-creator entry bb59e0d0065c3368e0b7add747f795026a93489b550bf0ddfbd6dc636f6666636861696e546f6f6c7354657374696e67 -a /home/piotr/t/node/tokens/minter/offchain-tools-test/policy.skey
 
@@ -76,7 +76,8 @@ curl -X GET http://localhost:8090/v2/wallets/1b0aa24994b4181e79116c131510f2abf6c
       "name": "OffchainToolsCoin",
       "ticker": "OTC",
       "logo": "...",
-      "description": "Test OffchainTools"
+      "description": "Test OffchainTools",
+      "decimals": 5
     }
   },
 ```
@@ -140,7 +141,8 @@ curl -X GET http://localhost:8090/v2/wallets/1b0aa24994b4181e79116c131510f2abf6c
       "name": "OffchainToolsCoin update",
       "ticker": "OTC",
       "logo": "...",
-      "description": "Test OffchainTools"
+      "description": "Test OffchainTools",
+      "decimals": 5
     }
   },
 
