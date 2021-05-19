@@ -36,6 +36,14 @@ in {
         default = 8080;
         description = "the port the metadata server runs on";
       };
+      extraFlags = lib.mkOption {
+        type = with lib.types; listOf str;
+        default = [];
+        description = ''
+          Extra flags to pass to the metadata-server executable.
+        '';
+        example = ["+RTS" "-M500M" "-RTS"];
+      };
       postgres = {
         socketdir = lib.mkOption {
           type = lib.types.str;
@@ -75,7 +83,7 @@ in {
   config = lib.mkIf cfg.enable {
     services.metadata-server.script = let
       exec = "metadata-server";
-      cmd = builtins.filter (x: x != "") [
+      cmd = builtins.filter (x: x != "") ([
           "${cfg.package}/bin/${exec}"
           "--db ${config.services.metadata-server.postgres.database}"
           "--db-user ${config.services.metadata-server.postgres.user}"
@@ -83,7 +91,7 @@ in {
           "--db-table ${config.services.metadata-server.postgres.table}"
           "--db-conns ${toString config.services.metadata-server.postgres.numConnections}"
           "--port ${toString config.services.metadata-server.port}"
-      ];
+      ] ++ cfg.extraFlags);
     in pkgs.writeShellScript "metadata-server" ''
       set -euo pipefail
       echo "Starting ${exec}: ${lib.concatStringsSep "\"\n   echo \"" cmd}"
