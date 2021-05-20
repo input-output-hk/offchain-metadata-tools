@@ -82,10 +82,10 @@ import Config
     , canonicalFilename
     , draftFilename
     )
-import System.IO
-    ( hSetEncoding, mkTextEncoding)
 import GHC.IO.Encoding
     ( setFileSystemEncoding )
+import System.IO
+    ( hSetEncoding, mkTextEncoding )
 import System.IO.CodePage
     ( withCP65001 )
 
