@@ -8,6 +8,7 @@ const { assert } = require('chai');
 
 let cli, getDraft, withDraft, getFinal, writeTmpFile;
 
+process.env['LANG'] = 'en_US.UTF-8';
 
 const alice = "19309eb9c066253cede617dc635223ace320ae0bbdd5bd1968439cd0";
 const bob = "04c24626761279476a9da9b9d851328cab93d92e7a8790852e42ff894b746f725a436f696e";
@@ -136,6 +137,13 @@ describe("token-metadata-creator", () => {
       assert.isNotNull(getDraft(alice).name);
       cli(alice, "--init");
       assert.isNull(getDraft(alice).name);
+    });
+
+    it("Always handles UTF-8", () => {
+      process.env["LANG"] = "C";
+      cli(alice, "--name", "☃");
+      process.env["LANG"] = "en_US.UTF-8";
+      assert.equal(getDraft(alice).name.value, "☃");
     });
 
     it("Decimals range = [0,255]", () => {
