@@ -82,6 +82,12 @@ import Config
     , canonicalFilename
     , draftFilename
     )
+import System.IO
+    ( hSetEncoding, mkTextEncoding)
+import GHC.IO.Encoding
+    ( setFileSystemEncoding )
+import System.IO.CodePage
+    ( withCP65001 )
 
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Encode.Pretty as Aeson
@@ -97,7 +103,7 @@ import qualified Options.Applicative as OA
 import qualified System.IO as IO
 
 main :: IO ()
-main = do
+main = withUtf8Encoding $ do
     defaultSubject <- fmap (Subject . T.pack) <$> lookupEnv "METADATA_SUBJECT"
     args <- OA.execParser $ OA.info (argumentParser defaultSubject <**> OA.helper) mempty
     case args of
@@ -269,7 +275,7 @@ handleValidate logSeverity fpA mFpB = do
     logAction = filterBySeverity logSeverity msgSeverity (cmap fmtMessage logTextStdout)
 
   usingLoggerT logAction $ do
-    fileA  <- parseFile parseValidationMetadata fpA 
+    fileA  <- parseFile parseValidationMetadata fpA
     mFileB <- traverse (parseFile parseValidationMetadata) mFpB
 
     let
@@ -301,3 +307,17 @@ handleValidate logSeverity fpA mFpB = do
           log E $ "Failed to parse validation metadata. Error was: '" <> T.pack (show err) <> "', from JSON: '" <> contents <> "'."
           liftIO $ exitFailure
         Right meta -> pure meta
+
+-- | Force the locale text encoding to UTF-8. This is needed because the CLI
+-- prints UTF-8 characters regardless of the @LANG@ environment variable or any
+-- other settings.
+--
+-- On Windows the current console code page is changed to UTF-8.
+withUtf8Encoding :: IO a -> IO a
+withUtf8Encoding action = withCP65001 (setUtf8EncodingHandles >> action)
+
+setUtf8EncodingHandles :: IO ()
+setUtf8EncodingHandles = do
+    utf8' <- mkTextEncoding "UTF-8//TRANSLIT"
+    mapM_ (`hSetEncoding` utf8') [stdin, stdout, stderr]
+    setFileSystemEncoding utf8'

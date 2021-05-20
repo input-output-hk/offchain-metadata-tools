@@ -58,6 +58,7 @@ executable token-metadata-creator
                      , base64-bytestring
                      , bytestring
                      , cardano-prelude
+                     , code-page
                      , token-metadata-creator
                      , safe-exceptions
                      , co-log
