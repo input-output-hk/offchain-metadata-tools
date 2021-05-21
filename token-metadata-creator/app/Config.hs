@@ -84,7 +84,7 @@ data Arguments
 
 argumentParser :: Maybe Subject -> OA.Parser Arguments
 argumentParser defaultSubject =
-  OA.hsubparser 
+  OA.hsubparser
     ( OA.command "entry" (OA.info (ArgumentsEntryUpdate <$> entryUpdateArgumentParser defaultSubject) mempty)
    <> OA.command "validate" (OA.info (ArgumentsValidate <$> pFileA <*> pFileB <*> pLogSeverity) mempty)
     )
@@ -154,7 +154,7 @@ entryUpdateArgumentParser defaultSubject = EntryUpdateArguments
         <*> pure Nothing -- logo
         <*> optional (emptyAttested <$> wellKnownOption (OA.long "url" <> OA.short 'h' <> OA.metavar "URL"))
         <*> optional (emptyAttested <$> wellKnownOption (OA.long "ticker" <> OA.short 't' <> OA.metavar "TICKER"))
-        <*> optional (emptyAttested <$> OA.option (OA.eitherReader ((Aeson.parseEither parseWellKnown =<<) . Aeson.eitherDecodeStrict . BC8.pack)) (OA.long "decimals" <>  OA.metavar "DECIMALS"))
+        <*> optional (emptyAttested <$> wellKnownOption (OA.long "decimals" <>  OA.metavar "DECIMALS"))
 
 pLogSeverity :: OA.Parser Colog.Severity
 pLogSeverity = pDebug <|> pInfo <|> pWarning <|> pError <|> pure I
@@ -196,8 +196,35 @@ wellKnownOption
     => OA.Mod OA.OptionFields p
     -> OA.Parser p
 wellKnownOption =
-    OA.option wellKnownReader
+  OA.option (OA.eitherReader (\arg ->
+                               let
+                                 r1 = asJSONValue arg
+                               in
+                                 if isPotentiallyString r1
+                                 then asJSONString arg
+                                 else r1
+                             ))
   where
-    wellKnownReader :: OA.ReadM p
-    wellKnownReader = OA.eitherReader $
-        Aeson.parseEither parseWellKnown . Aeson.toJSON
+    -- Presume we got a value (i.e. 3 or []).
+    asJSONValue :: String -> Either String p
+    asJSONValue = (Aeson.parseEither parseWellKnown =<<) . Aeson.eitherDecodeStrict' . BC8.pack
+    -- Presume we got a string (i.e. "3" or "potato").
+    asJSONString :: String -> Either String p
+    asJSONString = Aeson.parseEither parseWellKnown . Aeson.String . T.pack
+
+    -- A program called with the arguments "--arg hello" will pass the
+    -- value "hello" to the JSON parser. "hello" is not a valid JSON
+    -- value, you might expect it to be treated as a string, but the
+    -- correct way to pass a string to a JSON parser is "\"hello\"".
+    -- To handle the cases of both JSON strings and any other JSON
+    -- value, we first try to parse it as a raw value, then if that
+    -- fails with an error like "not a valid json value", then we
+    -- treat the input as a string and try to parse that. This at the
+    -- very least gives us a better error message.
+    isPotentiallyString :: forall x. Either String x -> Bool
+    isPotentiallyString (Left err) | "not a valid json value" `isSuffixOf` err = True
+    isPotentiallyString (Left err) | "endOfInput" `isSuffixOf` err             = True
+    isPotentiallyString (Left err) | "takeWhile1" `isSuffixOf` err             = True
+    isPotentiallyString (Left err) | "string" `isSuffixOf` err                 = True
+    isPotentiallyString (Left _)                                               = False
+    isPotentiallyString (Right _)                                              = False
