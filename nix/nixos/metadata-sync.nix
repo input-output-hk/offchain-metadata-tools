@@ -111,6 +111,7 @@ in {
       serviceConfig = {
         ExecStart = config.services.metadata-sync.script;
         DynamicUser = true;
+        User = config.services.metadata-sync.user;
         RuntimeDirectory = "metadata-sync";
         StateDirectory = "metadata-sync";
       };

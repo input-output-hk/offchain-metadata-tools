@@ -111,6 +111,7 @@ in {
       serviceConfig = {
         ExecStart = config.services.metadata-webhook.script;
         DynamicUser = true;
+        User = config.services.metadata-webhook.user;
         RuntimeDirectory = "metadata-webhook";
         StateDirectory = "metadata-webhook";
         StandardOutput = "journal";
