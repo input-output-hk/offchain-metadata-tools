@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: "Metadata Server API"
-  version: "0.1.0.0"
+  version: "0.2.0.0"
 servers:
   - url: https://tokens.cardano.org/
     description: Production server (uses live data)
