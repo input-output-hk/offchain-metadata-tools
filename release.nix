@@ -103,6 +103,7 @@ let
       [
         jobs.native.metadata-server.x86_64-linux
         jobs.native.metadata-webhook.x86_64-linux
+        jobs.native.metadata-sync.x86_64-linux
         jobs.native.metadata-validator-github.x86_64-linux
         jobs.native.token-metadata-creator.x86_64-linux
 
