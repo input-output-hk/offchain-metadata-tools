@@ -105,6 +105,7 @@ in {
       serviceConfig = {
         ExecStart = config.services.metadata-server.script;
         DynamicUser = true;
+        User = config.services.metadata-server.user;
         RuntimeDirectory = "metadata-server";
         StateDirectory = "metadata-server";
       };

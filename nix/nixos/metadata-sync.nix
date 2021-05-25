@@ -1,46 +1,45 @@
 { config, lib, pkgs, ... }:
 let
-  cfg = config.services.metadata-webhook;
+  cfg = config.services.metadata-sync;
 in {
 
   options = {
-    services.metadata-webhook = {
-      enable = lib.mkEnableOption "enable the metadata webhook";
+    services.metadata-sync = {
+      enable = lib.mkEnableOption "enable the metadata sync script";
       script = lib.mkOption {
         internal = true;
         type = lib.types.package;
       };
-      metadataServerPkgs = lib.mkOption {
+      offchainMetadataToolsPkgs = lib.mkOption {
         type = lib.types.attrs;
         default = (import ../../. {}).project;
-        defaultText = "metadata-server pkgs";
+        defaultText = "offchain-metadata-tools pkgs";
         description = ''
-          The metadata-server packages and library that should be used.
+          The offchain-metadata-tools package set.
         '';
         internal = true;
       };
       package = lib.mkOption {
         type = lib.types.package;
-        default = cfg.metadataServerPkgs.metadata-webhook.components.exes.metadata-webhook;
+        default = cfg.offchainMetadataToolsPkgs.metadata-sync.components.exes.metadata-sync;
       };
       user = lib.mkOption {
         type = lib.types.str;
         # Linux OS user can have a hyphen (`-`) along with systemd service names as standard
-        default = "metadata-webhook";
+        default = "metadata-sync";
         description = "the user to run as";
       };
-      port = lib.mkOption {
-        type = lib.types.int;
-        default = 8081;
-        description = "the port the metadata webhook runs on";
-      };
-      webHookSecret = lib.mkOption {
-        type = lib.types.str;
-        description = "the GitHub webhook secret";
-      };
-      gitHubToken = lib.mkOption {
-        type = lib.types.str;
-        description = "the GitHub token to use to query the GitHub API";
+      git = {
+        repositoryUrl = lib.mkOption {
+          type = lib.types.str;
+          description = "URL of the git repository of the metadata registry.";
+        };
+
+        metadataFolder = lib.mkOption {
+          type = lib.types.str;
+          default = "/";
+          description = "Folder within the git repository that contains the metadata entries.";
+        };
       };
       postgres = {
         socketdir = lib.mkOption {
@@ -79,47 +78,55 @@ in {
     };
   };
   config = lib.mkIf cfg.enable {
-    services.metadata-webhook.script = let
-      exec = "metadata-webhook";
+    services.metadata-sync.script = let
+      exec = "metadata-sync";
       cmd = builtins.filter (x: x != "") [
           "${cfg.package}/bin/${exec}"
-          "--db ${cfg.postgres.database}"
-          "--db-user ${cfg.postgres.user}"
-          "--db-host ${cfg.postgres.socketdir}"
-          "--db-table ${cfg.postgres.table}"
-          "--db-conns ${toString cfg.postgres.numConnections}"
-          "--port ${toString cfg.port}"
+          "--db ${config.services.metadata-sync.postgres.database}"
+          "--db-user ${config.services.metadata-sync.postgres.user}"
+          "--db-host ${config.services.metadata-sync.postgres.socketdir}"
+          "--db-table ${config.services.metadata-sync.postgres.table}"
+          "--db-conns ${toString config.services.metadata-sync.postgres.numConnections}"
+          "--git-url ${config.services.metadata-sync.git.repositoryUrl}"
+          "--git-metadata-folder ${config.services.metadata-sync.git.metadataFolder}"
       ];
-    in pkgs.writeShellScript "metadata-webhook" ''
+    in pkgs.writeShellScript "metadata-sync" ''
       set -euo pipefail
       echo "Starting ${exec}: ${lib.concatStringsSep "\"\n   echo \"" cmd}"
       echo "..or, once again, in a single line:"
       echo "${toString cmd}"
-      METADATA_WEBHOOK_SECRET=${cfg.webHookSecret} METADATA_GITHUB_TOKEN=${cfg.gitHubToken} exec ${toString cmd}
+      exec ${toString cmd}
     '';
     environment.systemPackages = [ cfg.package config.services.postgresql.package ];
-    systemd.services.metadata-webhook = {
-      path = [ cfg.package pkgs.netcat pkgs.postgresql ];
+    systemd.services.metadata-sync = {
+      path = [ cfg.package pkgs.netcat pkgs.postgresql pkgs.git ];
       preStart = ''
         for x in {1..60}; do
-          nc -z localhost ${toString cfg.postgres.port} && break
+          nc -z localhost ${toString config.services.metadata-sync.postgres.port} && break
           echo loop $x: waiting for postgresql 2 sec...
           sleep 2
         done
         sleep 1
       '';
       serviceConfig = {
-        ExecStart = config.services.metadata-webhook.script;
+        ExecStart = config.services.metadata-sync.script;
         DynamicUser = true;
-        User = config.services.metadata-webhook.user;
-        RuntimeDirectory = "metadata-webhook";
-        StateDirectory = "metadata-webhook";
-        StandardOutput = "journal";
+        User = config.services.metadata-sync.user;
+        RuntimeDirectory = "metadata-sync";
+        StateDirectory = "metadata-sync";
       };
 
       wantedBy = [ "multi-user.target" ];
       after = [ "postgres.service" ];
       requires = [ "postgresql.service" ];
+    };
+
+    systemd.timers.run-metadata-sync = {
+      timerConfig = {
+        Unit = "metadata-sync.service";
+        OnCalendar = "hourly";
+      };
+      wantedBy = [ "timers.target" ];
     };
   };
 }
