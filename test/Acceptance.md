@@ -6,6 +6,7 @@ The document describes few high-level end-to-end scenarios that can be used as a
 ## Scenarios
 1. Add new metadata
 2. Update metadata
+3. Test metadata-sync script
 
 ### Add new metadata
 
@@ -147,3 +148,24 @@ curl -X GET http://localhost:8090/v2/wallets/1b0aa24994b4181e79116c131510f2abf6c
   },
 
 ```
+
+## Metadata sync
+
+- A sync script is setup to run hourly. This script pulls the current GitHub repository state into the Postgres database.
+
+- To test that this script is working correctly, we need to:
+
+  1. Disable the metadata-registry-testnet webhook
+    - Navigate to https://github.com/input-output-hk/metadata-registry-testnet/settings/hooks/279167325
+    - Set the webhook to "Inactive"
+    - Update the webhook
+
+  2. Modify, in some way, the metadata entry created in the previous tests.
+
+  3. Commit and push this modification directly to the master branch of `input-output-hk/metadata-registry-testnet` (or go through a PR, either will work).
+
+  4. Confirm that querying https://metadata.cardano-testnet.iohkdev.io/metadata/${SUBJECT} returns your /original/ entry.
+
+  5. Set the webhook to "Active" again.
+
+  6. Wait until a few seconds past the top of the hour and ensure that querying https://metadata.cardano-testnet.iohkdev.io/metadata/${SUBJECT} returns your /modified/ entry.
