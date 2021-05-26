@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: "Metadata Server API"
-  version: "0.1.0.0"
+  version: "0.2.0.0"
 servers:
   - url: https://tokens.cardano.org/
     description: Production server (uses live data)
@@ -211,6 +211,16 @@ components:
                   minLength: 2
                   maxLength: 5
                   example: "QUID"
+          decimals:
+            allOf:
+            - $ref: '#/components/schemas/GenericProperty'
+            - type: object
+              properties:
+                value:
+                  type: number
+                  minimum: 0
+                  maximum: 255
+                  example: 1
           logo:
             allOf:
             - $ref: '#/components/schemas/GenericProperty'

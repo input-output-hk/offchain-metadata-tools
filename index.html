@@ -1125,11 +1125,16 @@ dependencies.</p>
 <li>
 <p>Preparing the release</p>
 <ul>
+<li>[ ] Update the versions of all sub-projects.</li>
+<li>[ ] Update the CHANGELOG.</li>
+<li>[ ] Ensure that a new version of the api docs have been
+    created under a new folder, and the symbolic link at
+    docs/api/latest has been updated.</li>
 <li>[ ] Deploy offchain-metadata-tools to testnet such that
     metadata-server is available at
     <a href="https://metadata.cardano-testnet.iohkdev.io/">https://metadata.cardano-testnet.iohkdev.io/</a> and new metadata
     can be added in
-    <a href="https://github.com/input-output-hk/metadata-registry-testnet">https://github.com/input-output-hk/metadata-registry-testnet</a></li>
+    <a href="https://github.com/input-output-hk/metadata-registry-testnet">https://github.com/input-output-hk/metadata-registry-testnet</a>.</li>
 </ul>
 </li>
 <li>
@@ -1137,7 +1142,12 @@ dependencies.</p>
 <ul>
 <li>[ ] Add a draft release to
     <a href="https://github.com/input-output-hk/offchain-metadata-tools/releases">https://github.com/input-output-hk/offchain-metadata-tools/releases</a>,
-    so that the release notes can be reviewed.</li>
+    so that the release notes can be reviewed.<ul>
+<li>[ ] Include CHANGELOG updates in the release notes.</li>
+<li>[ ] Include the binaries for the master builds of
+    executables of the project, as well as their sha256 sum.</li>
+</ul>
+</li>
 </ul>
 </li>
 <li>
