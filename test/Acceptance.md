@@ -31,7 +31,7 @@ $ token-metadata-creator entry bb59e0d0065c3368e0b7add747f795026a93489b550bf0ddf
   --ticker "OTC" \
   --url "https://github.com/input-output-hk/offchain-metadata-tools/" \
   --logo "/home/piotr/wb/offchain-metadata-tools/token-metadata-creator/test/testData/icon.png" \
-  --decimals 5 \
+  --decimals 5
 
 $ token-metadata-creator entry bb59e0d0065c3368e0b7add747f795026a93489b550bf0ddfbd6dc636f6666636861696e546f6f6c7354657374696e67 -a /home/piotr/t/node/tokens/minter/offchain-tools-test/policy.skey
 
@@ -40,6 +40,30 @@ $ token-metadata-creator entry bb59e0d0065c3368e0b7add747f795026a93489b550bf0ddf
 $ token-metadata-creator validate bb59e0d0065c3368e0b7add747f795026a93489b550bf0ddfbd6dc636f6666636861696e546f6f6c7354657374696e67.json
 
 [Info]    [Main.log#281] Wallet metadata validation successful!
+```
+
+In the case of Plutus smart-contracts follows the same process but omits the `--policy` field:
+
+```
+$ token-metadata-creator entry --init bb59e0d0065c3368e0b7add747f795026a93489b550bf0ddfbd6dc636f6666636861696e546f6f6c7354657374696e67
+
+$ token-metadata-creator entry bb59e0d0065c3368e0b7add747f795026a93489b550bf0ddfbd6dc636f6666636861696e546f6f6c7354657374696e67 \
+  --name "OffchainToolsCoin" \
+  --description "Test OffchainTools"
+
+$ token-metadata-creator entry bb59e0d0065c3368e0b7add747f795026a93489b550bf0ddfbd6dc636f6666636861696e546f6f6c7354657374696e67 \
+  --ticker "OTC" \
+  --url "https://github.com/input-output-hk/offchain-metadata-tools/" \
+  --logo "/home/piotr/wb/offchain-metadata-tools/token-metadata-creator/test/testData/icon.png" \
+  --decimals 5
+
+$ token-metadata-creator entry bb59e0d0065c3368e0b7add747f795026a93489b550bf0ddfbd6dc636f6666636861696e546f6f6c7354657374696e67 -a /home/piotr/t/node/tokens/minter/offchain-tools-test/policy.skey
+
+$ token-metadata-creator entry bb59e0d0065c3368e0b7add747f795026a93489b550bf0ddfbd6dc636f6666636861696e546f6f6c7354657374696e67 --finalize
+
+$ token-metadata-creator validate bb59e0d0065c3368e0b7add747f795026a93489b550bf0ddfbd6dc636f6666636861696e546f6f6c7354657374696e67.json
+
+[Info]    [Main.log#293] Wallet metadata validation successful!
 ```
 
 2. Commit file and create PR on https://github.com/input-output-hk/metadata-registry-testnet.git

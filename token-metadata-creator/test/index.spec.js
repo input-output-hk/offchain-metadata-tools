@@ -199,6 +199,21 @@ describe("token-metadata-creator", () => {
       assert.lengthOf(getDraft(alice).name.signatures, 1);
       assert.equal(getDraft(alice).name.sequenceNumber, 0);
     });
+
+    it("Policy field is optional, while still attesting", () => {
+      writeTmpFile(keyFiles[alice][0], keys[alice][0]);
+      // No policy argument
+      const name        = "Auroracoin";
+      const description = "Icelandic cryptocurrency";
+      cli(alice, "--name", name, "--description", description);
+      cli(alice, "-a", keyFiles[alice][0]);
+      cli(alice, "--finalize");
+      // Policy field omitted
+      assert.isUndefined(getFinal(alice).policy);
+      // Attestations are still there
+      assert.lengthOf(getFinal(alice).name.signatures, 1);
+      assert.lengthOf(getFinal(alice).description.signatures, 1);
+    });
   });
 
   describe("Signing", () => {

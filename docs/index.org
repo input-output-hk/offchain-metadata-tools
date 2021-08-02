@@ -480,9 +480,12 @@ subject of our metadata. Our metadata will be keyed by the subject, so
 when querying a metadata service for the metadata of our asset, we
 will use the subject in our query.
 
-The standard for wallet metadata is that the subject is equal to the
-hash of the policy concatenated to the base16-encoded asset name
-(which can be empty).
+For phase-1 monetary scripts the standard for wallet metadata is that
+the subject is equal to the hash of the policy concatenated to the
+base16-encoded asset name (which can be empty).
+
+For phase-2 Plutus Smart-Contracts the subject is equal to the
+blake2b-224 hash of the serialized Plutus script.
 
 We can obtain the hash of the policy like so:
 
@@ -533,9 +536,11 @@ cat $SUBJECT.json.draft
 #+END_SRC
 
 Each key in the JSON map (other than the "subject") corresponds to a
-"property". There are three required properties for asset metadata
-(the kind of metadata we are creating): "name", "description", and
-"policy".
+"property". For a phase-1 monetary policy there are three required
+properties for asset metadata (the kind of metadata we are creating):
+"name", "description", and "policy".
+
+Phase-2 Plutus Smart-Contracts do not require a ~--policy~ field.
 
 We can provide these with the following command:
 
