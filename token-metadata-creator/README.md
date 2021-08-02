@@ -10,8 +10,10 @@ The instruction below supposes that users have already been through the process 
 
 ### Creating a new entry
 
-To create a new entry, you must first obtain your metadata subject. The subject is defined as the concatenation of the base16-encoded `policyId` and base16-encoded `assetName` of your asset. In case
-your `assetName` is empty, then the `policyId` is your subject. We'll consider the following policy for this tutorial:
+To create a new entry, you must first obtain your metadata subject. If no policy is provided the `policyId` is defined as the blake2b-224
+hash of the serialized Plutus script. If a policy is provided the subject is defined as the concatenation of the base16-encoded
+`policyId` and base16-encoded `assetName` of your asset. In case your `assetName` is empty, then the `policyId` is your subject. We'll
+consider the following policy for this tutorial:
 
 <p align="right"><strong>policy.json</strong></p>
 
@@ -26,7 +28,6 @@ your `assetName` is empty, then the `policyId` is your subject. We'll consider t
     ]
 }
 ```
-
 
 From there, initialize a new submission using `--init` as follows:
 
@@ -44,9 +45,10 @@ Asset metadata have a set of required well-known properties. At minima, you'll t
 | ---           | ---                                             | ---                   |
 | `name`        | at most 50 UTF-8 characters                     | `--name \| -n`        |
 | `description` | at most 500 UTF-8 characters                    | `--description \| -d` |
-| `policy`      | the exact script which hashes to the `policyId` | `--policy \| -p`      |
 
-You can pass multiple commands at once to edit a draft submission. For example:
+The policy field on metadata is optional, but it is required to
+perform signature verification. You can pass multiple commands at once
+to edit a draft submission. For example:
 
 ```console
 token-metadata-creator entry 19309eb9c066253cede617dc635223ace320ae0bbdd5bd1968439cd0 \
@@ -62,6 +64,7 @@ token-metadata-creator entry 19309eb9c066253cede617dc635223ace320ae0bbdd5bd19684
 
 | Field    | Details                                                               | Command          |
 | ---      | ---                                                                   | ---              |
+| `policy` | the exact script which hashes to the `policyId`                       | `--policy \| -p` |
 | `ticker` | between 2 and 5 UTF-8 characters                                      | `--ticker \| -t` |
 | `url`    | a valid https URI                                                     | `--url \| -h`    |
 | `logo`   | a PNG image file                                                      | `--logo \| -l`   |
