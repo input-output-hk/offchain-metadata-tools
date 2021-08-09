@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -11,33 +12,19 @@ module Cardano.Metadata.Transform.Reader
   ) where
 
 import Control.Applicative
-    ( Alternative, empty, (<|>) )
+    ( Alternative )
 import Control.Comonad
 import Control.Monad.Reader
-    ( ReaderT (ReaderT), runReaderT, withReaderT )
+    ( ReaderT (ReaderT) )
 
-data Transform r f a = Transform (ReaderT r f a)
-
-instance Functor f => Functor (Transform r f) where
-  fmap f (Transform reader) = Transform $ fmap f reader
-
-instance Applicative f => Applicative (Transform r f) where
-  pure = Transform . pure
-
-  (Transform ff) <*> (Transform fa) = Transform $ ff <*> fa
-
-instance Monad f => Monad (Transform r f) where
-  (Transform fa) >>= fmb =
-    Transform $ fa >>= (ReaderT . apply . fmb)
-
-instance Alternative f => Alternative (Transform r f) where
-  empty = Transform empty
-  (Transform f1) <|> (Transform f2) = Transform $ f1 <|> f2
+newtype Transform r f a = Transform (r -> f a)
+  deriving (Functor, Applicative, Alternative, Monad)
+  via ReaderT r f
 
 instance (Monoid r, Comonad f) => Comonad (Transform r f) where
   extract trans = extract $ trans `apply` mempty
 
-  duplicate (Transform (ReaderT f)) =
+  duplicate (Transform f) =
     let
       -- base :: f (f a)
       base = (duplicate $ extract f)
@@ -45,10 +32,10 @@ instance (Monoid r, Comonad f) => Comonad (Transform r f) where
       mkTransform (const $ (mkTransform . const) <$> base)
 
 apply :: Transform r f a -> r -> f a
-apply (Transform reader) = runReaderT reader
+apply (Transform reader) = reader
 
 mkTransform :: (r -> f a) -> Transform r f a
-mkTransform = Transform . ReaderT
+mkTransform = Transform
 
 withInput :: (r' -> r) -> Transform r f a -> Transform r' f a
-withInput f (Transform readerR) = Transform $ withReaderT f readerR
+withInput f (Transform readerR) = Transform $ readerR . f

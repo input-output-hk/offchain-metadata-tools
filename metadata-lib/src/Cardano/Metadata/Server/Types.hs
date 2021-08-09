@@ -60,15 +60,10 @@ instance FromJSON BatchRequest where
       <*> obj .:? "properties"
 
 -- | Represents the response of a batch request.
-data BatchResponse
+newtype BatchResponse
   = BatchResponse { bRespSubjects :: [Weakly.Metadata] }
   deriving (Eq, Show)
-
-instance Semigroup BatchResponse where
-  (BatchResponse xs) <> (BatchResponse ys) = BatchResponse $ xs <> ys
-
-instance Monoid BatchResponse where
-  mempty = BatchResponse mempty
+  deriving newtype (Semigroup, Monoid)
 
 -- Instances
 
