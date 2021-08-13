@@ -1,5 +1,9 @@
 # Revision history for offchain-metadata-tools
 
+## 0.3.0.0 -- TODO
+
+* token-metadata-creator: Made "policy" field optional"
+
 ## 0.2.0.0 -- 2020-05-25
 
 * Added support for the "decimals" field.

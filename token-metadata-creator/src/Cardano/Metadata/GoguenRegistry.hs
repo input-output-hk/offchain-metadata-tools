@@ -91,7 +91,7 @@ instance ToJSON (GoguenRegistryEntry Maybe) where
           ]
         , catMaybes
           [ (\x -> unProperty (wellKnownPropertyName (Proxy @Logo)) .= fmap wellKnownToJSON x)
-                <$> (_goguenRegistryEntry_logo r)
+                 <$> (_goguenRegistryEntry_logo r)
           , (\x -> unProperty (wellKnownPropertyName (Proxy @Url)) .= fmap wellKnownToJSON x)
                 <$> (_goguenRegistryEntry_url r)
           , (\x -> unProperty (wellKnownPropertyName (Proxy @Ticker)) .= fmap wellKnownToJSON x)
@@ -143,34 +143,39 @@ validateEntry
 validateEntry record = do
     -- 1. Verify that mandatory fields are present
     subject <- verifyField _goguenRegistryEntry_subject
-    policy  <- verifyField _goguenRegistryEntry_policy
     name    <- verifyField _goguenRegistryEntry_name
     desc    <- verifyField _goguenRegistryEntry_description
 
-    -- 2. Policy should re-hash to first bytes of the subject
-    verifyPolicy policy subject
+    -- 2. Verify signature if policy is present
+    case _goguenRegistryEntry_policy record of
+      Nothing ->
+        pure ()
 
-    -- 3. Verify that all attestations have matching signatures
-    let verifyLocalAttestations :: WellKnownProperty p => Text -> Attested p -> Either Text ()
-        verifyLocalAttestations fieldName (Attested attestations n w) = do
-            let hashes = hashesForAttestation subject w n
-            left (const $ "attestation verification failed for: " <> fieldName) $ do
-                verifyAttested $ Attested attestations n hashes
-            let policyEvaluationFailed = unlines
-                    [ "policy evaluation failed for: " <> fieldName
-                    , "Policy is:"
-                    , prettyPolicy policy
-                    ]
-            left (const policyEvaluationFailed) $
-                evaluatePolicy policy attestations
+      Just policy -> do
+        -- 3. Policy should re-hash to first bytes of the subject
+        verifyPolicy policy subject
 
-    verifyLocalAttestations "name" name
-    verifyLocalAttestations "description" desc
+        -- 4. Verify that all attestations have matching signatures
+        let verifyLocalAttestations :: WellKnownProperty p => Text -> Attested p -> Either Text ()
+            verifyLocalAttestations fieldName (Attested attestations n w) = do
+                let hashes = hashesForAttestation subject w n
+                left (const $ "attestation verification failed for: " <> fieldName) $ do
+                    verifyAttested $ Attested attestations n hashes
+                let policyEvaluationFailed = unlines
+                        [ "policy evaluation failed for: " <> fieldName
+                        , "Policy is:"
+                        , prettyPolicy policy
+                        ]
+                left (const policyEvaluationFailed) $
+                    evaluatePolicy policy attestations
 
-    forM_ (_goguenRegistryEntry_logo record) $ verifyLocalAttestations "logo"
-    forM_ (_goguenRegistryEntry_url record) $ verifyLocalAttestations "url"
-    forM_ (_goguenRegistryEntry_ticker record) $ verifyLocalAttestations "ticker"
-    forM_ (_goguenRegistryEntry_decimals record) $ verifyLocalAttestations "decimals"
+        verifyLocalAttestations "name" name
+        verifyLocalAttestations "description" desc
+
+        forM_ (_goguenRegistryEntry_logo record) $ verifyLocalAttestations "logo"
+        forM_ (_goguenRegistryEntry_url record) $ verifyLocalAttestations "url"
+        forM_ (_goguenRegistryEntry_ticker record) $ verifyLocalAttestations "ticker"
+        forM_ (_goguenRegistryEntry_decimals record) $ verifyLocalAttestations "decimals"
   where
     verifyField :: (PartialGoguenRegistryEntry -> Maybe a) -> Either Text a
     verifyField field = maybe (Left missingFields) Right (field record)
@@ -179,8 +184,6 @@ validateEntry record = do
     missingFields = mconcat
         [ missingField "Missing field subject"
             _goguenRegistryEntry_subject
-        , missingField "Missing field policy: Use -p to specify"
-            _goguenRegistryEntry_policy
         , missingField "Missing field name: Use -n to specify"
             _goguenRegistryEntry_name
         , missingField "Missing field description: Use -d to specify"
