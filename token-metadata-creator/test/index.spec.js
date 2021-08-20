@@ -83,18 +83,17 @@ describe("token-metadata-creator", () => {
     it("Add required fields", () => {
       const name = `ギル`;
       const description = `The currency in all of the Final Fantasy games.`;
-      const policy = `82008201818200581c2b0c33e73d2a70733edc971d19e2cafbada1692db2d35e7dc9453df2`
 
-      cli(alice, "--name", name, "--description", description, "--policy", policy);
+      cli(alice, "--name", name, "--description", description);
 
       const empty = { sequenceNumber: 0, signatures: [] };
       assert.deepEqual(getDraft(alice).name, { ...empty, value: name });
       assert.deepEqual(getDraft(alice).description, { ...empty, value: description });
-      assert.deepEqual(getDraft(alice).policy, policy);
     });
 
 
     it("Add optional fields", () => {
+      const policy = `82008201818200581c2b0c33e73d2a70733edc971d19e2cafbada1692db2d35e7dc9453df2`
       const ticker = `GIL`;
       const url = `https://finalfantasy.fandom.com/wiki/Gil`;
       const logo = `testData/icon.png`
@@ -102,7 +101,7 @@ describe("token-metadata-creator", () => {
       const decimals = 255;
 
       copyTestData();
-      cli(alice, "--ticker", ticker, "--url", url, "--logo", logo, "--decimals", decimals);
+      cli(alice, "--policy", policy, "--ticker", ticker, "--url", url, "--logo", logo, "--decimals", decimals);
 
       const empty = { sequenceNumber: 0, signatures: [] };
       assert.deepEqual(getDraft(alice).ticker, { ...empty, value: ticker });
@@ -193,6 +192,7 @@ describe("token-metadata-creator", () => {
     it("Keep signatures on edit to same value", () => {
       writeTmpFile(keyFiles[alice][0], keys[alice][0]);
       cli(alice, "--name", "foo")
+      cli(alice, "--policy", policyFiles[alice]);
       cli(alice, "-a", keyFiles[alice][0]);
       cli(alice, "--name", "foo")
       assert.equal(getDraft(alice).name.value, "foo");
