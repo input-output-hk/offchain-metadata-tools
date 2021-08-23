@@ -108,6 +108,7 @@ describe("token-metadata-creator", () => {
       assert.deepEqual(getDraft(alice).url, { ...empty, value: url });
       assert.deepEqual(getDraft(alice).logo, { ...empty, value: logoSerialized });
       assert.deepEqual(getDraft(alice).decimals, { ...empty, value: decimals});
+      assert.deepEqual(getDraft(alice).policy, policy);
     });
 
     it("No other fields are supported!", () => {
