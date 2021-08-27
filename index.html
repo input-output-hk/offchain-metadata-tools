@@ -517,9 +517,11 @@ nicer name for your token.</p>
 the subject of our metadata. Our metadata will be keyed by the
 subject, so when querying a metadata service for the metadata of
 our asset, we will use the subject in our query.</p>
-<p>The standard for wallet metadata is that the subject is equal to
-the hash of the policy concatenated to the base16-encoded asset
-name (which can be empty).</p>
+<p>For phase-1 monetary scripts the standard for wallet metadata is
+that the subject is equal to the hash of the policy concatenated
+to the base16-encoded asset name (which can be empty).</p>
+<p>For phase-2 Plutus Smart-Contracts the subject is equal to the
+blake2b-224 hash of the serialized Plutus script.</p>
 <p>We can obtain the hash of the policy like so:</p>
 <pre><code>export POLICY_ID=$(cardano-cli transaction policyid --script-file $SCRIPT)
 </code></pre>
@@ -552,9 +554,12 @@ echo "Subject is '$SUBJECT'"
 }
 </code></pre>
 <p>Each key in the JSON map (other than the \"subject\")
-corresponds to a \"property\". There are three required
-properties for asset metadata (the kind of metadata we are
-creating): \"name\", \"description\", and \"policy\".</p>
+corresponds to a \"property\". For a phase-1 monetary policy
+there are three required properties for asset metadata (the kind
+of metadata we are creating): \"name\", \"description\", and
+\"policy\".</p>
+<p>Phase-2 Plutus Smart-Contracts do not require a <code>--policy</code>
+field.</p>
 <p>We can provide these with the following command:</p>
 <pre><code>token-metadata-creator entry $SUBJECT \
   --name "Quid" \
