@@ -229,15 +229,9 @@ handleEntryUpdateArguments (EntryUpdateArguments fInfo keyfile props newEntryInf
             , _goguenRegistryEntry_policy = policy
             }) record
 
-        hasPolicyField :: Bool
-        hasPolicyField = isJust (_goguenRegistryEntry_policy newRecord)
-
-    -- The server will need to perform signature verification only
-    -- optionally when the `policy` field is present.
     newRecordWithAttestations <- dieOnLeft "Adding attestation" $ case attestKey of
-        Just k
-          | hasPolicyField -> attestFields k props newRecord
-        _ -> pure newRecord
+        Just k -> attestFields k props newRecord
+        Nothing -> pure newRecord
 
     let finalVerificationStatus = validateEntry newRecordWithAttestations
 

@@ -82,22 +82,22 @@ deriving instance
 instance ToJSON (GoguenRegistryEntry Maybe) where
     toJSON r = Aeson.object $ mconcat
         [ [ "subject" .= _goguenRegistryEntry_subject r
-          , unProperty (wellKnownPropertyName (Proxy @Policy)) .=
-              (wellKnownToJSON <$> (_goguenRegistryEntry_policy r))
           , unProperty (wellKnownPropertyName (Proxy @Name)) .=
               (fmap wellKnownToJSON <$> (_goguenRegistryEntry_name r))
           , unProperty (wellKnownPropertyName (Proxy @Description)) .=
               (fmap wellKnownToJSON <$> (_goguenRegistryEntry_description r))
           ]
         , catMaybes
-          [ (\x -> unProperty (wellKnownPropertyName (Proxy @Logo)) .= fmap wellKnownToJSON x)
-                 <$> (_goguenRegistryEntry_logo r)
-          , (\x -> unProperty (wellKnownPropertyName (Proxy @Url)) .= fmap wellKnownToJSON x)
-                <$> (_goguenRegistryEntry_url r)
-          , (\x -> unProperty (wellKnownPropertyName (Proxy @Ticker)) .= fmap wellKnownToJSON x)
-                <$> (_goguenRegistryEntry_ticker r)
-          , (\x -> unProperty (wellKnownPropertyName (Proxy @Decimals)) .= fmap wellKnownToJSON x)
-                <$> (_goguenRegistryEntry_decimals r)
+          [ do policy <- _goguenRegistryEntry_policy r
+               Just (unProperty (wellKnownPropertyName (Proxy @Policy)) .= wellKnownToJSON policy)
+          , do logo <- _goguenRegistryEntry_logo r
+               Just (unProperty (wellKnownPropertyName (Proxy @Logo)) .= fmap wellKnownToJSON logo)
+          , do url <- _goguenRegistryEntry_url r
+               Just (unProperty (wellKnownPropertyName (Proxy @Url)) .= fmap wellKnownToJSON url)
+          , do ticker <- (_goguenRegistryEntry_ticker r)
+               Just (unProperty (wellKnownPropertyName (Proxy @Ticker)) .= fmap wellKnownToJSON ticker)
+          , do decimals <- _goguenRegistryEntry_decimals r
+               Just (unProperty (wellKnownPropertyName (Proxy @Decimals)) .= fmap wellKnownToJSON decimals)
           ]
         ]
 
