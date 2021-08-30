@@ -40,6 +40,7 @@ executable metadata-server
                         -Wincomplete-uni-patterns
                         -Wno-unsafe
                         -threaded
+                        -rtsopts
 
   other-modules:        Paths_metadata_server
                         Config
