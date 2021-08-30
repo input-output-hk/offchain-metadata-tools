@@ -1,8 +1,9 @@
 # Revision history for offchain-metadata-tools
 
-## 0.3.0.0 -- TODO
+## 0.3.0.0 -- 2021-08-30
 
-* token-metadata-creator: Made "policy" field optional"
+* token-metadata-creator: Made "policy" field optional to support Plutus smart
+  contracts.
 
 ## 0.2.0.0 -- 2020-05-25
 

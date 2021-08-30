@@ -1,6 +1,6 @@
 cabal-version:       2.2
 name:                token-metadata-creator
-version:             0.2.0.0
+version:             0.3.0.0
 synopsis:            A library and CLI for manipulating data for the Metadata Server CIP
 license:             Apache-2.0
 copyright:           2020 Input Output (Hong Kong) Ltd.
