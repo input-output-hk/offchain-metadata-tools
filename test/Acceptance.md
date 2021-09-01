@@ -4,11 +4,158 @@
 The document describes few high-level end-to-end scenarios that can be used as acceptance tests.
 
 ## Scenarios
-1. Add new metadata
-2. Update metadata
-3. Test metadata-sync script
+1. Add new metadata (for _anything_)
+2. Add new metadata (for tokens minted with Plutus minting policy)
+3. Add new metadata (for native tokens)
+4. Update metadata
+5. Test metadata-sync script
 
-### Add new metadata
+### Add new metadata (for _anything_)
+
+ 1. Add metadata entry to testnet metadata registry:
+
+ ```
+ $ git clone https://github.com/input-output-hk/metadata-registry-testnet.git
+ $ cd metadata-registry-testnet/registry
+ ```
+
+ ```
+ $ token-metadata-creator entry --init abcd
+ $ token-metadata-creator entry abcd \
+   --name "ArbitraryName" \
+   --description "Cna be anything" \
+ $ token-metadata-creator entry abcd \
+   --ticker "ABC" \
+   --url "https://github.com/input-output-hk/offchain-metadata-tools/" \
+   --logo "/home/piotr/wb/offchain-metadata-tools/token-metadata-creator/test/testData/icon.png" \
+   --decimals 3
+ $ token-metadata-creator entry abcd --finalize
+ $ token-metadata-creator validate abcd.json
+ [Info]    [Main.log#281] Wallet metadata validation successful!
+ ```
+
+ 2. Commit file and create PR on https://github.com/input-output-hk/metadata-registry-testnet.git
+
+ 3. Validate PR.
+ ```
+ $ metadata-validator-github --no-auth input-output-hk metadata-registry-testnet 94 --expect-branch master
+ [Info]    [Cardano.Metadata.Validation.GitHub.gitHubValidationRules#146] Validating 1 files.
+ [Info]    [Cardano.Metadata.Validation.GitHub.validatePRFile#198] Adding a record...
+ ```
+ 4. Merge PR.
+
+ 5. Check that metadata is displayed in the metadata server: https://metadata.cardano-testnet.iohkdev.io/metadata/abcd
+
+### Add new metadata (for tokens minted with Plutus minting policy)
+
+0. Mint a new token on testnet using exemplary Plutus script, like https://github.com/input-output-hk/cardano-node/blob/master/scripts/plutus/scripts/anyone-can-mint.plutus
+
+ - create address:
+ ```
+$ cardano-cli  address key-gen \
+--verification-key-file payment.vkey \
+--signing-key-file payment.skey
+$ cardano-cli address build \
+--payment-verification-key-file payment.vkey \
+--out-file payment.addr \
+--testnet-magic 1097911063
+ ```
+ - send 2 txs with ADA to this address, such that you have utxo for collateral
+ ```
+ $ cardano-cli query utxo --address $(cat payment.addr) --testnet-magic 1097911063
+ TxHash                                 TxIx        Amount
+--------------------------------------------------------------------------------------
+76c3338240434a6990b8d6258eea0fe0b85c3d2ec9e8e541cd1a7cec4e76643b     0        1000000000000 lovelace + TxOutDatumHashNone
+fe5c852ad7aba5f2ea2f4b9078a41626f67768e09180039c872e423468116409     0        1000000000000 lovelace + TxOutDatumHashNone
+ ```
+ - mint token sending it to your wallet address:
+ ```
+ $ export MAGIC=1097911063
+ $ git clone https://github.com/input-output-hk/cardano-node.git
+ $ cd cardano-node/scripts/plutus
+ $ cardano-cli query protocol-parameters --testnet-magic $MAGIC --out-file pparams.json
+ $ cardano-cli transaction build  \
+    --alonzo-era  \
+    --testnet-magic $MAGIC \
+    --change-address "addr_test1vzfq99mvg8lfxqa88t8d3hjxhl0w83g9c832cw269u6ht8sn5xkpl" \
+    --tx-in "76c3338240434a6990b8d6258eea0fe0b85c3d2ec9e8e541cd1a7cec4e76643b#0"  \
+    --tx-in-collateral "fe5c852ad7aba5f2ea2f4b9078a41626f67768e09180039c872e423468116409#0" \
+    --mint-redeemer-file "data/42.redeemer" \
+    --tx-out "addr_test1qqlgm2dh3vpv07cjfcyuu6vhaqhf8998qcx6s8ucpkly6f8l0dw5r75vk42mv3ykq8vyjeaanvpytg79xqzymqy5acmqtjmugu+1600000 + 1 $(cardano-cli transaction policyid --script-file scripts/anyone-can-mint.plutus).MillarCoin" \
+    --mint "1 $(cardano-cli transaction policyid --script-file scripts/anyone-can-mint.plutus).MillarCoin"  \
+    --mint-script-file "scripts/anyone-can-mint.plutus" \
+    --protocol-params-file pparams.json  \
+    --out-file plutusmint.body
+ $ cardano-cli transaction sign \
+   --tx-body-file plutusmint.body \
+   --testnet-magic $MAGIC \
+   --signing-key-file payment.skey \
+   --out-file plutusmint.tx
+ $ cardano-cli transaction submit --tx-file plutusmint.tx --testnet-magic $MAGIC
+ ```
+
+ 1. Add metadata entry to testnet metadata registry:
+
+ ```
+ $ git clone https://github.com/input-output-hk/metadata-registry-testnet.git
+ $ cd metadata-registry-testnet/registry
+ ```
+
+ ```
+ $ token-metadata-creator entry --init fda1b6b487bee2e7f64ecf24d24b1224342484c0195ee1b7b943db504d696c6c6172436f696e
+ $ token-metadata-creator entry fda1b6b487bee2e7f64ecf24d24b1224342484c0195ee1b7b943db504d696c6c6172436f696e \
+   --name "PlutusCoin" \
+   --description "Test Plutus token"
+ $ token-metadata-creator entry fda1b6b487bee2e7f64ecf24d24b1224342484c0195ee1b7b943db504d696c6c6172436f696e \
+   --ticker "PLT" \
+   --url "https://github.com/input-output-hk/offchain-metadata-tools/" \
+   --logo "/home/piotr/wb/offchain-metadata-tools/token-metadata-creator/test/testData/icon.png" \
+   --decimals 5 
+ $ token-metadata-creator entry fda1b6b487bee2e7f64ecf24d24b1224342484c0195ee1b7b943db504d696c6c6172436f696e --finalize
+ $ token-metadata-creator validate fda1b6b487bee2e7f64ecf24d24b1224342484c0195ee1b7b943db504d696c6c6172436f696e.json
+ [Info]    [Main.log#281] Wallet metadata validation successful!
+ ```
+
+ 2. Commit file and create PR on https://github.com/input-output-hk/metadata-registry-testnet.git
+
+ 3. Validate PR.
+ ```
+ $ metadata-validator-github --no-auth input-output-hk metadata-registry-testnet 94 --expect-branch master
+ [Info]    [Cardano.Metadata.Validation.GitHub.gitHubValidationRules#146] Validating 1 files.
+ [Info]    [Cardano.Metadata.Validation.GitHub.validatePRFile#198] Adding a record...
+ ```
+ 4. Merge PR.
+
+ 5. Check that metadata is displayed in cardano-wallet which holds tokens for which we defined metadata in metadata-registry:
+
+  - cardano-wallet must be started with `--token-metadata-server https://metadata.cardano-testnet.iohkdev.io/` parameter
+ ```
+ cardano-wallet serve
+   --node-socket ../node/node.socket \
+   --testnet testnet-byron-genesis.json  \
+   --token-metadata-server https://metadata.cardano-testnet.iohkdev.io/ \
+   --database ./wallet-db
+ ```
+
+ ```
+ curl -X GET http://localhost:8090/v2/wallets/1b0aa24994b4181e79116c131510f2abf6cdaa4f/assets | jq
+ ...
+   {
+     "asset_name": "4d696c6c6172436f696e",
+     "fingerprint": "asset17yzqcz2jlaq3aklshfh939ccz9pgxz04md8jl9",
+     "policy_id": "fda1b6b487bee2e7f64ecf24d24b1224342484c0195ee1b7b943db50",
+     "metadata": {
+       "url": "https://github.com/input-output-hk/offchain-metadata-tools/",
+       "name": "PlutusCoin",
+       "ticker": "PLT",
+       "logo": "...",
+       "description": "Test Plutus token",
+       "decimals": 5
+     }
+   },
+ ```
+
+### Add new metadata (for native tokens)
 
 0. Mint a new token on testnet, like https://github.com/input-output-hk/cardano-node/blob/master/scripts/byron-to-mary/mint.sh
 
