@@ -517,15 +517,21 @@ nicer name for your token.</p>
 the subject of our metadata. Our metadata will be keyed by the
 subject, so when querying a metadata service for the metadata of
 our asset, we will use the subject in our query.</p>
-<p>For phase-1 monetary scripts the standard for wallet metadata is
-that the subject is equal to the hash of the policy concatenated
-to the base16-encoded asset name (which can be empty).</p>
-<p>For phase-2 Plutus Smart-Contracts the subject is equal to the
+<p>For tokens minted using phase-1 monetary scripts the standard
+for metadata is that the subject is equal to the hash of the
+policy concatenated to the base16-encoded asset name (which can
+be empty).</p>
+<p>For tokens minted using phase-2 monetary scripts (Plutus) the
+standard for metadata is that the subject is equal to the hash
+of the Plutus minting policy concatenated to the base16-encoded
+asset name (which can be empty).</p>
+<p>For other Plutus Smart-Contracts the subject is equal to the
 blake2b-224 hash of the serialized Plutus script.</p>
 <p>We can obtain the hash of the policy like so:</p>
 <pre><code>export POLICY_ID=$(cardano-cli transaction policyid --script-file $SCRIPT)
 </code></pre>
-<p>where <code>$SCRIPT</code> is the location of the policy.json file.</p>
+<p>where <code>$SCRIPT</code> is the location of the policy.json file (or
+plutus-minting-policy.script).</p>
 <p>And the base16-encoding of the asset name like so:</p>
 <pre><code>export ASSET_NAME="quid"
 export ASSET_ENC=$(echo $ASSET_NAME | basenc --base16 | awk '{print tolower($0)}')
