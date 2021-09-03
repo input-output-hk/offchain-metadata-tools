@@ -503,7 +503,7 @@ And the base16-encoding of the asset name like so:
 
 #+BEGIN_SRC shell :tangle asset.sh :tangle-mode (identity #o755)
 export ASSET_NAME="quid"
-export ASSET_ENC=$(echo $ASSET_NAME | basenc --base16 | awk '{print tolower($0)}' | sed 's/..$//')
+export ASSET_ENC=$(echo -n $ASSET_NAME | basenc --base16 | awk '{print tolower($0)}')
 echo "Asset name '$ASSET_NAME' encoded as base16: '$ASSET_ENC'"
 #+END_SRC
 
