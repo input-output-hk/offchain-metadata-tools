@@ -534,7 +534,7 @@ blake2b-224 hash of the serialized Plutus script.</p>
 plutus-minting-policy.script).</p>
 <p>And the base16-encoding of the asset name like so:</p>
 <pre><code>export ASSET_NAME="quid"
-export ASSET_ENC=$(echo $ASSET_NAME | basenc --base16 | awk '{print tolower($0)}')
+export ASSET_ENC=$(echo -n $ASSET_NAME | basenc --base16 | awk '{print tolower($0)}')
 echo "Asset name '$ASSET_NAME' encoded as base16: '$ASSET_ENC'"
 </code></pre>
 <p>This makes our subject:</p>
