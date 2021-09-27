@@ -16,7 +16,12 @@ import Control.Concurrent.Chan
 import Control.Monad.IO.Class
     ( liftIO )
 import Control.Monad.Logger
-    ( runChanLoggingT, runStdoutLoggingT, unChanLoggingT )
+    ( LogLevel (LevelDebug)
+    , filterLogger
+    , runChanLoggingT
+    , runStdoutLoggingT
+    , unChanLoggingT
+    )
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.Text as T
 import qualified Database.Persist.Postgresql as Postgresql
@@ -41,7 +46,7 @@ main = do
   let pgConnString = pgConnectionString options
   putStrLn $ "Connecting to database using connection string: " <> BC.unpack pgConnString
 
-  runStdoutLoggingT $ do
+  runStdoutLoggingT $ filterLogger (\_ lvl -> lvl /= LevelDebug) $ do
     -- Create log channel
     logChan <- liftIO newChan
 
