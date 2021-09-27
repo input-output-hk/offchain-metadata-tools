@@ -38,6 +38,7 @@ import qualified Data.Map.Strict as M
 import Data.Pool
 import Data.Text
     ( Text )
+import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TLE
 import Data.Traversable
@@ -133,10 +134,7 @@ readBatch ks (KeyValue pool tableName) = do
       Just v  -> [v]
 
   where
-    toSqlList []     = "()"
-    toSqlList (x:xs) = foldr (\x' acc -> acc <> ", " <> toSqlKey x') ("(" <> toSqlKey x) xs <> ")"
-
-    toSqlKey x = "'" <> toJSONKeyText x <> "'"
+    toSqlList xs = "('" <> T.intercalate "','" (map toJSONKeyText xs) <> "')"
 
 write :: (ToJSONKey k, ToJSON v) => k -> v -> KeyValue k v -> IO ()
 write k v (KeyValue pool tableName) = withBackendFromPool pool $ do

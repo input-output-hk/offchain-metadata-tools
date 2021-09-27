@@ -9,10 +9,14 @@
 
 module Main where
 
+import Control.Concurrent
+    ( forkIO )
+import Control.Concurrent.Chan
+    ( newChan )
 import Control.Monad.IO.Class
     ( liftIO )
 import Control.Monad.Logger
-    ( runStdoutLoggingT )
+    ( runChanLoggingT, runStdoutLoggingT, unChanLoggingT )
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.Text as T
 import qualified Database.Persist.Postgresql as Postgresql
@@ -36,10 +40,18 @@ main = do
 
   let pgConnString = pgConnectionString options
   putStrLn $ "Connecting to database using connection string: " <> BC.unpack pgConnString
-  runStdoutLoggingT $
-    Postgresql.withPostgresqlPool pgConnString numDbConns $ \pool -> liftIO $ do
+
+  runStdoutLoggingT $ do
+    -- Create log channel
+    logChan <- liftIO newChan
+
+    -- Spawn server
+    _ <- liftIO $ forkIO $ runChanLoggingT logChan $ Postgresql.withPostgresqlPool pgConnString numDbConns $ \pool -> liftIO $ do
       putStrLn $ "Initializing table '" <> tableName <> "'."
       intf <- Store.postgresStore pool (T.pack tableName)
 
       putStrLn $ "Metadata server is starting on port " <> show port <> "."
       liftIO $ Warp.run port (webApp intf)
+
+    -- Logging in main thread
+    unChanLoggingT logChan
