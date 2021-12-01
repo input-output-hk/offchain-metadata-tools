@@ -20,7 +20,7 @@ It provides a reference implementation for [this draft CIP](https://github.com/m
 ## Disambiguation
 
 This metadata is used to describe "assets" (see
-[here](https://docs.cardano.org/en/latest/native-tokens/learn-about-native-tokens.html)).
+[here](https://docs.cardano.org/native-tokens/learn)).
 Assets, most-often known as tokens, are represented on-the-chain by
 their asset ID, which look something like this:
 "7c8d07d69639e9413dd637a1a815a7323c69c86abbafb66dbfdb1bb6". Asset IDs
