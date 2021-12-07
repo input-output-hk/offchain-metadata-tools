@@ -75,7 +75,7 @@ complexType =
   <*> Gen.map (Range.linear 0 20) ((,) <$> key <*> val)
 
 complexKey :: MonadGen m => m ComplexKey
-complexKey = unSubject <$> subject
+complexKey = Gen.text (Range.linear 1 255) Gen.alphaNum
 
 complexKeyVals :: MonadGen m => m [(ComplexKey, ComplexType)]
 complexKeyVals = Gen.list (Range.linear 0 20) ((,) <$> complexKey <*> complexType)

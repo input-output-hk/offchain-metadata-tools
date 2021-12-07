@@ -2,7 +2,7 @@ module Config where
 
 import Options.Applicative
 
-import Cardano.Metadata.Store.Postgres.Config
+import Cardano.Metadata.Store.File.Config
     ( Opts, parseOpts )
 
 opts :: ParserInfo Opts

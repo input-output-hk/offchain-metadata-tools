@@ -1,6 +1,6 @@
 cabal-version:       >=1.10
-name:                metadata-store-postgres
-version:             0.3.0.0
+name:                metadata-store-file
+version:             0.1.0.0
 author:              Samuel Evans-Powell
 maintainer:          mail@sevanspowell.net
 build-type:          Simple
@@ -9,34 +9,22 @@ extra-source-files:  CHANGELOG
 library
   hs-source-dirs:      src
 
-  exposed-modules:     Cardano.Metadata.Store.Postgres
-                       Cardano.Metadata.Store.Postgres.Config
+  exposed-modules:     Cardano.Metadata.Store.File
+                       Cardano.Metadata.Store.File.Config
 
   build-depends:       aeson
                      , base
                      , bytestring
-                     , casing
                      , containers
                      , directory
-                     , esqueleto
-                     , github-webhooks
-                     , lens
-                     , lens-aeson
                      , metadata-lib
-                     , monad-logger
                      , mtl
+                     , filepath
                      , optparse-applicative
-                     , persistent
-                     , persistent-postgresql
-                     , persistent-template
-                     , resource-pool
                      , safe-exceptions
                      , scientific
-                     , servant
-                     , servant-server
                      , text
                      , unordered-containers
-                     , wai
                      , warp
 
   ghc-options:          -Wall
@@ -63,17 +51,14 @@ test-suite integration-tests
                 , casing
                 , containers
                 , directory
-                , esqueleto
-                , github-webhooks
                 , hedgehog
                 , hspec
                 , http-client
                 , lens
                 , lens-aeson
                 , metadata-lib
-                , metadata-store-postgres
+                , metadata-store-file
                 , monad-logger
-                , persistent-postgresql
                 , mtl
                 , raw-strings-qq
                 , resource-pool
@@ -101,5 +86,3 @@ test-suite integration-tests
                         -Wredundant-constraints
                         -Wpartial-fields
                         -Wcompat
-
-  -- other-modules:    Test.Cardano.Metadata.Store.Postgres

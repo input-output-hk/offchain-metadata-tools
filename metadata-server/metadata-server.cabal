@@ -19,7 +19,7 @@ executable metadata-server
                      , lens
                      , lens-aeson
                      , metadata-lib
-                     , metadata-store-postgres
+                     , metadata-store-file
                      , monad-logger
                      , mtl
                      , persistent-postgresql
