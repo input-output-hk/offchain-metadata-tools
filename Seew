@@ -1,0 +1,26 @@
+{
+   7b28d1c960a06eaa8dd9ad5b306aaf83cb2e175b65f7902115cfe163: {
+      Seew: {
+         description: "",
+         files: [
+            {
+               mediaType: "image/png",
+               name: "Seew",
+               src: "ipfs://QmT8iGR5A18i6n6eYiJy1u4Z52XQQRdp5nxmpTbdg5U7C4"
+            }
+         ],
+         image: "ipfs://QmT8iGR5A18i6n6eYiJy1u4Z52XQQRdp5nxmpTbdg5U7C4",
+         mediaType: "image/png",
+         minting: {
+            blockchain: "cardano",
+            mintedBeforeSlotNumber: 50758458,
+            type: "time-lock-policy"
+         },
+         name: "Seew",
+         symbol: "Seew",
+         tokenType: "token",
+         totalSupply: 89000000
+      }
+   },
+   version: "1.0"
+}
