@@ -55,21 +55,26 @@ module Cardano.Metadata.Types
 import Cardano.Prelude
 
 import Cardano.Api
-    ( AsType (AsMaryEra, AsScriptInEra)
-    , MaryEra
+    ( MaryEra
     , PaymentExtendedKey
     , PaymentKey
     , Script (..)
     , ScriptHash
     , ScriptInEra (..)
+    , ScriptLanguageInEra (..)
     , SigningKey
-    , SimpleScript
     , SimpleScriptVersion (..)
-    , deserialiseFromCBOR
+    , TimeLocksSupported (..)
+    , adjustSimpleScriptVersion
     , hashScript
-    , serialiseToCBOR
     , serialiseToRawBytes
     , serialiseToRawBytesHex
+    )
+import Cardano.Api.Shelley
+    ( fromAllegraTimelock
+    , fromShelleyMultiSig
+    , toAllegraTimelock
+    , toShelleyMultiSig
     )
 import Cardano.Crypto.DSIGN
     ( DSIGNAlgorithm
@@ -87,47 +92,37 @@ import Cardano.Crypto.DSIGN
     )
 import Cardano.Crypto.Hash
     ( Blake2b_256, Hash, castHash, hashToBytes, hashWith )
+import Cardano.Ledger.BaseTypes ( StrictMaybe (..) )
+import Cardano.Ledger.Keys ( KeyHash (..), KeyRole (Witness) )
+import Cardano.Ledger.Pretty.Mary ( ppTimelock )
 import Cardano.Ledger.ShelleyMA.Timelocks
     ( Timelock (RequireAllOf, RequireAnyOf, RequireMOf, RequireSignature, RequireTimeExpire, RequireTimeStart)
     , ValidityInterval (..)
-    , ppTimelock
     )
-import Codec.Picture.Png
-    ( decodePng )
-import Control.Category
-    ( id )
-import Control.Monad.Fail
-    ( fail )
-import Data.Aeson
-    ( FromJSON (..), ToJSON (..), (.:), (.=) )
-import Data.Maybe
-    ( fromJust )
-import Network.URI
-    ( URI (..), parseAbsoluteURI )
-import Ouroboros.Consensus.Shelley.Eras
-    ( StandardCrypto )
-import Shelley.Spec.Ledger.BaseTypes
-    ( StrictMaybe (..) )
-import Shelley.Spec.Ledger.Keys
-    ( KeyHash (..), KeyRole (Witness) )
+import Codec.Picture.Png ( decodePng )
+import Control.Category ( id )
+import Control.Monad.Fail ( fail )
+import Data.Aeson ( FromJSON (..), ToJSON (..), (.:), (.=) )
+import Data.Maybe ( fromJust )
+import Network.URI ( URI (..), parseAbsoluteURI )
+import Ouroboros.Consensus.Shelley.Eras ( StandardCrypto )
 
 import qualified AesonHelpers
-import qualified Cardano.Api as Api
+import qualified Cardano.Api.Shelley as Api
+import qualified Cardano.Binary as CBOR
 import qualified Cardano.Crypto.Wallet as CC
-import qualified Codec.CBOR.Encoding as CBOR
-import qualified Codec.CBOR.Write as CBOR
+import qualified Cardano.Ledger.Keys as Shelley
+import qualified Cardano.Prelude as CBOR ( cborError )
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base16 as B16
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Char8 as B8
-import qualified Data.Sequence.Strict as Seq
+import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
-import qualified Shelley.Spec.Ledger.Keys as Shelley
-
 --
 -- Subject
 --
@@ -178,6 +173,51 @@ data Policy = Policy
     , getPolicy :: ScriptInEra MaryEra
     } deriving (Eq, Show)
 
+-- FIXME: obsolete serialization methods (cf. cardano-node#207936dafd0f352bafc89b6c4822a636e80a3f01):
+
+parseScriptJson :: Aeson.Value -> Aeson.Parser (ScriptInEra MaryEra)
+parseScriptJson v =
+    toMinimumSimpleScriptVersion
+             <$> parseJSON v
+        where
+          toMinimumSimpleScriptVersion s =
+            case adjustSimpleScriptVersion SimpleScriptV1 s of
+              Nothing -> ScriptInEra SimpleScriptV2InMary
+                                     (SimpleScript SimpleScriptV2 s)
+              Just s' -> ScriptInEra SimpleScriptV1InMary
+                                     (SimpleScript SimpleScriptV1 s')
+
+serialiseScriptToCBOR :: (ScriptInEra MaryEra) -> ByteString
+serialiseScriptToCBOR (ScriptInEra SimpleScriptV1InMary (SimpleScript _v s)) = CBOR.serializeEncoding' $
+       CBOR.encodeListLen 2
+    <> CBOR.encodeWord 0
+    <> CBOR.toCBOR (toShelleyMultiSig s)
+serialiseScriptToCBOR (ScriptInEra SimpleScriptV2InMary (SimpleScript _v s)) = CBOR.serializeEncoding' $
+       CBOR.encodeListLen 2
+    <> CBOR.encodeWord 1
+    <> CBOR.toCBOR (toAllegraTimelock s :: Timelock StandardCrypto)
+
+deserialiseScriptFromCBOR :: ByteString -> Either CBOR.DecoderError (ScriptInEra MaryEra)
+deserialiseScriptFromCBOR bs =
+    CBOR.decodeAnnotator "Script" decodeScript (LBS.fromStrict bs)
+      where
+        decodeScript :: CBOR.Decoder s (CBOR.Annotator (ScriptInEra MaryEra))
+        decodeScript = do
+          CBOR.decodeListLenOf 2
+          tag <- CBOR.decodeWord8
+
+          case tag of
+            0 -> fmap (fmap convert) CBOR.fromCBOR
+              where
+                convert = (ScriptInEra SimpleScriptV1InMary) . (SimpleScript SimpleScriptV1) . fromShelleyMultiSig
+            1 -> fmap (fmap convert) CBOR.fromCBOR
+              where
+                convert = (ScriptInEra SimpleScriptV2InMary) . (SimpleScript SimpleScriptV2) . (fromAllegraTimelock TimeLocksInSimpleScriptV2)
+
+            _ -> CBOR.cborError $ CBOR.DecoderErrorUnknownTag "Script" tag
+
+-- end FIXME
+
 instance WellKnownProperty Policy where
     wellKnownPropertyName _ =
         Property "policy"
@@ -188,17 +228,17 @@ instance WellKnownProperty Policy where
     parseWellKnown = \v -> parseAsText v <|> parseAsObject v
       where
         parseAsText = Aeson.withText "policy" validateMetadataPolicy
-        parseAsObject o = parseJSON o <&> \s -> Policy
-            { rawPolicy = T.decodeUtf8 $ B16.encode $ serialiseToCBOR s
+        parseAsObject o = parseScriptJson o <&> \s -> Policy
+            { rawPolicy = T.decodeUtf8 $ B16.encode $ serialiseScriptToCBOR s
             , getPolicy = s
             }
 
 prettyPolicy :: Policy -> Text
 prettyPolicy = \case
     Policy _ (ScriptInEra _ (SimpleScript SimpleScriptV1 s)) ->
-        show $ ppTimelock $ toAllegraTimelock s
+        show $ ppTimelock $ Api.toAllegraTimelock s
     Policy _ (ScriptInEra _ (SimpleScript SimpleScriptV2 s)) ->
-        show $ ppTimelock $ toAllegraTimelock s
+        show $ ppTimelock $ Api.toAllegraTimelock s
 #if !(MIN_VERSION_base(4,14,0))
     _ -> panic "impossible pattern match"
 #endif
@@ -226,9 +266,9 @@ evaluatePolicy
 evaluatePolicy (Policy _ script) sigs =
     case script of
         ScriptInEra _ (SimpleScript SimpleScriptV1 s) ->
-            evaluateScript $ toAllegraTimelock s
+            evaluateScript $ Api.toAllegraTimelock s
         ScriptInEra _ (SimpleScript SimpleScriptV2 s) ->
-            evaluateScript $ toAllegraTimelock s
+            evaluateScript $ Api.toAllegraTimelock s
 #if !(MIN_VERSION_base(4,14,0))
         _ -> panic "impossible pattern match"
 #endif
@@ -262,20 +302,6 @@ evaluatePolicy (Policy _ script) sigs =
         any (isValidScript vhks vi) xs
     isValidScript vhks vi (RequireMOf m xs) =
         m <= sum (fmap (\x -> if isValidScript vhks vi x then 1 else 0) xs)
-
--- | Conversion for the 'Timelock.Timelock' language that is shared between the
--- Allegra and Mary eras.
---
-toAllegraTimelock :: forall lang. SimpleScript lang -> Timelock StandardCrypto
-toAllegraTimelock = go
-  where
-    go :: SimpleScript lang -> Timelock StandardCrypto
-    go (Api.RequireSignature (Api.PaymentKeyHash kh)) = RequireSignature (Shelley.coerceKeyRole kh)
-    go (Api.RequireAllOf s) = RequireAllOf (Seq.fromList (map go s))
-    go (Api.RequireAnyOf s) = RequireAnyOf (Seq.fromList (map go s))
-    go (Api.RequireMOf m s) = RequireMOf m (Seq.fromList (map go s))
-    go (Api.RequireTimeBefore _ t) = RequireTimeExpire t
-    go (Api.RequireTimeAfter  _ t) = RequireTimeStart  t
 
 -- | "name" is a well-known property whose value must be a string
 newtype Name = Name { unName :: Text }
@@ -371,9 +397,10 @@ validateMetadataName :: MonadFail f => Text -> f Name
 validateMetadataName = fmap Name .
     (validateMinLength 1 >=> validateMaxLength 50)
 
+
 validateScriptInEra :: MonadFail f => ByteString -> f (ScriptInEra MaryEra)
 validateScriptInEra =
-    either (fail . show) pure . deserialiseFromCBOR (AsScriptInEra AsMaryEra)
+    either (fail . show) pure . deserialiseScriptFromCBOR
 
 validateMetadataPolicy :: MonadFail f => Text -> f Policy
 validateMetadataPolicy t = Policy t <$>

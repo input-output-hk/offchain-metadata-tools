@@ -17,7 +17,8 @@ let
   mkShell = name: project: project.shellFor rec {
     inherit name;
     packages = ps: lib.attrValues (selectProjectPackages ps);
-    buildInputs = (with pkgs; [
+    nativeBuildInputs = (with pkgs; [
+      cabalWrapped
       haskellPackages.ghcid
       git
       hlint
@@ -36,15 +37,6 @@ let
     inherit withHoogle;
 
     GIT_SSL_CAINFO = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
-
-    # If any build input has bash completions, add it to the search
-    # path for shell completions.
-    XDG_DATA_DIRS = lib.concatStringsSep ":" (
-      [(builtins.getEnv "XDG_DATA_DIRS")] ++
-      (lib.filter
-        (share: builtins.pathExists (share + "/bash-completion"))
-        (map (p: p + "/share") buildInputs))
-    );
 
     meta.platforms = lib.platforms.unix;
   };

@@ -48,14 +48,14 @@ in
             if ! test -e ${cfg.dataDir}/PG_VERSION; then
               # Cleanup the data directory.
               rm -f ${cfg.dataDir}/*.conf
-  
+
               # Initialise the database.
               initdb -U ${cfg.superUser} ${lib.concatStringsSep " " cfg.initdbArgs}
-  
+
               # See postStart!
               touch "${cfg.dataDir}/.first_startup"
             fi
-  
+
             ${lib.optionalString (cfg.recoveryConfig != null) ''
               ln -sfn "${pkgs.writeText "recovery.conf" cfg.recoveryConfig}" \
                 "${cfg.dataDir}/recovery.conf"
@@ -86,9 +86,6 @@ in
 
   testScript =
     ''
-    import json
-    import sys
-
     start_all()
 
     server.wait_for_unit("postgresql.service")

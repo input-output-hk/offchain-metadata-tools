@@ -33,9 +33,6 @@ in
 
   testScript =
     ''
-    import json
-    import sys
-
     start_all()
 
     server.succeed(

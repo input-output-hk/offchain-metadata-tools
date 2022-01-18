@@ -30,11 +30,15 @@ library
                , cardano-api
                , cardano-crypto
                , JuicyPixels
+               , cardano-ledger-core
                , cardano-ledger-shelley-ma
+               , cardano-ledger-pretty
                , ouroboros-consensus-shelley
-               , shelley-spec-ledger
+               , cardano-ledger-shelley
                , cardano-slotting
+               , cardano-binary
                , containers
+               , strict-containers
                , cborg
                , time
                , co-log

@@ -75,9 +75,6 @@ in
 
   testScript =
     ''
-    import json
-    import sys
-
     start_all()
 
     server.wait_for_open_port(${toString postgresPort})
