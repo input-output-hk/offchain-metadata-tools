@@ -37,7 +37,6 @@ library
                      , bytestring
                      , canonical-json
                      , cardano-api
-                     , cardano-api-test
                      , co-log
                      , filepath
                      , cardano-crypto
@@ -51,7 +50,7 @@ library
                      , github-webhooks
                      , hashable
                      , hedgehog
-                     , hspec
+                     , hspec <2.9
                      , http-api-data
                      , http-client
                      , http-types
@@ -113,7 +112,7 @@ test-suite unit-tests
                 , containers
                 , filepath
                 , hedgehog
-                , hspec
+                , hspec <2.9
                 , hspec-wai
                 , http-client
                 , http-types

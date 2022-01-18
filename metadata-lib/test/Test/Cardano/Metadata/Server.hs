@@ -26,6 +26,7 @@ import Network.Wai.Test
     ( SResponse )
 import Prelude hiding
     ( read )
+import Test.Hspec
 import Test.Hspec.Wai
 import Test.Tasty
     ( TestTree )

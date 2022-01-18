@@ -32,7 +32,7 @@ library
                , JuicyPixels
                , cardano-ledger-shelley-ma
                , ouroboros-consensus-shelley
-               , shelley-spec-ledger
+               , cardano-ledger-shelley
                , cardano-slotting
                , containers
                , cborg

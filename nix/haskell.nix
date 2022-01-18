@@ -17,7 +17,7 @@
 , borsBuild ? null
 # Version info, to be passed when not building from a git work tree
 , gitrev ? null
-, libsodium ? pkgs.libsodium
+, libsodium-vrf ? pkgs.libsodium-vrf
 }:
 let
   haskell = pkgs.haskell-nix;
@@ -31,7 +31,7 @@ let
 
   pkg-set = haskell-nix.cabalProject ({
     inherit src;
-    compiler-nix-name = "ghc8102";
+    compiler-nix-name = "ghc8107";
     modules = [
       # Add source filtering to local packages
       {
@@ -60,15 +60,15 @@ let
       # Enable profiling on executables if the profiling argument is set.
       (lib.optionalAttrs profiling {
         enableLibraryProfiling = true;
-        packages.metadata-server.components.exes.metadata-server.enableExecutableProfiling = true;
-        packages.metadata-webhook.components.exes.metadata-webhook.enableExecutableProfiling = true;
-        packages.metadata-sync.components.exes.metadata-sync.enableExecutableProfiling = true;
-        packages.metadata-validator-github.components.exes.metadata-validator-github.enableExecutableProfiling = true;
+        packages.metadata-server.components.exes.metadata-server.enableProfiling = true;
+        packages.metadata-webhook.components.exes.metadata-webhook.enableProfiling = true;
+        packages.metadata-sync.components.exes.metadata-sync.enableProfiling = true;
+        packages.metadata-validator-github.components.exes.metadata-validator-github.enableProfiling = true;
       })
 
       # Musl libc fully static build
       (lib.optionalAttrs stdenv.hostPlatform.isMusl (let
-        staticLibs = with pkgs; [ zlib openssl libffi gmp6 libsodium ];
+        staticLibs = with pkgs; [ zlib openssl libffi gmp6 libsodium-vrf ];
 
         # Module options which add GHC flags and libraries for a fully static build
         fullyStaticOptions = {
@@ -83,7 +83,6 @@ let
         packages.metadata-validator-github.components.tests.integration = fullyStaticOptions;
 
         # systemd can't be statically linked - disable lobemo-scribe-journal
-        packages.cardano-config.flags.systemd = false;
         packages.cardano-node.flags.systemd = false;
 
         # Haddock not working for cross builds and is not needed anyway
@@ -112,6 +111,11 @@ let
         packages.metadata-store-postgres.components.tests.integration-tests.doCheck = false;
         packages.metadata-sync.components.tests.integration-tests.doCheck = false;
       }
+      ({ pkgs, ... }: {
+        packages = lib.genAttrs [ "cardano-config" ] (_: {
+          components.library.build-tools = [ pkgs.buildPackages.buildPackages.gitMinimal ];
+        });
+      })
     ];
   });
 
@@ -133,12 +137,11 @@ let
   # setGitRev is a postInstall script to stamp executables with
   # version info. It uses the "gitrev" argument, if set. Otherwise,
   # the revision is sourced from the local git work tree.
-  setGitRev = ''${haskellBuildUtils}/bin/set-git-rev "${gitrev'}" $out/bin/*'';
+  setGitRev = ''${buildPackages.haskellBuildUtils}/bin/set-git-rev "${gitrev'}" $out/bin/*'';
   # package with libsodium:
-  setLibSodium = "ln -s ${libsodium}/bin/libsodium-23.dll $out/bin/libsodium-23.dll";
+  setLibSodium = "ln -s ${libsodium-vrf}/bin/libsodium-23.dll $out/bin/libsodium-23.dll";
   gitrev' = if (gitrev == null)
     then buildPackages.commonLib.commitIdFromGitRepoOrZero ../.git
     else gitrev;
-  haskellBuildUtils = buildPackages.haskellBuildUtils.package;
 in
   pkg-set

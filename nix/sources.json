@@ -5,10 +5,10 @@
         "homepage": "https://input-output-hk.github.io/haskell.nix",
         "owner": "input-output-hk",
         "repo": "haskell.nix",
-        "rev": "ebf59e4fc32b5e4bdef64b1f2bdf4e9733721533",
-        "sha256": "189fq5ijvbkh4i6a3fbl9blmjfllwq5ryhkkaajndbns4jvcdyg9",
+        "rev": "e3ff467e13d3803edec242c8368be2d7e134991b",
+        "sha256": "11m69ljrvvc26fk0s4zg5arhphxpvgvhdn0zw6qwyr30i5i0lpvp",
         "type": "tarball",
-        "url": "https://github.com/input-output-hk/haskell.nix/archive/ebf59e4fc32b5e4bdef64b1f2bdf4e9733721533.tar.gz",
+        "url": "https://github.com/input-output-hk/haskell.nix/archive/e3ff467e13d3803edec242c8368be2d7e134991b.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "iohk-nix": {
@@ -17,22 +17,10 @@
         "homepage": null,
         "owner": "input-output-hk",
         "repo": "iohk-nix",
-        "rev": "5b86d63a0b59b7666d19901b654d8fbde27d9500",
-        "sha256": "1mfb93nnw0x4gyq93v6lh6h7imliw4j0wp5l9gpdafy3rw621xzb",
+        "rev": "a878d7fe8607c762f2a961bc87f8882e0485d37a",
+        "sha256": "0bhjr7rwvxib0jmq31hxmisgmb3di2ml9p8s6lfg2j7x57c3c7fw",
         "type": "tarball",
-        "url": "https://github.com/input-output-hk/iohk-nix/archive/5b86d63a0b59b7666d19901b654d8fbde27d9500.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
-    "niv": {
-        "branch": "master",
-        "description": "Easy dependency management for Nix projects",
-        "homepage": "https://github.com/nmattia/niv",
-        "owner": "nmattia",
-        "repo": "niv",
-        "rev": "9d35b9e4837ab88517210b1701127612c260eccf",
-        "sha256": "0q50xhnm8g2yfyakrh0nly4swyygxpi0a8cb9gp65wcakcgvzvdh",
-        "type": "tarball",
-        "url": "https://github.com/nmattia/niv/archive/9d35b9e4837ab88517210b1701127612c260eccf.tar.gz",
+        "url": "https://github.com/input-output-hk/iohk-nix/archive/a878d7fe8607c762f2a961bc87f8882e0485d37a.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }
