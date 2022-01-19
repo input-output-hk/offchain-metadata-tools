@@ -171,6 +171,22 @@ describe("token-metadata-creator", () => {
       assert.equal(getDraft(alice).decimals.sequenceNumber, 1);
     });
 
+
+    it("Name length [2-9]", () => {
+      const ticker = `MILKSHAKE`;
+
+      cli(alice, "--ticker", ticker);
+
+      const empty = { sequenceNumber: 0, signatures: [] };
+      assert.deepEqual(getDraft(alice).ticker, { ...empty, value: ticker });
+
+      try {
+        cli(alice, "--ticker", `${ticker}+`)
+        assert.fail("should have thrown.");
+      } catch (e) {}
+    })
+
+
     it("Edit property on successive calls", () => {
       let name = "SuperCoin"
       cli(alice, "--name", "foo");

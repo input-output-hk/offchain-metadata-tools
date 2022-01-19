@@ -65,7 +65,7 @@ token-metadata-creator entry 19309eb9c066253cede617dc635223ace320ae0bbdd5bd19684
 | Field    | Details                                                               | Command          |
 | ---      | ---                                                                   | ---              |
 | `policy` | the exact script which hashes to the `policyId`                       | `--policy \| -p` |
-| `ticker` | between 2 and 5 UTF-8 characters                                      | `--ticker \| -t` |
+| `ticker` | between 2 and 9 UTF-8 characters                                      | `--ticker \| -t` |
 | `url`    | a valid https URI                                                     | `--url \| -h`    |
 | `logo`   | a PNG image file                                                      | `--logo \| -l`   |
 
