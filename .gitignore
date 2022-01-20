@@ -4,3 +4,4 @@ result*
 *.local
 *.local~
 TAGS
+token-metadata-creator/test/node_modules/

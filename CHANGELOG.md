@@ -1,5 +1,9 @@
 # Revision history for offchain-metadata-tools
 
+## 0.4.0.0 -- 2022-01-20
+
+* token-metadata-creator: Increased ticker max length from 5 to 9.
+
 ## 0.3.0.0 -- 2021-08-30
 
 * token-metadata-creator: Made "policy" field optional to support Plutus smart
