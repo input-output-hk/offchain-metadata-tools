@@ -30,7 +30,7 @@ in
         haskellPackages.metadata-webhook.components.exes.metadata-webhook
         vim
         jq
-        ngrok-2
+        # ngrok-2
       ];
 
       services.postgresql = {
