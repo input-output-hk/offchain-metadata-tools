@@ -2,8 +2,7 @@
 
 module Cardano.Metadata.Types.Weakly where
 
-import Data.Aeson
-    ( FromJSON, ToJSON, (.:) )
+import Data.Aeson ( FromJSON, ToJSON, (.:) )
 import qualified Data.Aeson as Aeson
 import qualified Data.HashMap.Strict as HM
 

@@ -13,22 +13,16 @@
 module Main where
 
 import Colog
-import Control.Monad.Except
-    ( ExceptT, MonadError, runExceptT )
-import Control.Monad.IO.Class
-    ( MonadIO, liftIO )
-import Control.Monad.Reader
-    ( MonadReader, ReaderT, runReaderT )
-import Data.Aeson
-    ( FromJSON )
+import Control.Monad.Except ( ExceptT, MonadError, runExceptT )
+import Control.Monad.IO.Class ( MonadIO, liftIO )
+import Control.Monad.Reader ( MonadReader, ReaderT, runReaderT )
+import Data.Aeson ( FromJSON )
 import qualified Data.Text as T
 import qualified Data.Vector as Vector
 import qualified GitHub
 import qualified Options.Applicative as Opt
-import Prelude hiding
-    ( log )
-import System.Exit
-    ( exitFailure, exitSuccess )
+import Prelude hiding ( log )
+import System.Exit ( exitFailure, exitSuccess )
 
 import Cardano.Metadata.Validation.GitHub
     ( PullRequestValidationError

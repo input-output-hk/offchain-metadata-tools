@@ -5,10 +5,8 @@ module Cardano.Metadata.Server.API where
 
 import Servant.API
 
-import Cardano.Metadata.Server.Types
-    ( BatchRequest, BatchResponse )
-import Cardano.Metadata.Types.Common
-    ( PropertyName, Subject )
+import Cardano.Metadata.Server.Types ( BatchRequest, BatchResponse )
+import Cardano.Metadata.Types.Common ( PropertyName, Subject )
 import qualified Cardano.Metadata.Types.Weakly as Weakly
 
 type MetadataServerAPI =

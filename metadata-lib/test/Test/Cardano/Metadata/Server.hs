@@ -10,33 +10,26 @@ module Test.Cardano.Metadata.Server
   ( tests
   ) where
 
-import Data.Aeson
-    ( ToJSON )
+import Data.Aeson ( ToJSON )
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy.Char8 as BLC
 import Data.Foldable
 import qualified Data.HashMap.Strict as HM
-import Data.String
-    ( fromString )
+import Data.String ( fromString )
 import qualified Data.Text as T
-import Network.HTTP.Types
-    ( hContentType, methodPost )
-import Network.Wai.Test
-    ( SResponse )
-import Prelude hiding
-    ( read )
+import Network.HTTP.Types ( hContentType, methodPost )
+import Network.Wai.Test ( SResponse )
+import Prelude hiding ( read )
 import Test.Hspec
 import Test.Hspec.Wai
-import Test.Tasty
-    ( TestTree )
+import Test.Tasty ( TestTree )
 import Test.Tasty.Hspec
 
 import Cardano.Metadata.Server
 import Cardano.Metadata.Server.Types
     ( BatchRequest (BatchRequest), BatchResponse (BatchResponse) )
-import Cardano.Metadata.Store.Simple
-    ( simpleStore )
+import Cardano.Metadata.Store.Simple ( simpleStore )
 import Cardano.Metadata.Store.Types
 import Cardano.Metadata.Types.Common
     ( AttestedProperty (AttestedProperty)

@@ -10,17 +10,14 @@ module Test.Cardano.Metadata.Server.Types
 import qualified Data.Aeson as Aeson
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Vector as V
-import Test.Tasty
-    ( TestTree, testGroup )
+import Test.Tasty ( TestTree, testGroup )
+import Test.Tasty.HUnit ( Assertion, testCase, (@?=) )
 import Test.Tasty.Hedgehog
-import Test.Tasty.HUnit
-    ( Assertion, testCase, (@?=) )
 import Text.RawString.QQ
 
 import Cardano.Metadata.Server.Types
 import qualified Cardano.Metadata.Types.Weakly as Weakly
-import Test.Cardano.Helpers
-    ( prop_json_only_has_keys, prop_json_roundtrips )
+import Test.Cardano.Helpers ( prop_json_only_has_keys, prop_json_roundtrips )
 import qualified Test.Cardano.Metadata.Generators as Gen
 
 tests :: TestTree

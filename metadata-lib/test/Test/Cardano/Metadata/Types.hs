@@ -7,38 +7,26 @@ module Test.Cardano.Metadata.Types
   ( tests
   ) where
 
-import Data.Aeson
-    ( FromJSON, ToJSON )
+import Data.Aeson ( FromJSON, ToJSON )
 import qualified Data.Aeson as Aeson
 import qualified Data.Bifunctor as Bifunctor
-import Data.ByteArray.Encoding
-    ( Base (Base16), convertToBase )
+import Data.ByteArray.Encoding ( Base (Base16), convertToBase )
 import qualified Data.ByteString.Lazy.Char8 as BLC
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
-import Hedgehog
-    ( Gen, forAll, property, (===) )
-import qualified Hedgehog as H
-    ( Property )
-import Hedgehog.Internal.Property
-    ( forAllT )
-import Test.Tasty
-    ( TestTree, testGroup )
+import Hedgehog ( Gen, forAll, property, (===) )
+import qualified Hedgehog as H ( Property )
+import Hedgehog.Internal.Property ( forAllT )
+import Test.Tasty ( TestTree, testGroup )
+import Test.Tasty.HUnit ( Assertion, testCase, (@?=) )
 import Test.Tasty.Hedgehog
-import Test.Tasty.HUnit
-    ( Assertion, testCase, (@?=) )
-import Text.RawString.QQ
-    ( r )
-import Text.Read
-    ( readEither )
+import Text.RawString.QQ ( r )
+import Text.Read ( readEither )
 
 import Cardano.Crypto.DSIGN
 import Test.Cardano.Helpers
-    ( prop_json_only_has_keys
-    , prop_json_roundtrips
-    , prop_read_show_roundtrips
-    )
+    ( prop_json_only_has_keys, prop_json_roundtrips, prop_read_show_roundtrips )
 import qualified Test.Cardano.Metadata.Generators as Gen
 
 import Cardano.Metadata.Types.Common

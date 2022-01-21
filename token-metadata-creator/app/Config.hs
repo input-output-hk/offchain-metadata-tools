@@ -19,18 +19,12 @@ import Cardano.Metadata.GoguenRegistry
     ( GoguenRegistryEntry (..), PartialGoguenRegistryEntry )
 import Cardano.Metadata.Types
     ( Subject (..), WellKnownProperty (..), emptyAttested )
-import Colog
-    ( pattern D, pattern E, pattern I, Severity, pattern W )
-import Control.Applicative
-    ( empty, optional, (<|>) )
-import Data.Foldable
-    ( asum )
-import Data.List
-    ( isSuffixOf )
-import Data.Text
-    ( Text )
-import Data.Void
-    ( Void )
+import Colog ( Severity, pattern D, pattern E, pattern I, pattern W )
+import Control.Applicative ( empty, optional, (<|>) )
+import Data.Foldable ( asum )
+import Data.List ( isSuffixOf )
+import Data.Text ( Text )
+import Data.Void ( Void )
 import qualified Options.Applicative as OA
 
 import qualified Data.Aeson as Aeson

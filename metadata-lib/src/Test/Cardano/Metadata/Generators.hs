@@ -9,34 +9,26 @@ import qualified Cardano.Crypto.DSIGN.Class as Crypto
 import qualified Cardano.Crypto.DSIGN.Ed25519 as Crypto
 import qualified Cardano.Crypto.Seed as Crypto
 import Control.Monad.Except
-import Control.Monad.Morph
-    ( hoist )
+import Control.Monad.Morph ( hoist )
 import qualified Data.Aeson as Aeson
 import Data.Aeson.TH
-import Data.Functor.Identity
-    ( runIdentity )
+import Data.Functor.Identity ( runIdentity )
 import qualified Data.HashMap.Strict as HM
-import Data.Int
-    ( Int32, Int64 )
-import Data.List
-    ( intersperse )
+import Data.Int ( Int32, Int64 )
+import Data.List ( intersperse )
 import qualified Data.Map.Strict as M
-import Data.Text
-    ( Text )
+import Data.Text ( Text )
 import qualified Data.Text as T
 import qualified Data.Vector as V
 import Data.Word
-import Hedgehog
-    ( Gen, MonadGen, Opaque (Opaque), fromGenT )
+import Hedgehog ( Gen, MonadGen, Opaque (Opaque), fromGenT )
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
-import Network.URI
-    ( URI (URI), URIAuth (URIAuth) )
+import Network.URI ( URI (URI), URIAuth (URIAuth) )
 
 import Cardano.Metadata.Server.Types
     ( BatchRequest (BatchRequest), BatchResponse (BatchResponse) )
-import Cardano.Metadata.Transform
-    ( Transform, mkTransform )
+import Cardano.Metadata.Transform ( Transform, mkTransform )
 import Cardano.Metadata.Types.Common
     ( AnnotatedSignature
     , AttestedProperty (AttestedProperty)

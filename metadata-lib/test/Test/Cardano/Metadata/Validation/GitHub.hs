@@ -11,20 +11,15 @@ module Test.Cardano.Metadata.Validation.GitHub
   ( tests
   ) where
 
-import Colog
-    ( LoggerT (LoggerT), Message, runLoggerT, usingLoggerT )
+import Colog ( LoggerT (LoggerT), Message, runLoggerT, usingLoggerT )
 import Control.Monad.Except
     ( Except, MonadError, catchError, lift, runExcept, throwError )
-import Data.Foldable
-    ( traverse_ )
-import Hedgehog
-    ( forAll, property, (===) )
-import qualified Hedgehog as H
-    ( Property )
+import Data.Foldable ( traverse_ )
+import Hedgehog ( forAll, property, (===) )
+import qualified Hedgehog as H ( Property )
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
-import Test.Tasty
-    ( TestTree, testGroup )
+import Test.Tasty ( TestTree, testGroup )
 import Test.Tasty.Hedgehog
 
 import qualified Test.Cardano.Metadata.Generators as Gen

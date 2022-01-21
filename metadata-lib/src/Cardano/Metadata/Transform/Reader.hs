@@ -11,11 +11,9 @@ module Cardano.Metadata.Transform.Reader
   , withInput
   ) where
 
-import Control.Applicative
-    ( Alternative )
+import Control.Applicative ( Alternative )
 import Control.Comonad
-import Control.Monad.Reader
-    ( ReaderT (ReaderT) )
+import Control.Monad.Reader ( ReaderT (ReaderT) )
 
 newtype Transform r f a = Transform (r -> f a)
   deriving (Functor, Applicative, Alternative, Monad)

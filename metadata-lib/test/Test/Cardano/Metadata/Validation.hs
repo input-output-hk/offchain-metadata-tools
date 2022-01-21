@@ -10,40 +10,27 @@ module Test.Cardano.Metadata.Validation
 
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Encode.Pretty as Aeson
-import Data.Aeson.QQ
-    ( aesonQQ )
+import Data.Aeson.QQ ( aesonQQ )
 import qualified Data.ByteString.Lazy as BSL
-import Data.Foldable
-    ( forM_, traverse_ )
-import Data.Int
-    ( Int32, Int64, Int8 )
+import Data.Foldable ( forM_, traverse_ )
+import Data.Int ( Int32, Int64, Int8 )
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
-import Data.Validation
-    ( Validation (Failure) )
-import Hedgehog
-    ( MonadGen, forAll, property, (===) )
-import qualified Hedgehog as H
-    ( Property )
+import Data.Validation ( Validation (Failure) )
+import Hedgehog ( MonadGen, forAll, property, (===) )
+import qualified Hedgehog as H ( Property )
 import qualified Hedgehog.Gen as Gen
-import Hedgehog.Internal.Property
-    ( forAllT )
+import Hedgehog.Internal.Property ( forAllT )
 import qualified Hedgehog.Range as Range
-import Numeric.Natural
-    ( Natural )
-import System.FilePath.Posix
-    ( addExtension, dropExtension, takeExtension )
-import Test.Tasty
-    ( TestTree, testGroup )
+import Numeric.Natural ( Natural )
+import System.FilePath.Posix ( addExtension, dropExtension, takeExtension )
+import Test.Tasty ( TestTree, testGroup )
+import Test.Tasty.HUnit ( Assertion, testCase, (@?=) )
 import Test.Tasty.Hedgehog
-import Test.Tasty.HUnit
-    ( Assertion, testCase, (@?=) )
-import Text.RawString.QQ
-    ( r )
+import Text.RawString.QQ ( r )
 
-import Test.Cardano.Helpers
-    ( prop_json_roundtrips )
+import Test.Cardano.Helpers ( prop_json_roundtrips )
 import qualified Test.Cardano.Metadata.Generators as Gen
 
 import Cardano.Metadata.Types.Common

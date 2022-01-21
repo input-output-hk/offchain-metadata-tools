@@ -10,20 +10,16 @@ module Cardano.Metadata.Server
   , MetadataServerAPI
   ) where
 
-import Control.Exception.Safe
-    ( catchAny )
-import Control.Monad.IO.Class
-    ( liftIO )
+import Control.Exception.Safe ( catchAny )
+import Control.Monad.IO.Class ( liftIO )
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Char8 as BLC
 import qualified Data.HashMap.Strict as HM
-import Data.Text
-    ( Text )
+import Data.Text ( Text )
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TLE
-import Prelude hiding
-    ( read )
+import Prelude hiding ( read )
 import Servant
 
 import Cardano.Metadata.Server.API
