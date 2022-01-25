@@ -144,8 +144,9 @@ cardano-cli can communicate with the node:</p>
 </code></pre>
 <p>We also need to set the network ID to use in subsequent
 cardano-cli commmands. This will vary depending on whether or
-not you\'re working on a testnet (<code>--testnet-magic ...</code>) or
-mainnet (<code>--mainnet</code>). Set it appropriately.</p>
+not you\'re working on a testnet
+(<code>--testnet-magic ...</code>{.verbatim}) or mainnet
+(<code>--mainnet</code>{.verbatim}). Set it appropriately.</p>
 <pre><code>export NETWORK_ID="--testnet-magic 1097911063"
 </code></pre>
 <p>Note that if you do set it incorrectly the cardano-cli will give
@@ -163,7 +164,7 @@ continue.</p>
 </code></pre>
 <p>That means you chose the wrong network magic (3) and need to
 change your network magic to \"1097911063\" (i.e. use
-\"<code>--testnet-magic 1097911063</code>\")</p>
+\"<code>--testnet-magic 1097911063</code>{.verbatim}\")</p>
 </li>
 <li>
 <p>Funding an address</p>
@@ -171,7 +172,8 @@ change your network magic to \"1097911063\" (i.e. use
 regular transactions require fees! So the first thing we\'ll
 need to do is find (or create) an address with some funds. If
 you already have an address with some funds, feel free to use
-that and skip to <em>the next section</em>, but set the <code>PAYMENT_ADDR</code>
+that and skip to [<em>the next section</em>]{.spurious-link
+target="* Choosing a UTxO"}, but set the <code>PAYMENT_ADDR</code>
 environment variable accordingly.</p>
 <p>We\'ll create our payment keys and address:</p>
 <pre><code>echo
@@ -679,7 +681,8 @@ Yoroi, and other products that use this metadata.</p>
 <h3 id="running-your-own-metadata-system">Running your own metadata system<a class="headerlink" href="#running-your-own-metadata-system" title="Permanent link">&para;</a></h3>
 <p>The metadata system is made up of a few components, each of which we
 will set up separately. To get a visual overview of what we will be
-creating, you can refer to the <em>Structure diagram</em>.</p>
+creating, you can refer to the [<em>Structure diagram</em>]{.spurious-link
+target="structure-diagram"}.</p>
 <p>We need to:</p>
 <ul>
 <li>Set up a Postgres DB to store metadata</li>
@@ -1062,8 +1065,12 @@ the webhook settings page.</p>
 <p>Pull request validation</p>
 <p>Letting just anyone commit metadata to your repository is likely
 not what you want. We recommend accepting pull requests to your
-repository and using <em>metadata-validator-github</em> and
-<em>token-metadata-creator</em> to automate some of the vetting of PRs.</p>
+repository and using
+[<em>metadata-validator-github</em>]{.spurious-link
+target="<em> metadata-validator-github"} and
+[</em>token-metadata-creator<em>]{.spurious-link
+target="</em>token-metadata-creator"} to automate some of the
+vetting of PRs.</p>
 <p>One easy way to do this is with GitHub actions. Create the
 following file in your repository:</p>
 <pre><code>mkdir -p .github/workflows
@@ -1074,12 +1081,17 @@ touch .github/workflows/ci.yaml
 This should always be the most up-to-date version of the PR
 validation script that we use.</p>
 <p>This script will automatically fetch the latest versions of the
-<em>metadata-validator-github</em> and <em>token-metadata-creator</em> tools
-and run them on every PR to your repository.</p>
+[<em>metadata-validator-github</em>]{.spurious-link
+target="<em>metadata-validator-github"} and
+[</em>token-metadata-creator<em>]{.spurious-link
+target="</em>token-metadata-creator"} tools and run them on every PR
+to your repository.</p>
 <p>By default, the validation script ensures that metadata files
 are written to the \"mappings\" directory, so when adding
 metadata from now on, make sure to add it to the \"mappings\"
-directory. See <em>here</em> for an explanation of why this is.</p>
+directory. See [<em>here</em>]{.spurious-link
+target="* Why are metadata entries kept in a separate directory (e.g. \"mappings\")?"}
+for an explanation of why this is.</p>
 <p>Congratulations on setting up your own metadata system!</p>
 </li>
 </ol>
@@ -1087,10 +1099,11 @@ directory. See <em>here</em> for an explanation of why this is.</p>
 </ul>
 <h2 id="how-to">How-to<a class="headerlink" href="#how-to" title="Permanent link">&para;</a></h2>
 <h3 id="set-up-the-nix-cache">Set up the Nix cache<a class="headerlink" href="#set-up-the-nix-cache" title="Permanent link">&para;</a></h3>
-<p>For both building with <code>nix-build</code> and using <code>nix-shell</code>, it might take
-a very long time if you do not have the Cardano binary cache set up.
-Adding the IOHK binary cache to your Nix configuration will speed up
-builds a lot, since many things will have been built already by our CI.</p>
+<p>For both building with <code>nix-build</code>{.verbatim} and using
+<code>nix-shell</code>{.verbatim}, it might take a very long time if you do not
+have the Cardano binary cache set up. Adding the IOHK binary cache to
+your Nix configuration will speed up builds a lot, since many things
+will have been built already by our CI.</p>
 <p>If you find you are building packages that are not defined in this
 repository, or if the build seems to take a very long time then you may
 not have this set up properly.</p>
@@ -1115,19 +1128,22 @@ trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=
 <ol>
 <li>
 <p>Using Nix</p>
-<p>From the root directory of the project <code>nix-build -A project</code> will
-build all project components, including test suites.</p>
-<p>To build a particular executable, say <code>token-metadata-creator</code>, use
-<code>nix-build -A token-metadata-creator</code>.</p>
-<p>To enter a development shell, use <code>nix-shell default.nix -A shell</code>.
-This will enter a development shell for which
+<p>From the root directory of the project
+<code>nix-build -A project</code>{.verbatim} will build all project components,
+including test suites.</p>
+<p>To build a particular executable, say
+<code>token-metadata-creator</code>{.verbatim}, use
+<code>nix-build -A token-metadata-creator</code>{.verbatim}.</p>
+<p>To enter a development shell, use
+<code>nix-shell default.nix -A shell</code>{.verbatim}. This will enter a
+development shell for which
 <a href="https://github.com/input-output-hk/haskell.nix/">haskell.nix</a>
 provides all dependencies.</p>
 <p>To enter a development shell with a compiler, build tools, and
 system libraries, but without Haskell packages, use
 <code>nix-shell default.nix -A
-cabal-shell</code>. You can then use cabal to build all Haskell package
-dependencies.</p>
+cabal-shell</code>{.verbatim}. You can then use cabal to build all Haskell
+package dependencies.</p>
 </li>
 </ol>
 <h3 id="make-a-release">Make a release<a class="headerlink" href="#make-a-release" title="Permanent link">&para;</a></h3>
@@ -1138,9 +1154,9 @@ dependencies.</p>
 <ul>
 <li>[ ] Update the versions of all sub-projects.</li>
 <li>[ ] Update the CHANGELOG.</li>
-<li>[ ] Ensure that a new version of the api docs have been
-    created under a new folder, and the symbolic link at
-    docs/api/latest has been updated.</li>
+<li>[ ] Ensure that a new version of the api docs have been created
+    under a new folder, and the symbolic link at docs/api/latest has
+    been updated.</li>
 <li>[ ] Deploy offchain-metadata-tools to testnet such that
     metadata-server is available at
     <a href="https://metadata.cardano-testnet.iohkdev.io/">https://metadata.cardano-testnet.iohkdev.io/</a> and new metadata
@@ -1168,12 +1184,12 @@ testnet infrastructure prior to the release so e2e acceptance tests
 can be executed./</p>
 <ul>
 <li>
-<p>[ ] Verify the release notes point to relevant API
-    documentation and manual.</p>
+<p>[ ] Verify the release notes point to relevant API documentation
+    and manual.</p>
 </li>
 <li>
 <p>[ ] Download release artifacts from the release page and make
-    them available on <code>$PATH</code>.</p>
+    them available on <code>$PATH</code>{.verbatim}.</p>
 </li>
 <li>
 <p>[ ] Go over e2e acceptance tests ->
@@ -1218,23 +1234,29 @@ API.</p>
 <li>
 <p>Cardano.Metadata.Server.Types</p>
 <p>Types required to define the API specified in
-<em>Cardano.Metadata.Server.API</em>.</p>
+[<em>Cardano.Metadata.Server.API</em>]{.spurious-link
+target="*Cardano.Metadata.Server.API"}.</p>
 </li>
 <li>
 <p>Cardano.Metadata.Server</p>
 <p>The logic of the metadata-server, and a web application. The
-application issues read commands to a <em>StoreInterface</em>, which
-determines how reading is actually performed.</p>
+application issues read commands to a
+[<em>StoreInterface</em>]{.spurious-link
+target="*Cardano.Metadata.Store.Types"}, which determines how
+reading is actually performed.</p>
 </li>
 <li>
 <p>Cardano.Metadata.Store.Types</p>
 <p>Defines the interface for reading/writing/deleting/updating the
 storage layer of the metadata-server. Implementations must pass
-the set of tests specified in <em>Test.Cardano.Metadata.Store</em>.</p>
+the set of tests specified in
+[<em>Test.Cardano.Metadata.Store</em>]{.spurious-link
+target="*Test.Cardano.Metadata.Store"}.</p>
 </li>
 <li>
 <p>Cardano.Metadata.Store.Simple</p>
-<p>A simple implementation of the <em>above</em>, used only for testing.</p>
+<p>A simple implementation of the [<em>above</em>]{.spurious-link
+target="*Cardano.Metadata.Store.Types"}, used only for testing.</p>
 </li>
 <li>
 <p>Cardano.Metadata.Types.Common</p>
@@ -1261,7 +1283,8 @@ monadic/applicative style in a way that makes sense.</p>
 </li>
 <li>
 <p>Cardano.Metadata.Transform.Reader</p>
-<p>An implementation of the <em>above</em>.</p>
+<p>An implementation of the [<em>above</em>]{.spurious-link
+target="*Cardano.Metadata.Transform"}.</p>
 </li>
 <li>
 <p>Cardano.Metadata.Validation.Rules</p>
@@ -1285,13 +1308,18 @@ metadata storage layer.</p>
 </li>
 <li>
 <p>Cardano.Metadata.Webhook.Types</p>
-<p>Types used to define the <em>above</em> and to decode JSON events from
-GitHub.</p>
+<p>Types used to define the [<em>above</em>]{.spurious-link
+target="*Cardano.Metadata.Webhook.API"} and to decode JSON
+events from GitHub.</p>
 </li>
 <li>
 <p>Cardano.Metadata.Webhook.Server</p>
-<p>Implementation of the <em>webhook API</em>. Like the <em>metadata-server</em>,
-is also defined against an <em>interface to the storage layer</em>.</p>
+<p>Implementation of the [<em>webhook API</em>]{.spurious-link
+target="<em>Cardano.Metadata.Webhook.API"}. Like the
+[</em>metadata-server<em>]{.spurious-link
+target="</em>Cardano.Metadata.Server"}, is also defined against an
+[<em>interface to the storage layer</em>]{.spurious-link
+target="*Cardano.Metadata.Store.Types"}.</p>
 </li>
 <li>
 <p>Test.Cardano.Helpers</p>
@@ -1304,16 +1332,18 @@ is also defined against an <em>interface to the storage layer</em>.</p>
 <li>
 <p>Test.Cardano.Metadata.Store</p>
 <p>A set of property tests that implementations of the
-<em>StoreInterfaces</em> should pass to be considered valid
-implementations.</p>
+[<em>StoreInterfaces</em>]{.spurious-link
+target="*Cardano.Metadata.Store.Types"} should pass to be
+considered valid implementations.</p>
 </li>
 </ol>
 </li>
 <li>
 <p>metadata-server</p>
 <p>Service that provides read-only access to metadata, keyed by
-metadata subject and optionally, property name. Uses a <em>Postgres
-database as the storage layer</em>.</p>
+metadata subject and optionally, property name. Uses a [<em>Postgres
+database as the storage layer</em>]{.spurious-link
+target="*metadata-store-postgres"}.</p>
 </li>
 <li>
 <p>metadata-validator-github</p>
@@ -1327,7 +1357,8 @@ database as the storage layer</em>.</p>
 <li>
 <p>metadata-store-postgres</p>
 <p>Haskell library that provides a Postgres implementation of the
-<em>interface to the metadata storage layer</em>.</p>
+[<em>interface to the metadata storage layer</em>]{.spurious-link
+target="*Cardano.Metadata.Store.Types"}.</p>
 </li>
 <li>
 <p>metadata-webhook</p>
@@ -1377,8 +1408,9 @@ format:</p>
 ​#+END_SRC
 </code></pre>
 <p>This introduces a source code block (of type \"shell\" or \"bash\") that
-when tangled, is written out to a file called <code>no-nix-setup.sh</code> with
-0755 permissions (<code>rwx/r-x/r-x</code>).</p>
+when tangled, is written out to a file called
+<code>no-nix-setup.sh</code>{.verbatim} with 0755 permissions
+(<code>rwx/r-x/r-x</code>{.verbatim}).</p>
 <p>A <a href="default.nix">Nix derivation</a> calls emacs and tangles this
 documentation file, producing various scripts specified by the source
 code blocks. These are our documentation scripts.</p>
@@ -1388,7 +1420,7 @@ to run the scripts in a minimal environment and ensure that they pass.</p>
 with (from the root directory of this project):</p>
 <pre><code>nix-build default.nix -A docScripts
 </code></pre>
-<p>and find them in <code>./result/bin/*</code>.</p></div>
+<p>and find them in <code>./result/bin/*</code>{.verbatim}.</p></div>
         </div>
 
         <footer class="col-md-12">
