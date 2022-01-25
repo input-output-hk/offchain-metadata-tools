@@ -10,16 +10,6 @@ steps:
       system: x86_64-linux
     branches: "master"
 
-  - label: 'Check that jobset will evaluate in Hydra'
-    command:
-      - nix-build -A maintainer-scripts.check-hydra -o check-hydra.sh
-      - ./check-hydra.sh 0
-      - ./check-hydra.sh 1
-      - ./check-hydra.sh 2
-      - ./check-hydra.sh 3
-    agents:
-      system: x86_64-linux
-
   - label: 'Check Stylish Haskell'
     command: 'nix-shell --run .buildkite/check-stylish.sh'
     agents:

@@ -15,7 +15,6 @@ import Cardano.Metadata.Types
     , Decimals (..)
     , Description (..)
     , Logo (..)
-    , Logo (..)
     , Name (..)
     , Policy (..)
     , Property (..)
@@ -30,10 +29,8 @@ import Cardano.Metadata.Types
     , verifyAttested
     , verifyPolicy
     )
-import Control.Arrow
-    ( left )
-import Data.Aeson
-    ( ToJSON (..), (.:?), (.=) )
+import Control.Arrow ( left )
+import Data.Aeson ( ToJSON (..), (.:?), (.=) )
 
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson

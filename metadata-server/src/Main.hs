@@ -9,12 +9,9 @@
 
 module Main where
 
-import Control.Concurrent
-    ( forkIO )
-import Control.Concurrent.Chan
-    ( newChan )
-import Control.Monad.IO.Class
-    ( liftIO )
+import Control.Concurrent ( forkIO )
+import Control.Concurrent.Chan ( newChan )
+import Control.Monad.IO.Class ( liftIO )
 import Control.Monad.Logger
     ( LogLevel (LevelDebug)
     , filterLogger
@@ -28,13 +25,10 @@ import qualified Database.Persist.Postgresql as Postgresql
 import qualified Network.Wai.Handler.Warp as Warp
 import qualified Options.Applicative as Opt
 
-import Cardano.Metadata.Server
-    ( webApp )
+import Cardano.Metadata.Server ( webApp )
 import qualified Cardano.Metadata.Store.Postgres as Store
-import Cardano.Metadata.Store.Postgres.Config
-    ( Opts (..), pgConnectionString )
-import Config
-    ( opts )
+import Cardano.Metadata.Store.Postgres.Config ( Opts (..), pgConnectionString )
+import Config ( opts )
 
 main :: IO ()
 main = do

@@ -32,25 +32,17 @@ module Cardano.Metadata.Validation.Rules
   ) where
 
 import qualified Data.Aeson as Aeson
-import Data.Bool
-    ( bool )
-import Data.Foldable
-    ( traverse_ )
-import Data.Function
-    ( (&) )
-import Data.List.NonEmpty
-    ( NonEmpty )
+import Data.Bool ( bool )
+import Data.Foldable ( traverse_ )
+import Data.Function ( (&) )
+import Data.List.NonEmpty ( NonEmpty )
 import qualified Data.Map.Merge.Strict as M
 import qualified Data.Map.Strict as M
-import Data.Text
-    ( Text )
+import Data.Text ( Text )
 import qualified Data.Text as T
-import Data.Validation
-    ( Validation )
-import Data.Void
-    ( Void, absurd )
-import Numeric.Natural
-    ( Natural )
+import Data.Validation ( Validation )
+import Data.Void ( Void, absurd )
+import Numeric.Natural ( Natural )
 
 import Cardano.Metadata.Transform
 import qualified Cardano.Metadata.Transform as Transform

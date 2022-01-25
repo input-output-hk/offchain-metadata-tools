@@ -2,15 +2,11 @@
 module Cardano.Metadata.Store.Simple where
 
 import Control.Concurrent.MVar
-import Data.Functor
-    ( void )
-import Data.Map.Strict
-    ( Map )
+import Data.Functor ( void )
+import Data.Map.Strict ( Map )
 import qualified Data.Map.Strict as Map
-import Data.Maybe
-    ( catMaybes )
-import Prelude hiding
-    ( init, read )
+import Data.Maybe ( catMaybes )
+import Prelude hiding ( init, read )
 
 import Cardano.Metadata.Store.Types
 

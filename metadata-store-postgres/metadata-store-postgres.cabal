@@ -47,7 +47,7 @@ library
                         -Wpartial-fields
                         -Wcompat
 
-test-suite integration-tests 
+test-suite integration-tests
   hs-source-dirs:       test
   main-is:              Main.hs
   type:                 exitcode-stdio-1.0
@@ -65,7 +65,7 @@ test-suite integration-tests
                 , esqueleto
                 , github-webhooks
                 , hedgehog
-                , hspec
+                , hspec <2.9
                 , http-client
                 , lens
                 , lens-aeson

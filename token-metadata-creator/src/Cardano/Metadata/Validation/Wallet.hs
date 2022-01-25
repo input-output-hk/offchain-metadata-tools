@@ -12,24 +12,17 @@ module Cardano.Metadata.Validation.Wallet
   , walletValidation
   ) where
 
-import Cardano.Metadata.GoguenRegistry
-    ( parseRegistryEntry, validateEntry )
-import Cardano.Metadata.Types.Common
-    ( File, fileContents )
+import Cardano.Metadata.GoguenRegistry ( parseRegistryEntry, validateEntry )
+import Cardano.Metadata.Types.Common ( File, fileContents )
 import Cardano.Metadata.Validation.Rules
     ( Transform, ValidationError (ErrorCustom), defaultRules, mkTransform )
 import Cardano.Metadata.Validation.Types
     ( Difference (Added, Changed, Removed), invalid, valid )
-import qualified Cardano.Metadata.Validation.Types as Common
-    ( Metadata )
-import Data.List.NonEmpty
-    ( NonEmpty )
-import Data.Text
-    ( Text )
-import Data.Validation
-    ( Validation )
-import Prelude hiding
-    ( log )
+import qualified Cardano.Metadata.Validation.Types as Common ( Metadata )
+import Data.List.NonEmpty ( NonEmpty )
+import Data.Text ( Text )
+import Data.Validation ( Validation )
+import Prelude hiding ( log )
 
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson

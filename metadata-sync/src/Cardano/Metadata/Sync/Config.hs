@@ -2,25 +2,20 @@
 
 module Cardano.Metadata.Sync.Config where
 
-import Control.Exception
-    ( bracket )
+import Control.Exception ( bracket )
 import qualified Data.ByteString.Char8 as BC
-import Data.Pool
-    ( Pool, createPool, destroyAllResources )
+import Data.Pool ( Pool, createPool, destroyAllResources )
 import qualified Data.Pool as Pool
-import Data.Text
-    ( Text )
+import Data.Text ( Text )
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
-import Data.Time.Clock
-    ( NominalDiffTime )
-import Database.PostgreSQL.Simple
-    ( Connection )
+import Data.Time.Clock ( NominalDiffTime )
+import Database.PostgreSQL.Simple ( Connection )
 import qualified Database.PostgreSQL.Simple as Sql
 import Options.Applicative
-    ( Parser, ParserInfo )
-import Options.Applicative
-    ( auto
+    ( Parser
+    , ParserInfo
+    , auto
     , fullDesc
     , header
     , help

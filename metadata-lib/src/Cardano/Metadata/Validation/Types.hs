@@ -14,19 +14,15 @@ module Cardano.Metadata.Validation.Types
   , valid
   ) where
 
-import Data.Aeson
-    ( FromJSON, ToJSON, (.:) )
+import Data.Aeson ( FromJSON, ToJSON, (.:) )
 import qualified Data.Aeson as Aeson
 import qualified Data.Bifunctor as Bifunctor
 import qualified Data.HashMap.Strict as HM
-import Data.List.NonEmpty
-    ( NonEmpty )
+import Data.List.NonEmpty ( NonEmpty )
 import qualified Data.Map.Merge.Strict as M
-import Data.Map.Strict
-    ( Map )
+import Data.Map.Strict ( Map )
 import qualified Data.Map.Strict as M
-import Data.Validation
-    ( Validation (Failure) )
+import Data.Validation ( Validation (Failure) )
 
 import Cardano.Metadata.Transform
 import Cardano.Metadata.Types.Common

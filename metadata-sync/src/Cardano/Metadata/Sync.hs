@@ -3,31 +3,21 @@
 module Cardano.Metadata.Sync where
 
 import qualified Data.Aeson as Aeson
-import Data.Functor
-    ( void )
-import Data.String
-    ( fromString )
-import Data.Text
-    ( Text )
+import Data.Functor ( void )
+import Data.String ( fromString )
+import Data.Text ( Text )
 import qualified Data.Text as T
-import Data.Traversable
-    ( forM )
+import Data.Traversable ( forM )
 import Database.PostgreSQL.Simple
     ( Connection, execute, executeMany, withTransaction )
-import Database.PostgreSQL.Simple.Types
-    ( Identifier (..), In (..), Only (..) )
-import System.Directory
-    ( listDirectory )
-import System.FilePath.Posix
-    ( takeBaseName )
-import System.IO.Temp
-    ( withSystemTempDirectory )
+import Database.PostgreSQL.Simple.Types ( Identifier (..), In (..), Only (..) )
+import System.Directory ( listDirectory )
+import System.FilePath.Posix ( takeBaseName )
+import System.IO.Temp ( withSystemTempDirectory )
 import qualified Turtle.Prelude as Turtle
 
-import Cardano.Metadata.Sync.Config
-    ( withConnectionFromPool )
-import Cardano.Metadata.Types.Common
-    ( Subject (..) )
+import Cardano.Metadata.Sync.Config ( withConnectionFromPool )
+import Cardano.Metadata.Types.Common ( Subject (..) )
 
 -- | View the current state of the registry (source-of-truth).
 view :: Text -> Text -> IO [(Subject, Aeson.Value)]

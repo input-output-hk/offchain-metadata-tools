@@ -8,16 +8,13 @@
 
 module Cardano.Metadata.Webhook.Types where
 
-import Data.Aeson
-    ( FromJSON, ToJSON, parseJSON, toJSON, (.:), (.:?) )
+import Data.Aeson ( FromJSON, ToJSON, parseJSON, toJSON, (.:), (.:?) )
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString as BS
 import qualified Data.HashMap.Strict as HM
-import Data.List.NonEmpty
-    ( NonEmpty )
+import Data.List.NonEmpty ( NonEmpty )
 import qualified Data.List.NonEmpty as NE
-import Data.Text
-    ( Text )
+import Data.Text ( Text )
 import Servant
 import qualified Servant.GitHub.Webhook as SGH
 

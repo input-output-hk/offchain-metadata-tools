@@ -38,9 +38,6 @@ in
 
   testScript =
     ''
-    import json
-    import sys
-
     start_all()
 
     server.wait_for_unit("metadata-server.service")

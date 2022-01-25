@@ -2,8 +2,7 @@ module Config where
 
 import qualified Colog
 import qualified Data.ByteString as BS
-import Data.Text
-    ( Text )
+import Data.Text ( Text )
 import qualified Data.Text as T
 import qualified GitHub
 import qualified GitHub.Data.Name as GitHub

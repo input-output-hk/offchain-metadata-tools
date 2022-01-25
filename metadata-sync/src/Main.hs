@@ -1,17 +1,12 @@
 module Main where
 
-import Control.Exception
-    ( bracket )
-import Control.Monad.IO.Class
-    ( liftIO )
+import Control.Exception ( bracket )
+import Control.Monad.IO.Class ( liftIO )
 import qualified Data.ByteString.Char8 as BC
-import Data.Pool
-    ( Pool, createPool, destroyAllResources )
+import Data.Pool ( Pool, createPool, destroyAllResources )
 import qualified Data.Text as T
-import Data.Time.Clock
-    ( NominalDiffTime )
-import Database.PostgreSQL.Simple
-    ( Connection, close, connectPostgreSQL )
+import Data.Time.Clock ( NominalDiffTime )
+import Database.PostgreSQL.Simple ( Connection, close, connectPostgreSQL )
 import qualified Network.Wai.Handler.Warp as Warp
 import qualified Options.Applicative as Opt
 

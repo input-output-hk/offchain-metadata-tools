@@ -17,51 +17,33 @@ module Cardano.Metadata.Types.Common where
 
 import Cardano.Crypto.DSIGN
 import Cardano.Crypto.Hash
-import Control.DeepSeq
-    ( NFData )
-import Data.Aeson
-    ( FromJSON, FromJSONKey, ToJSON, ToJSONKey, (.:), (.:?) )
+import Control.DeepSeq ( NFData )
+import Data.Aeson ( FromJSON, FromJSONKey, ToJSON, ToJSONKey, (.:), (.:?) )
 import qualified Data.Aeson as Aeson
-import Data.Aeson.TH
-    ( deriveJSON )
+import Data.Aeson.TH ( deriveJSON )
 import qualified Data.Aeson.Types as Aeson
 import Data.ByteArray.Encoding
     ( Base (Base16, Base64), convertFromBase, convertToBase )
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy as BSL
-import Data.Hashable
-    ( Hashable )
 import qualified Data.HashMap.Strict as HM
-import Data.Int
-    ( Int64 )
-import Data.Maybe
-    ( fromMaybe )
-import Data.Scientific
-    ( toBoundedInteger )
-import Data.String
-    ( IsString )
-import Data.Text
-    ( Text )
+import Data.Hashable ( Hashable )
+import Data.Int ( Int64 )
+import Data.Maybe ( fromMaybe )
+import Data.Scientific ( toBoundedInteger )
+import Data.String ( IsString )
+import Data.Text ( Text )
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
-import GHC.Generics
-    ( Generic )
-import Numeric.Natural
-    ( Natural )
-import Quiet
-    ( Quiet (Quiet) )
-import System.FilePath.Posix
-    ( takeBaseName, takeExtensions )
-import Text.Casing
-    ( fromHumps, toCamel )
-import Text.ParserCombinators.ReadP
-    ( choice, string )
-import Text.Read
-    ( readEither, readPrec )
-import qualified Text.Read as Read
-    ( lift )
-import Web.HttpApiData
-    ( FromHttpApiData )
+import GHC.Generics ( Generic )
+import Numeric.Natural ( Natural )
+import Quiet ( Quiet (Quiet) )
+import System.FilePath.Posix ( takeBaseName, takeExtensions )
+import Text.Casing ( fromHumps, toCamel )
+import Text.ParserCombinators.ReadP ( choice, string )
+import Text.Read ( readEither, readPrec )
+import qualified Text.Read as Read ( lift )
+import Web.HttpApiData ( FromHttpApiData )
 
 -- | The metadata subject, the on-chain identifier
 newtype Subject = Subject { unSubject :: Text }

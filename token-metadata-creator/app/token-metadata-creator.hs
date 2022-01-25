@@ -11,15 +11,11 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-import Cardano.Prelude hiding
-    ( log )
+import Cardano.Prelude hiding ( log )
 
-import Cardano.Api
-    ( AsType (AsPaymentExtendedKey, AsPaymentKey) )
-import Cardano.CLI.Shelley.Key
-    ( readSigningKeyFile )
-import Cardano.CLI.Types
-    ( SigningKeyFile (..) )
+import Cardano.Api ( AsType (AsPaymentExtendedKey, AsPaymentKey) )
+import Cardano.CLI.Shelley.Key ( readSigningKeyFile )
+import Cardano.CLI.Types ( SigningKeyFile (..) )
 import Cardano.Metadata.GoguenRegistry
     ( GoguenRegistryEntry (..)
     , PartialGoguenRegistryEntry
@@ -36,9 +32,7 @@ import Cardano.Metadata.Types
     , hashesForAttestation
     )
 import Colog
-    ( pattern E
-    , pattern I
-    , LogAction
+    ( LogAction
     , Message
     , Severity
     , WithLog
@@ -48,24 +42,19 @@ import Colog
     , log
     , logTextStdout
     , msgSeverity
+    , pattern E
+    , pattern I
     , usingLoggerT
     )
-import Control.Arrow
-    ( left )
-import Control.Exception.Safe
-    ( handleAny )
+import Control.Arrow ( left )
+import Control.Exception.Safe ( handleAny )
 import Data.Validation
-import System.Directory
-    ( doesFileExist, renameFile )
-import System.Environment
-    ( lookupEnv )
-import System.IO
-    ( hFileSize )
+import System.Directory ( doesFileExist, renameFile )
+import System.Environment ( lookupEnv )
+import System.IO ( hFileSize )
 
-import Cardano.Metadata.Types.Common
-    ( File (File) )
-import Cardano.Metadata.Validation.Rules
-    ( apply, prettyPrintValidationError )
+import Cardano.Metadata.Types.Common ( File (File) )
+import Cardano.Metadata.Validation.Rules ( apply, prettyPrintValidationError )
 import Cardano.Metadata.Validation.Types
     ( Difference (Added, Changed), Metadata )
 import Cardano.Metadata.Validation.Wallet
@@ -82,12 +71,9 @@ import Config
     , canonicalFilename
     , draftFilename
     )
-import GHC.IO.Encoding
-    ( setFileSystemEncoding )
-import System.IO
-    ( hSetEncoding, mkTextEncoding )
-import System.IO.CodePage
-    ( withCP65001 )
+import GHC.IO.Encoding ( setFileSystemEncoding )
+import System.IO ( hSetEncoding, mkTextEncoding )
+import System.IO.CodePage ( withCP65001 )
 
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Encode.Pretty as Aeson

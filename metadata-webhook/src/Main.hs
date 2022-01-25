@@ -7,25 +7,20 @@
 
 module Main where
 
-import Control.Monad.IO.Class
-    ( liftIO )
-import Control.Monad.Logger
-    ( runStdoutLoggingT )
+import Control.Monad.IO.Class ( liftIO )
+import Control.Monad.Logger ( runStdoutLoggingT )
 import qualified Data.ByteString.Char8 as C8
 import qualified Data.Text as T
 import qualified Database.Persist.Postgresql as Postgresql
 import qualified Network.Wai.Handler.Warp as Warp
 import qualified Options.Applicative as Opt
-import System.Environment
-    ( lookupEnv )
+import System.Environment ( lookupEnv )
 
 import qualified Cardano.Metadata.Store.Postgres as Store
-import Cardano.Metadata.Store.Postgres.Config
-    ( Opts (..), pgConnectionString )
+import Cardano.Metadata.Store.Postgres.Config ( Opts (..), pgConnectionString )
 import Cardano.Metadata.Webhook.Server
 import Cardano.Metadata.Webhook.Types
-import Config
-    ( opts )
+import Config ( opts )
 
 main :: IO ()
 main = do
