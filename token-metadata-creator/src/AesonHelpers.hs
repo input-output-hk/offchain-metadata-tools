@@ -6,6 +6,7 @@ import Control.Category
     ()
 
 import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Types as Aeson
 import qualified Data.HashMap.Strict as HMap
 import qualified Data.HashSet as HSet
@@ -19,4 +20,4 @@ noOtherFields
   -- ^ Fields we expect
   -> Aeson.Parser ()
 noOtherFields tp o fs = Aeson.modifyFailure (\_ -> T.unpack tp <> " contained extraneous fields") $
-  guard $ HSet.null $ HMap.keysSet o `HSet.difference` HSet.fromList fs
+  guard $ HSet.null $ HMap.keysSet (KM.toHashMapText o) `HSet.difference` HSet.fromList fs

@@ -18,15 +18,16 @@ module Cardano.Metadata.Types.Common where
 import Cardano.Crypto.DSIGN
 import Cardano.Crypto.Hash
 import Control.DeepSeq ( NFData )
-import Data.Aeson ( FromJSON, FromJSONKey, ToJSON, ToJSONKey, (.:), (.:?) )
+import Data.Aeson ( FromJSON, FromJSONKey, ToJSON, ToJSONKey, (.:), (.:?), (.=) )
 import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.Key as AK
 import Data.Aeson.TH ( deriveJSON )
 import qualified Data.Aeson.Types as Aeson
 import Data.ByteArray.Encoding
     ( Base (Base16, Base64), convertFromBase, convertToBase )
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy as BSL
-import qualified Data.HashMap.Strict as HM
+import qualified Data.Aeson.KeyMap as KM
 import Data.Hashable ( Hashable )
 import Data.Int ( Int64 )
 import Data.Maybe ( fromMaybe )
@@ -93,11 +94,17 @@ type family Property (propertyType :: PropertyType) a where
   Property 'Verifiable a = a
   Property 'Attested   a = AttestedProperty a
 
-toPropertyNameList :: [(Text, a)] -> [(PropertyName, a)]
-toPropertyNameList = fmap (\(k, v) -> (PropertyName k, v))
+toKey :: PropertyName -> Aeson.Key
+toKey = AK.fromText . unPropertyName
 
-fromPropertyNameList :: [(PropertyName, a)] -> [(Text, a)]
-fromPropertyNameList = fmap (\(k, v) -> (unPropertyName k, v))
+fromKey :: Aeson.Key -> PropertyName
+fromKey = PropertyName . AK.toText
+
+toPropertyNameList :: [(Aeson.Key, a)] -> [(PropertyName, a)]
+toPropertyNameList = fmap (\(k, v) -> (fromKey k, v))
+
+fromPropertyNameList :: (ToJSON a) => [(PropertyName, a)] -> [Aeson.Pair]
+fromPropertyNameList = fmap (\(k, v) -> (toKey k) .= v)
 
 
 -- | A human-readable name for the metadata subject, suitable for use in an interface
@@ -238,7 +245,7 @@ instance Read HashFn where
 
 instance Aeson.ToJSON v => Aeson.ToJSON (AttestedProperty v) where
   toJSON (AttestedProperty v sigs sequenceNumber) =
-    Aeson.Object . HM.fromList $
+    Aeson.Object . KM.fromList $
       [ ("value", Aeson.toJSON v)
       , ("signatures", Aeson.toJSON sigs)
       , ("sequenceNumber", Aeson.toJSON sequenceNumber)
@@ -252,7 +259,7 @@ instance Aeson.FromJSON v => Aeson.FromJSON (AttestedProperty v) where
     <*> obj .: "sequenceNumber"
 
 instance ToJSON AnnotatedSignature where
-  toJSON (AnnotatedSignature sig pubKey) = Aeson.Object . HM.fromList $
+  toJSON (AnnotatedSignature sig pubKey) = Aeson.Object . KM.fromList $
     [ ("signature", Aeson.String $ T.decodeUtf8 $ convertToBase Base16 $ rawSerialiseSigDSIGN sig)
     , ("publicKey", Aeson.String $ T.decodeUtf8 $ convertToBase Base16 $ rawSerialiseVerKeyDSIGN pubKey)
     ]

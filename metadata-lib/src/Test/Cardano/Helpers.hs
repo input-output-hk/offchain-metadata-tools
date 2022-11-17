@@ -2,7 +2,8 @@ module Test.Cardano.Helpers where
 
 import Data.Aeson ( FromJSON, ToJSON )
 import qualified Data.Aeson as Aeson
-import qualified Data.HashMap.Strict as HM
+import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Aeson.Key as AK
 import Data.List ( sort )
 import Data.Text ( Text )
 import Data.Word ( Word8 )
@@ -57,7 +58,7 @@ onlyHasKeys :: (MonadTest m, ToJSON a) => a -> [Text] -> m ()
 onlyHasKeys a ks =
   case Aeson.toJSON a of
     Aeson.Object obj -> do
-      sort (HM.keys obj) === sort ks
+      sort (fmap AK.toText (KM.keys obj)) === sort ks
     x                -> do
       footnote $ "Expected Aeson Object but got: " <> show x
       failure

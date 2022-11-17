@@ -8,7 +8,8 @@ import Control.Monad ( join, void )
 import Control.Monad.IO.Class ( liftIO )
 import Control.Monad.Logger ( runNoLoggingT )
 import qualified Data.Aeson as Aeson
-import qualified Data.HashMap.Strict as HM
+import qualified Data.Aeson.Key as AK
+import qualified Data.Aeson.KeyMap as KM
 import Data.Pool ( Pool, destroyAllResources )
 import Data.Proxy ( Proxy (Proxy) )
 import Data.Tagged ( Tagged, unTagged )
@@ -147,11 +148,11 @@ toList :: Connection -> Text -> IO [(Subject, Aeson.Value)]
 toList conn table = do
   results <- query conn "SELECT key, value FROM ?" (Only $ Identifier table)
 
-  pure $ fmap (\(k, v) -> (Subject k, v)) results 
+  pure $ fmap (\(k, v) -> (Subject k, v)) results
 
 genKvs :: MonadGen m => m [(Subject, Aeson.Value)]
 genKvs =
   let
-    kv = (,) <$> Gen.subject <*> (fmap (Aeson.Object . HM.fromList) $ Gen.list (Range.linear 0 20) ((,) <$> (unPropertyName <$> Gen.propertyName) <*> Gen.propertyValue))
+    kv = (,) <$> Gen.subject <*> (fmap Aeson.object $ Gen.list (Range.linear 0 20) ((\k -> \v -> (AK.fromText k, v)) <$> (unPropertyName <$> Gen.propertyName) <*> Gen.propertyValue))
   in
     Gen.list (Range.linear 0 15) kv

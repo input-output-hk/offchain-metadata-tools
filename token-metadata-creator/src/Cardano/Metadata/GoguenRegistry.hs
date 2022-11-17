@@ -30,9 +30,10 @@ import Cardano.Metadata.Types
     , verifyPolicy
     )
 import Control.Arrow ( left )
-import Data.Aeson ( ToJSON (..), (.:?), (.=) )
+import Data.Aeson ( ToJSON, (.:?), (.=) )
 
 import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.Key as AK
 import qualified Data.Aeson.Types as Aeson
 
 -- | The goguen-metadata-registry as maintained by Cardano Foundation
@@ -79,22 +80,22 @@ deriving instance
 instance ToJSON (GoguenRegistryEntry Maybe) where
     toJSON r = Aeson.object $ mconcat
         [ [ "subject" .= _goguenRegistryEntry_subject r
-          , unProperty (wellKnownPropertyName (Proxy @Name)) .=
+          , AK.fromText (unProperty (wellKnownPropertyName (Proxy @Name))) .=
               (fmap wellKnownToJSON <$> (_goguenRegistryEntry_name r))
-          , unProperty (wellKnownPropertyName (Proxy @Description)) .=
+          , AK.fromText (unProperty (wellKnownPropertyName (Proxy @Description))) .=
               (fmap wellKnownToJSON <$> (_goguenRegistryEntry_description r))
           ]
         , catMaybes
           [ do policy <- _goguenRegistryEntry_policy r
-               Just (unProperty (wellKnownPropertyName (Proxy @Policy)) .= wellKnownToJSON policy)
+               Just (AK.fromText (unProperty (wellKnownPropertyName (Proxy @Policy))) .= wellKnownToJSON policy)
           , do logo <- _goguenRegistryEntry_logo r
-               Just (unProperty (wellKnownPropertyName (Proxy @Logo)) .= fmap wellKnownToJSON logo)
+               Just (AK.fromText (unProperty (wellKnownPropertyName (Proxy @Logo))) .= fmap wellKnownToJSON logo)
           , do url <- _goguenRegistryEntry_url r
-               Just (unProperty (wellKnownPropertyName (Proxy @Url)) .= fmap wellKnownToJSON url)
+               Just (AK.fromText (unProperty (wellKnownPropertyName (Proxy @Url))) .= fmap wellKnownToJSON url)
           , do ticker <- (_goguenRegistryEntry_ticker r)
-               Just (unProperty (wellKnownPropertyName (Proxy @Ticker)) .= fmap wellKnownToJSON ticker)
+               Just (AK.fromText (unProperty (wellKnownPropertyName (Proxy @Ticker))) .= fmap wellKnownToJSON ticker)
           , do decimals <- _goguenRegistryEntry_decimals r
-               Just (unProperty (wellKnownPropertyName (Proxy @Decimals)) .= fmap wellKnownToJSON decimals)
+               Just (AK.fromText (unProperty (wellKnownPropertyName (Proxy @Decimals))) .= fmap wellKnownToJSON decimals)
           ]
         ]
 
@@ -106,15 +107,15 @@ parseRegistryEntry
 parseRegistryEntry = Aeson.withObject "GoguenRegistryEntry" $ \o -> do
     subject <- o .:? "subject"
 
-    policyRaw <- o .:? unProperty (wellKnownPropertyName $ Proxy @Policy)
+    policyRaw <- o .:? AK.fromText (unProperty (wellKnownPropertyName $ Proxy @Policy))
     policy <- mapM parseWellKnown policyRaw
 
-    nameField     <- o .:? unProperty (wellKnownPropertyName $ Proxy @Name)
-    descField     <- o .:? unProperty (wellKnownPropertyName $ Proxy @Description)
-    logoField     <- o .:? unProperty (wellKnownPropertyName $ Proxy @Logo)
-    urlField      <- o .:? unProperty (wellKnownPropertyName $ Proxy @Url)
-    tickerField   <- o .:? unProperty (wellKnownPropertyName $ Proxy @Ticker)
-    decimalsField <- o .:? unProperty (wellKnownPropertyName $ Proxy @Decimals)
+    nameField     <- o .:? AK.fromText (unProperty (wellKnownPropertyName $ Proxy @Name))
+    descField     <- o .:? AK.fromText (unProperty (wellKnownPropertyName $ Proxy @Description))
+    logoField     <- o .:? AK.fromText (unProperty (wellKnownPropertyName $ Proxy @Logo))
+    urlField      <- o .:? AK.fromText (unProperty (wellKnownPropertyName $ Proxy @Url))
+    tickerField   <- o .:? AK.fromText (unProperty (wellKnownPropertyName $ Proxy @Ticker))
+    decimalsField <- o .:? AK.fromText (unProperty (wellKnownPropertyName $ Proxy @Decimals))
 
     nameAnn   <- mapM parseWithAttestation nameField
     descAnn   <- mapM parseWithAttestation descField

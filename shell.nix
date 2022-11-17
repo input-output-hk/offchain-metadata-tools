@@ -7,7 +7,7 @@
 , pkgs ? metadataPackages.pkgs
 , profiling ? false  # enable profiling in haskell dependencies
 , sourcesOverride ? {}  # see sourcesOverride in nix/default.nix
-, withHoogle ? true
+, withHoogle ? false
 }:
 
 let

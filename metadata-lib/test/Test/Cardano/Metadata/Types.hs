@@ -9,6 +9,7 @@ module Test.Cardano.Metadata.Types
 
 import Data.Aeson ( FromJSON, ToJSON )
 import qualified Data.Aeson as Aeson
+import Data.Aeson ( (.=) )
 import qualified Data.Bifunctor as Bifunctor
 import Data.ByteArray.Encoding ( Base (Base16), convertToBase )
 import qualified Data.ByteString.Lazy.Char8 as BLC
@@ -36,6 +37,7 @@ import Cardano.Metadata.Types.Common
     , asPublicKey
     , seqZero
     , unPropertyName
+    , toKey
     , unSubject
     )
 import qualified Cardano.Metadata.Types.Weakly as Weakly
@@ -121,17 +123,14 @@ prop_json_annotatedSignature_spec :: H.Property
 prop_json_annotatedSignature_spec = property $ do
   as <- forAllT Gen.annotatedSignature'
 
-  Aeson.toJSON as === Aeson.Object (HM.fromList
-                                     [ ("signature", Aeson.String $ T.decodeUtf8 $ convertToBase Base16 $ rawSerialiseSigDSIGN $ asAttestationSignature as)
-                                     , ("publicKey", Aeson.String $ T.decodeUtf8 $ convertToBase Base16 $ rawSerialiseVerKeyDSIGN $ asPublicKey as)
-                                     ]
-                                  )
+  Aeson.toJSON as === Aeson.object [ "signature" .= (Aeson.String $ T.decodeUtf8 $ convertToBase Base16 $ rawSerialiseSigDSIGN $ asAttestationSignature as)
+                                   , "publicKey" .= (Aeson.String $ T.decodeUtf8 $ convertToBase Base16 $ rawSerialiseVerKeyDSIGN $ asPublicKey as)
+                                   ]
 
 prop_json_metadata_spec :: H.Property
 prop_json_metadata_spec = property $ do
   m <- forAllT Gen.weaklyMetadata
 
-  Aeson.toJSON m === Aeson.Object (HM.fromList $
-                                     [ ("subject", Aeson.String $ unSubject $ Weakly.metaSubject m) ]
-                                     <> (fmap (Bifunctor.first unPropertyName) $ HM.toList $ fmap Aeson.toJSON $ Weakly.metaProperties m)
+  Aeson.toJSON m === Aeson.object ([ "subject" .= (Aeson.String $ unSubject $ Weakly.metaSubject m) ]
+                                     <> (fmap (Bifunctor.first toKey) $ HM.toList $ fmap Aeson.toJSON $ Weakly.metaProperties m)
                                   )
