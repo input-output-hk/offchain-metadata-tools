@@ -17,7 +17,7 @@ module Cardano.Metadata.Validation.Types
 import Data.Aeson ( FromJSON, ToJSON, (.:) )
 import qualified Data.Aeson as Aeson
 import qualified Data.Bifunctor as Bifunctor
-import qualified Data.HashMap.Strict as HM
+import qualified Data.Aeson.KeyMap as KM
 import Data.List.NonEmpty ( NonEmpty )
 import qualified Data.Map.Merge.Strict as M
 import Data.Map.Strict ( Map )
@@ -73,7 +73,7 @@ parseProperties
 parseProperties obj =
   let
     properties :: [(PropertyName, Aeson.Value)]
-    properties = toPropertyNameList $ HM.toList $ foldr HM.delete obj ["subject"]
+    properties = toPropertyNameList $ KM.toList $ foldr KM.delete obj ["subject"]
 
     partitioned =
       foldr (\(name, val) (atts,vers) ->
@@ -104,7 +104,7 @@ valid = pure ()
 -- Instances
 
 instance ToJSON Metadata where
-  toJSON meta@(Metadata subject _ _) = Aeson.Object $ HM.fromList $
+  toJSON meta@(Metadata subject _ _) = Aeson.Object $ KM.fromList $
     [ ("subject", Aeson.toJSON subject)
     ]
     <> (fmap (Aeson.toJSON) <$> (fromPropertyNameList $ M.toList $ metaProperties meta))

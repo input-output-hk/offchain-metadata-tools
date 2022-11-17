@@ -29,6 +29,7 @@ import Control.Exception.Safe
 import Control.Monad.Reader
 import Data.Aeson ( FromJSON, FromJSONKey, ToJSON, ToJSONKey )
 import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.Key as AK
 import qualified Data.Aeson.Encoding.Internal as Aeson
 import qualified Data.Aeson.Types as Aeson
 import Data.Coerce ( coerce )
@@ -188,5 +189,5 @@ toPersistValueJSONKey = toPersistValue . toJSONKeyText
 toJSONKeyText :: ToJSONKey k => k -> Text
 toJSONKeyText k =
   case Aeson.toJSONKey of
-    Aeson.ToJSONKeyText  f _ -> f k
+    Aeson.ToJSONKeyText  f _ -> AK.toText $ f k
     Aeson.ToJSONKeyValue _ f -> TL.toStrict $ TLE.decodeUtf8 $ Aeson.encodingToLazyByteString $ f k

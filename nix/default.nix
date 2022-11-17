@@ -13,7 +13,7 @@ let
   nixpkgs = if (sources ? nixpkgs)
     then (builtins.trace "Not using IOHK default nixpkgs (use 'niv drop nixpkgs' to use default for better sharing)"
       sources.nixpkgs)
-    else haskellNix.sources.nixpkgs-2105;
+    else haskellNix.sources.nixpkgs-2205;
 
   # for inclusion in pkgs:
   overlays =
@@ -23,6 +23,7 @@ let
     ++ iohkNix.overlays.haskell-nix-extra
     # iohkNix: nix utilities and niv:
     ++ iohkNix.overlays.iohkNix
+    ++ iohkNix.overlays.crypto
     ++ iohkNix.overlays.utils
     # our own overlays:
     ++ [

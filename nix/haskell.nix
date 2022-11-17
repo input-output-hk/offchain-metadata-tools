@@ -22,26 +22,11 @@
 let
   haskell = pkgs.haskell-nix;
 
-  # Chop out a subdirectory of the source, so that the package is only
-  # rebuilt when something in the subdirectory changes.
-  filterSubDir = subDir: {
-    src = haskell.haskellLib.cleanSourceWith { inherit src subDir; };
-    package.isProject = true;  # fixme: Haskell.nix
-  };
-
   pkg-set = haskell-nix.cabalProject ({
     inherit src;
     compiler-nix-name = "ghc8107";
+    inputMap = { "https://input-output-hk.github.io/cardano-haskell-packages" = pkgs.commonLib.sources.CHaP; };
     modules = [
-      # Add source filtering to local packages
-      {
-        packages.metadata-lib = filterSubDir "metadata-lib";
-        packages.metadata-server = filterSubDir "metadata-server";
-        packages.metadata-webhook = filterSubDir "metadata-webhook";
-        packages.metadata-sync = filterSubDir "metadata-sync";
-        packages.metadata-store-postgres = filterSubDir "metadata-store-postgres";
-        packages.metadata-validator-github = filterSubDir "metadata-validator-github";
-      }
       # Enable release flag (optimization and -Werror) on all local packages
       {
         packages.metadata-lib.flags.release = true;
@@ -91,6 +76,12 @@ let
         # Haddock not working for cross builds and is not needed anyway
         doHaddock = false;
       }))
+
+      ({ pkgs, ... }: {
+        # Use the VRF fork of libsodium
+        packages.cardano-crypto-praos.components.library.pkgconfig = lib.mkForce [ [ pkgs.libsodium-vrf ] ];
+        packages.cardano-crypto-class.components.library.pkgconfig = lib.mkForce [ [ pkgs.libsodium-vrf pkgs.secp256k1 ] ];
+      })
 
       # Allow installation of a newer version of Win32 than what is
       # included with GHC. The packages in this list are all those

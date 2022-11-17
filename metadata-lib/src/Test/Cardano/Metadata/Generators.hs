@@ -11,6 +11,7 @@ import qualified Cardano.Crypto.Seed as Crypto
 import Control.Monad.Except
 import Control.Monad.Morph ( hoist )
 import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.Key as AK
 import Data.Aeson.TH
 import Data.Functor.Identity ( runIdentity )
 import qualified Data.HashMap.Strict as HM
@@ -249,7 +250,7 @@ propertyValue =
     , pure $ Aeson.Null
     ]
     [ Aeson.Array . V.fromList <$> Gen.list (Range.linear 0 5) propertyValue
-    , Aeson.Object . HM.fromList <$> Gen.list (Range.linear 0 5) ((,) <$> Gen.text (Range.linear 1 64) Gen.unicodeAll <*> propertyValue)
+    , Aeson.object <$> Gen.list (Range.linear 0 5) ((\k -> \v-> (AK.fromText k,v)) <$> Gen.text (Range.linear 1 64) Gen.unicodeAll <*> propertyValue)
     ]
 
 eitherWord8 :: MonadGen m => m (Either Word8 Word8)

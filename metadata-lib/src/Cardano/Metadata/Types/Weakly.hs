@@ -4,6 +4,7 @@ module Cardano.Metadata.Types.Weakly where
 
 import Data.Aeson ( FromJSON, ToJSON, (.:) )
 import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.KeyMap as KM
 import qualified Data.HashMap.Strict as HM
 
 import Cardano.Metadata.Types.Common
@@ -22,7 +23,7 @@ getMetadataProperty propertyName (Metadata _ props) = HM.lookup propertyName pro
 -- JSON instances
 
 instance ToJSON Metadata where
-  toJSON (Metadata subject properties) = Aeson.Object $ HM.fromList $
+  toJSON (Metadata subject properties) = Aeson.object $
     [ ("subject", Aeson.toJSON subject)
     ]
     <> (fmap (Aeson.toJSON) <$> (fromPropertyNameList $ HM.toList properties))
@@ -31,4 +32,4 @@ instance FromJSON Metadata where
   parseJSON = Aeson.withObject "Weakly-typed Metadata" $ \obj ->
     Metadata
     <$> obj .: "subject"
-    <*> (traverse Aeson.parseJSON $ HM.fromList $ toPropertyNameList $ HM.toList $ foldr HM.delete obj ["subject"])
+    <*> (traverse Aeson.parseJSON $ HM.fromList $ toPropertyNameList $ KM.toList $ foldr KM.delete obj ["subject"])
