@@ -30,7 +30,10 @@
 , sourcesOverride ? {}
 
 # Import pkgs, including IOHK common nix lib
-, pkgs ? import ./nix { inherit sourcesOverride; }
+, pkgs ? import ./nix {
+  inherit sourcesOverride;
+  system = builtins.head supportedSystems;
+}
 
 # GitHub PR number (as a string), provided as a Hydra input
 , pr ? null
