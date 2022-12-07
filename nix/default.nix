@@ -6,14 +6,17 @@
 let
   sources = import ./sources.nix { inherit pkgs; }
     // sourcesOverride;
-  iohkNix = import sources.iohk-nix {};
-  haskellNix = import sources."haskell.nix" { inherit system; };
+  iohkNix = import sources.iohk-nix { inherit system; };
+  haskellNix = import sources."haskell.nix" {
+    inherit system;
+    pkgs = import nixpkgs { inherit system; };
+  };
   # use our own nixpkgs if it exists in our sources,
   # otherwise use iohkNix default nixpkgs.
   nixpkgs = if (sources ? nixpkgs)
     then (builtins.trace "Not using IOHK default nixpkgs (use 'niv drop nixpkgs' to use default for better sharing)"
       sources.nixpkgs)
-    else haskellNix.sources.nixpkgs-2105;
+    else iohkNix.nixpkgs;
 
   # for inclusion in pkgs:
   overlays =
