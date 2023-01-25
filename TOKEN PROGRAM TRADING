@@ -1,0 +1,14 @@
+$ echo -n "token program trading" | xxd -ps
+6d7961737365746e616d65
+token-metadata-creator entry --init 137c3033d852ff777e0b7059f919f31555464dc83c9b32a7e8f5e04e
+token-metadata-creator entry init 137c3033d852ff777e0b7059f919f31555464dc83c9b32a7e8f5e04e \
+  --name "token program trading" \
+  --description "IT IS A TRQDING PROGRAM,BASED ON SPECIAL EQUATION." \
+  --policy policy.json wkyuzwekgw00000
+  token-metadata-creator entry 137c3033d852ff777e0b7059f919f31555464dc83c9b32a7e8f5e04e \
+  --ticker "TPT" \
+  --url "" \
+  --logo "ipfs://QmeKb42AcHeho9KPuuBZrt23DCYf5EP8PeZkHUwo41iCs2" \
+  --decimals 6
+  token-metadata-creator entry 137c3033d852ff777e0b7059f919f31555464dc83c9b32a7e8f5e04e -a policy.skey
+  token-metadata-creator entry 137c3033d852ff777e0b7059f919f31555464dc83c9b32a7e8f5e04e --finalize
