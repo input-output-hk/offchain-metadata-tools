@@ -33,6 +33,8 @@ import qualified Options.Applicative as Opt
 data Opts = Opts
     { optDbName              :: Text
     , optDbUser              :: Text
+    , optDbPass              :: Text
+    , optDbSslMode           :: Text
     , optDbHost              :: FilePath
     , optDbMetadataTableName :: Text
     , optDbConnections       :: Int
@@ -45,6 +47,8 @@ parseOpts :: Parser Opts
 parseOpts = Opts
   <$> strOption (long "db" <> metavar "DB_NAME" <> help "Name of the database to store and read metadata from")
   <*> strOption (long "db-user" <> metavar "DB_USER" <> help "User to connect to metadata database with")
+  <*> strOption (long "db-pass" <> metavar "DB_PASS" <> help "User password to connect to metadata database with")
+  <*> strOption (long "db-ssl-mode" <> metavar "DB_SSL_MODE" <> help "SSL mode for the db connection; ex: disable, allow, prefer, require, verify-ca, verify-full")
   <*> strOption (long "db-host" <> metavar "DB_HOST" <> showDefault <> value "/run/postgresql" <> help "Host for the metadata database connection")
   <*> strOption (long "db-table" <> metavar "DB_TABLE" <> showDefault <> value "metadata" <> help "Table in the database to store metadata")
   <*> option auto (long "db-conns" <> metavar "INT" <> showDefault <> value 1 <> help "Number of connections to open to the database")
@@ -61,8 +65,8 @@ opts =
     )
 
 pgConnectionString :: Opts -> BC.ByteString
-pgConnectionString (Opts { optDbName = dbName, optDbUser = dbUser, optDbHost = dbHost }) =
-  TE.encodeUtf8 $ "host=" <> T.pack dbHost <> " dbname=" <> dbName <> " user=" <> dbUser
+pgConnectionString (Opts { optDbName = dbName, optDbUser = dbUser, optDbPass = dbPass, optDbSslMode = dbSslMode, optDbHost = dbHost }) =
+  TE.encodeUtf8 $ "host=" <> T.pack dbHost <> " dbname=" <> dbName <> " user=" <> dbUser <> " password=" <> dbPass <> " sslmode=" <> dbSslMode
 
 mkConnectionPool
   :: BC.ByteString
