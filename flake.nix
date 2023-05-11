@@ -15,6 +15,7 @@
       inherit inputs;
       cellsFrom = nix/cells;
       cellBlocks = [
+        (std.installables "packages")
         (std.functions "library")
         (std.functions "hydraJobs")
         (tullia.tasks "pipelines")
