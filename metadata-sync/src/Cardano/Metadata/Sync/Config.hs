@@ -35,7 +35,7 @@ data Opts = Opts
     { optDbName              :: Text
     , optDbUser              :: Text
     , optDbPass              :: Text
-    , optDbHost              :: String
+    , optDbHost              :: Text
     , optDbPort              :: Warp.Port
     , optDbMetadataTableName :: Text
     , optDbConnections       :: Int
@@ -50,7 +50,7 @@ parseOpts = Opts
   <*> strOption (long "db-user" <> metavar "DB_USER" <> help "User to connect to metadata database with")
   <*> strOption (long "db-pass" <> metavar "DB_PASS" <> help "Password to connect to metadata database with")
   <*> strOption (long "db-host" <> metavar "DB_HOST" <> showDefault <> value "/run/postgresql" <> help "Host for the metadata database connection")
-  <*> strOption (long "db-port" <> metavar "DB_PORT" <> showDefault <> value 5432 <> help "Port for the metadata database connection")
+  <*> option auto (long "db-port" <> metavar "DB_PORT" <> showDefault <> value 5432 <> help "Port for the metadata database connection")
   <*> strOption (long "db-table" <> metavar "DB_TABLE" <> showDefault <> value "metadata" <> help "Table in the database to store metadata")
   <*> option auto (long "db-conns" <> metavar "INT" <> showDefault <> value 1 <> help "Number of connections to open to the database")
   <*> strOption (long "git-url" <> metavar "GIT_URL" <> help "URL of the metadata registry git repository")
@@ -67,7 +67,7 @@ opts =
 
 pgConnectionString :: Opts -> BC.ByteString
 pgConnectionString (Opts { optDbName = dbName, optDbUser = dbUser, optDbPass = dbPass, optDbHost = dbHost, optDbPort = dbPort }) =
-  TE.encodeUtf8 $ "host=" <> T.pack dbHost <> " dbname=" <> dbName <> " user=" <> dbUser " password=" <> dbPass " port=" <> dbPort
+  TE.encodeUtf8 $ "host=" <> T.pack dbHost <> " dbname=" <> dbName <> " user=" <> dbUser " password=" <> dbPass " port=" <> (show dbPort)
 
 mkConnectionPool
   :: BC.ByteString
