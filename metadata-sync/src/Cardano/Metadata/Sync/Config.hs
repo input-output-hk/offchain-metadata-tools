@@ -13,6 +13,7 @@ import Data.Time.Clock ( NominalDiffTime )
 import Database.PostgreSQL.Simple ( Connection )
 import qualified Database.PostgreSQL.Simple as Sql
 import qualified Network.Wai.Handler.Warp as Warp
+import Control.Applicative (optional)
 import Options.Applicative
     ( Parser
     , ParserInfo
@@ -34,9 +35,9 @@ import qualified Options.Applicative as Opt
 data Opts = Opts
     { optDbName              :: Text
     , optDbUser              :: Text
-    , optDbPass              :: Text
+    , optDbPass              :: Maybe Text
     , optDbHost              :: Text
-    , optDbPort              :: Warp.Port
+    , optDbPort              :: Maybe Warp.Port
     , optDbMetadataTableName :: Text
     , optDbConnections       :: Int
     , optGitURL              :: Text
@@ -48,9 +49,9 @@ parseOpts :: Parser Opts
 parseOpts = Opts
   <$> strOption (long "db" <> metavar "DB_NAME" <> help "Name of the database to store and read metadata from")
   <*> strOption (long "db-user" <> metavar "DB_USER" <> help "User to connect to metadata database with")
-  <*> strOption (long "db-pass" <> metavar "DB_PASS" <> help "Password to connect to metadata database with")
+  <*> optional (strOption (long "db-pass" <> metavar "DB_PASS" <> help "Password to connect to metadata database with"))
   <*> strOption (long "db-host" <> metavar "DB_HOST" <> showDefault <> value "/run/postgresql" <> help "Host for the metadata database connection")
-  <*> option auto (long "db-port" <> metavar "DB_PORT" <> showDefault <> value 5432 <> help "Port for the metadata database connection")
+  <*> optional (option auto (long "db-port" <> metavar "DB_PORT" <> showDefault <> value 5432 <> help "Port for the metadata database connection"))
   <*> strOption (long "db-table" <> metavar "DB_TABLE" <> showDefault <> value "metadata" <> help "Table in the database to store metadata")
   <*> option auto (long "db-conns" <> metavar "INT" <> showDefault <> value 1 <> help "Number of connections to open to the database")
   <*> strOption (long "git-url" <> metavar "GIT_URL" <> help "URL of the metadata registry git repository")
@@ -67,7 +68,7 @@ opts =
 
 pgConnectionString :: Opts -> BC.ByteString
 pgConnectionString (Opts { optDbName = dbName, optDbUser = dbUser, optDbPass = dbPass, optDbHost = dbHost, optDbPort = dbPort }) =
-  TE.encodeUtf8 $ "host=" <> T.pack dbHost <> " dbname=" <> dbName <> " user=" <> dbUser " password=" <> dbPass " port=" <> (show dbPort)
+  TE.encodeUtf8 $ "host=" <> dbHost <> " dbname=" <> dbName <> " user=" <> dbUser <> (maybe "" (" password=" <>) dbPass) <> (maybe "" ((" port=" <>) . T.pack . show) dbPort)
 
 mkConnectionPool
   :: BC.ByteString
