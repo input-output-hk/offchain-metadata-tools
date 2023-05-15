@@ -57,4 +57,4 @@ main = do
     unChanLoggingT logChan
 
 obfuscatePasswords :: String -> String
-obfuscatePasswords clear = R.subRegex (R.mkRegex "pass=\\S+") clear "pass=*******"
+obfuscatePasswords clear = R.subRegex (R.mkRegex "password=\\S+") clear "password=*******"

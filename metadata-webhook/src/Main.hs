@@ -44,4 +44,4 @@ main = do
       liftIO $ Warp.run port (appSigned (gitHubKey $ pure key) intf (getFileContent githubToken))
 
 obfuscatePasswords :: String -> String
-obfuscatePasswords clear = R.subRegex (R.mkRegex "pass=\\S+") clear "pass=*******"
+obfuscatePasswords clear = R.subRegex (R.mkRegex "password=\\S+") clear "password=*******"
