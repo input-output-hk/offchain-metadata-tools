@@ -9,6 +9,7 @@ import Data.Time.Clock ( NominalDiffTime )
 import Database.PostgreSQL.Simple ( Connection, close, connectPostgreSQL )
 import qualified Network.Wai.Handler.Warp as Warp
 import qualified Options.Applicative as Opt
+import qualified Text.Regex as R
 
 import qualified Cardano.Metadata.Sync as Sync
 import Cardano.Metadata.Sync.Config
@@ -29,7 +30,7 @@ main = do
                 }) <- Opt.execParser opts
 
   let pgConnString = pgConnectionString options
-  putStrLn $ "Connecting to database using connection string: " <> BC.unpack pgConnString
+  putStrLn . obfuscatePasswords $ "Connecting to database using connection string: " <> BC.unpack pgConnString
   withConnectionPool pgConnString numDbConns $ \pool -> do
     withConnectionFromPool pool $ \conn -> do
       putStrLn $ "Reading registry state from '" <> T.unpack gitURL <> "'."
@@ -37,3 +38,6 @@ main = do
   
       putStrLn $ "Syncing to table '" <> T.unpack tableName <> "'."
       Sync.write conn tableName state
+
+obfuscatePasswords :: String -> String
+obfuscatePasswords clear = R.subRegex (R.mkRegex "pass=\\S+") clear "pass=*******"

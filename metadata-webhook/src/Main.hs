@@ -15,6 +15,7 @@ import qualified Database.Persist.Postgresql as Postgresql
 import qualified Network.Wai.Handler.Warp as Warp
 import qualified Options.Applicative as Opt
 import System.Environment ( lookupEnv )
+import qualified Text.Regex as R
 
 import qualified Cardano.Metadata.Store.Postgres as Store
 import Cardano.Metadata.Store.Postgres.Config ( Opts (..), pgConnectionString )
@@ -33,7 +34,7 @@ main = do
                 }) <- Opt.execParser opts
 
   let pgConnString = pgConnectionString options
-  putStrLn $ "Connecting to database using connection string: " <> C8.unpack pgConnString
+  putStrLn . obfuscatePasswords $ "Connecting to database using connection string: " <> C8.unpack pgConnString
   runStdoutLoggingT $
     Postgresql.withPostgresqlPool pgConnString numDbConns $ \pool -> liftIO $ do
       putStrLn $ "Initializing table '" <> tableName <> "'."
@@ -41,3 +42,6 @@ main = do
 
       putStrLn $ "Metadata webhook is starting on port " <> show port <> "."
       liftIO $ Warp.run port (appSigned (gitHubKey $ pure key) intf (getFileContent githubToken))
+
+obfuscatePasswords :: String -> String
+obfuscatePasswords clear = R.subRegex (R.mkRegex "pass=\\S+") clear "pass=*******"

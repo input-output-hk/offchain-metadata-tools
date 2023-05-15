@@ -25,6 +25,7 @@ executable metadata-server
                      , persistent-postgresql
                      , optparse-applicative
                      , persistent
+                     , regex-compat
                      , safe-exceptions
                      , scientific
                      , servant
