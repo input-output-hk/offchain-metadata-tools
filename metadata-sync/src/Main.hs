@@ -40,4 +40,4 @@ main = do
       Sync.write conn tableName state
 
 obfuscatePasswords :: String -> String
-obfuscatePasswords clear = R.subRegex (R.mkRegex "pass=\\S+") clear "pass=*******"
+obfuscatePasswords clear = R.subRegex (R.mkRegex "password=\\S+") clear "password=*******"
