@@ -16,6 +16,10 @@ jobs:
 
       - name: Install Nix
         uses: cachix/install-nix-action@v20
+        with:
+            extra_nix_config: |
+              trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+              substituters = https://cache.iog.io https://cache.nixos.org/
 
       - name: Run nix-build
         run: |
@@ -31,6 +35,10 @@ jobs:
 
       - name: Install Nix
         uses: cachix/install-nix-action@v20
+        with:
+            extra_nix_config: |
+              trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+              substituters = https://cache.iog.io https://cache.nixos.org/
 
       - name: Run nix-shell
         run: nix-shell --run .github/check-stylish.sh
