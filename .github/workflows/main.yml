@@ -7,6 +7,7 @@ env:
 
 jobs:
   update-docs:
+    if: github.ref == 'refs/heads/master'
     name: Update docs
     runs-on: ubuntu-latest
     steps:
@@ -15,13 +16,6 @@ jobs:
 
       - name: Install Nix
         uses: cachix/install-nix-action@v20
-
-      - name: Stop job if not on master branch
-        run: |
-          if [[ "${{ github.ref }}" != "refs/heads/master" ]]; then
-            echo "This job runs on the master branch only."
-            exit 78
-          fi
 
       - name: Run nix-build
         run: |
