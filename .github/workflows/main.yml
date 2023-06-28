@@ -1,0 +1,42 @@
+name: update-docs + check-stylish-haskell
+
+on: push
+
+env:
+  LC_ALL: en_US.UTF-8
+
+jobs:
+  update-docs:
+    name: Update docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v20
+
+      - name: Stop job if not on master branch
+        run: |
+          if [[ "${{ github.ref }}" != "refs/heads/master" ]]; then
+            echo "This job runs on the master branch only."
+            exit 78
+          fi
+
+      - name: Run nix-build
+        run: |
+          nix-build -A maintainer-scripts.update-docs -o update-docs.sh
+          ./update-docs.sh
+
+  check-stylish-haskell:
+    name: Check Stylish Haskell
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v20
+
+      - name: Run nix-shell
+        run: nix-shell --run .github/check-stylish.sh
