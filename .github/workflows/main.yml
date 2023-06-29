@@ -1,0 +1,44 @@
+name: update-docs + check-stylish-haskell
+
+on: push
+
+env:
+  LC_ALL: en_US.UTF-8
+
+jobs:
+  update-docs:
+    if: github.ref == 'refs/heads/master'
+    name: Update docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v20
+        with:
+            extra_nix_config: |
+              trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+              substituters = https://cache.iog.io https://cache.nixos.org/
+
+      - name: Run nix-build
+        run: |
+          nix-build -A maintainer-scripts.update-docs -o update-docs.sh
+          ./update-docs.sh
+
+  check-stylish-haskell:
+    name: Check Stylish Haskell
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v20
+        with:
+            extra_nix_config: |
+              trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+              substituters = https://cache.iog.io https://cache.nixos.org/
+
+      - name: Run nix-shell
+        run: nix-shell --run .github/check-stylish.sh
