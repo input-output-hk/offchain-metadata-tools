@@ -119,6 +119,7 @@ executable metadata-sync
                      , optparse-applicative
                      , persistent
                      , postgresql-simple
+                     , regex-compat
                      , resource-pool
                      , safe-exceptions
                      , scientific

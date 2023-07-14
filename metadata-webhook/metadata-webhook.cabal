@@ -27,6 +27,7 @@ executable metadata-webhook
                      , optparse-applicative
                      , persistent
                      , persistent-postgresql
+                     , regex-compat
                      , safe-exceptions
                      , scientific
                      , servant
