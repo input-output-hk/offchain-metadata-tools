@@ -34,13 +34,36 @@ in {
         default = 8081;
         description = "the port the metadata webhook runs on";
       };
+      environmentFile = lib.mkOption {
+        type = with lib.types; nullOr str;
+        default = null;
+        description = ''
+          A string path to a systemd environmentFile used to set secrets of:
+            METADATA_GITHUB_TOKEN
+            METADATA_WEBHOOK_SECRET
+
+          Note that if environmentFile is set, cfg.webHookSecret and cfg.gitHubToken cannot be set.
+        '';
+      };
       webHookSecret = lib.mkOption {
-        type = lib.types.str;
-        description = "the GitHub webhook secret";
+        type = with lib.types; nullOr str;
+        default = null;
+        description = ''
+          The GitHub webhook secret.
+          This option is used to set the environment variable METADATA_WEBHOOK_SECRET in the systemd service unit.
+
+          Note that if cfg.webHookSecret is set, cfg.environmentFile cannot be set.
+        '';
       };
       gitHubToken = lib.mkOption {
-        type = lib.types.str;
-        description = "the GitHub token to use to query the GitHub API";
+        type = with lib.types; nullOr str;
+        default = null;
+        description = ''
+          The GitHub token to use to query the GitHub API.
+          This option is used to set the environment variable METADATA_GITHUB_TOKEN in the systemd service unit.
+
+          Note that if cfg.gitHubToken is set, cfg.environmentFile cannot be set.
+        '';
       };
       postgres = {
         socketdir = lib.mkOption {
@@ -95,7 +118,7 @@ in {
       echo "Starting ${exec}: ${lib.concatStringsSep "\"\n   echo \"" cmd}"
       echo "..or, once again, in a single line:"
       echo "${toString cmd}"
-      METADATA_WEBHOOK_SECRET=${cfg.webHookSecret} METADATA_GITHUB_TOKEN=${cfg.gitHubToken} exec ${toString cmd}
+      exec ${toString cmd}
     '';
     environment.systemPackages = [ cfg.package config.services.postgresql.package ];
     systemd.services.metadata-webhook = {
@@ -108,7 +131,12 @@ in {
         done
         sleep 1
       '';
+      environment = lib.mkIf (cfg.webHookSecret != null || cfg.gitHubToken != null) {
+        METADATA_GITHUB_TOKEN = toString cfg.gitHubToken;
+        METADATA_WEBHOOK_SECRET = toString cfg.webHookSecret;
+      };
       serviceConfig = {
+        EnvironmentFile = lib.mkIf (cfg.environmentFile != null) cfg.environmentFile;
         ExecStart = config.services.metadata-webhook.script;
         DynamicUser = true;
         User = config.services.metadata-webhook.user;
@@ -121,5 +149,16 @@ in {
       after = [ "postgres.service" ];
       requires = [ "postgresql.service" ];
     };
+
+    assertions = [
+      {
+        assertion = !(cfg.environmentFile != null && cfg.webHookSecret != null || cfg.gitHubToken != null);
+        message = "The metadata-webhook nixos service config option environmentFile cannot be declared when webHookSecret and/or gitHubToken options are also declared.";
+      }
+      {
+        assertion = !(cfg.environmentFile == null && cfg.webHookSecret == null && cfg.gitHubToken == null);
+        message = "Either the metadata-webhook nixos service config option environmentFile or webHookSecret and/or gitHubToken options must be declared.";
+      }
+    ];
   };
 }
