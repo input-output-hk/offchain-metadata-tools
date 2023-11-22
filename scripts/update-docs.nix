@@ -1,7 +1,7 @@
-{ stdenv, writeScript, coreutils, glibc, git, openssh, gnused, mkdocs,
+{ lib, stdenv, writeScript, coreutils, glibc, git, openssh, gnused, mkdocs,
   runCommand, ghcWithPackages, pandoc }:
 
-with stdenv.lib;
+with lib;
 
 let
   repo = "git@github.com:input-output-hk/offchain-metadata-tools.git";
@@ -47,7 +47,7 @@ in
     echo "Committing changes..."
     git commit --no-gpg-sign --message "Update gh-pages for $rev"
 
-    if [ "''${BUILDKITE_BRANCH:-}" = master ]; then
-      git push ${repo} HEAD:gh-pages
-    fi
+    # if [ "''${BUILDKITE_BRANCH:-}" = master ]; then
+    #   git push ${repo} HEAD:gh-pages
+    # fi
   '')
