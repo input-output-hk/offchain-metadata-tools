@@ -1,24 +1,43 @@
 {
-  inputs = {
-    nixpkgs.follows = "std/nixpkgs";
-    std.url = "github:divnix/std";
-  };
+  inputs.nixpkgs.url = "github:nixos/nixpkgs/release-23.05";
 
-  outputs = {
-    self,
-    std,
-    ...
-  } @ inputs:
-    std.growOn {
-      inherit inputs;
-      cellsFrom = nix/cells;
-      cellBlocks = with std.blockTypes; [
-        (installables "packages")
-        (functions "hydraJobs")
-      ];
-    }
-    {
-      hydraJobs = std.harvest self ["automation" "hydraJobs"];
+  outputs = inputs:
+    with builtins;
+    with inputs.nixpkgs.lib; let
+      systems = ["x86_64-linux" "x86_64-darwin"];
+
+      hydraJobs = import "${inputs.self}/release.nix" {
+        metadata-server = inputs.self;
+        supportedSystems = systems;
+      };
+
+      nativePkgs = {
+        inherit
+          (hydraJobs.native)
+          metadata-server
+          metadata-sync
+          metadata-validator-github
+          metadata-webhook
+          token-metadata-creator
+          ;
+      };
+    in {
+      inherit hydraJobs;
+
+      packages = foldl' (
+        acc: pkg:
+          recursiveUpdate acc (
+            listToAttrs (
+              map (
+                system:
+                  optionalAttrs (hasAttr system pkg.value) (
+                    nameValuePair system (setAttrByPath [pkg.name] pkg.value.${system})
+                  )
+              )
+              systems
+            )
+          )
+      ) {} (mapAttrsToList nameValuePair nativePkgs);
     };
 
   nixConfig = {
