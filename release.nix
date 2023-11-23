@@ -78,6 +78,7 @@ let
   onlyBuildOnDefaultSystem = [
     ["nixosTests"]
     ["maintainer-scripts"]
+    ["shell-prof"]
   ];
   testsSupportedSystems = [ "x86_64-linux" ];
   collectTests = ds: filter (d: elem d.system testsSupportedSystems) (collect isDerivation ds);
