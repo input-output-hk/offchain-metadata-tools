@@ -4,9 +4,6 @@
 with lib;
 
 let
-  repo = "git@github.com:input-output-hk/offchain-metadata-tools.git";
-  sshKey = "/run/keys/buildkite-haskell-dot-nix-ssh-private";
-
   filterName = "orgMdFilter";
   pandocOrgMdFilter = import ./mk-pandoc-filter.nix {
     inherit runCommand ghcWithPackages filterName;
@@ -23,7 +20,8 @@ in
 
     source ${./git.env}
 
-    rev=$(git rev-parse --short HEAD)
+    BRANCH=$(git rev-parse --abbrev-ref HEAD)
+    REV=$(git rev-parse --short HEAD)
     cd $(git rev-parse --show-toplevel)
 
     echo "Preprocessing..."
@@ -45,9 +43,9 @@ in
     GIT_WORK_TREE=$(pwd)/site git add -A
     check_staged
     echo "Committing changes..."
-    git commit --no-gpg-sign --message "Update gh-pages for $rev"
+    git commit --no-gpg-sign --message "Update gh-pages for $REV"
 
-    # if [ "''${BUILDKITE_BRANCH:-}" = master ]; then
-    #   git push ${repo} HEAD:gh-pages
-    # fi
+    if [ "$BRANCH" = master ]; then
+      git push origin HEAD:gh-pages
+    fi
   '')
