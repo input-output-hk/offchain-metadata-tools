@@ -14,7 +14,7 @@
 , projectArgs ? {
     config = { allowUnfree = false; inHydra = true; };
     gitrev = metadata-server.rev;
-    inherit pr borsBuild sourcesOverride;
+    inherit pr sourcesOverride;
   }
 
 # The systems that the jobset will be built for.
@@ -37,9 +37,6 @@
 
 # GitHub PR number (as a string), provided as a Hydra input
 , pr ? null
-
-# Can be "staging" or "trying" to indicate that this is a bors jobset
-, borsBuild ? null
 
 # Platform filter string for jobset.
 , platform ? "all"
@@ -77,6 +74,8 @@ let
   # Paths or prefixes of paths of derivations to build only on the default system (ie. linux on hydra):
   onlyBuildOnDefaultSystem = [
     ["nixosTests"]
+    ["maintainer-scripts"]
+    ["shell-prof"]
   ];
   testsSupportedSystems = [ "x86_64-linux" ];
   collectTests = ds: filter (d: elem d.system testsSupportedSystems) (collect isDerivation ds);
@@ -87,8 +86,10 @@ let
     ) ds);
 
   filteredBuilds = mapAttrsRecursiveCond (a: !(isList a)) (path: value:
-    if (any (p: take (length p) path == p) onlyBuildOnDefaultSystem) then filter (s: !(elem s nonDefaultBuildSystems)) value else value)
-    (packagePlatforms project);
+    if (any (p: take (length p) path == p) onlyBuildOnDefaultSystem)
+    then filter (s: !(elem s nonDefaultBuildSystems)) value
+    else value
+  ) (packagePlatforms project);
 
   inherit (systems.examples) musl64;
 
@@ -112,6 +113,7 @@ let
 
         jobs.native.shell.x86_64-linux
         jobs.native.shell-prof.x86_64-linux
+        jobs.native.maintainer-scripts.update-docs.x86_64-linux
       ]
     ))
   # Build the shell derivation in Hydra so that all its dependencies

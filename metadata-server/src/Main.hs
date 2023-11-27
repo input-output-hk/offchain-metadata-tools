@@ -24,6 +24,7 @@ import qualified Data.Text as T
 import qualified Database.Persist.Postgresql as Postgresql
 import qualified Network.Wai.Handler.Warp as Warp
 import qualified Options.Applicative as Opt
+import qualified Text.Regex as R
 
 import Cardano.Metadata.Server ( webApp )
 import qualified Cardano.Metadata.Store.Postgres as Store
@@ -38,7 +39,7 @@ main = do
                 }) <- Opt.execParser opts
 
   let pgConnString = pgConnectionString options
-  putStrLn $ "Connecting to database using connection string: " <> BC.unpack pgConnString
+  putStrLn . obfuscatePasswords $ "Connecting to database using connection string: " <> BC.unpack pgConnString
 
   runStdoutLoggingT $ filterLogger (\_ lvl -> lvl /= LevelDebug) $ do
     -- Create log channel
@@ -54,3 +55,6 @@ main = do
 
     -- Logging in main thread
     unChanLoggingT logChan
+
+obfuscatePasswords :: String -> String
+obfuscatePasswords clear = R.subRegex (R.mkRegex "password=\\S+") clear "password=*******"

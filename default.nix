@@ -15,8 +15,6 @@
 , gitrev ? pkgs.iohkNix.commitIdFromGitRepoOrZero ./.git
 # GitHub PR number (as a string), set when building a Hydra PR jobset.
 , pr ? null
-# Bors job type (as a string), set when building a Hydra bors jobset.
-, borsBuild ? null
 }:
 with pkgs; with commonLib;
 let
@@ -29,7 +27,7 @@ let
   buildHaskellProject = args: import ./nix/haskell.nix ({
     inherit config pkgs;
     inherit (pkgs) buildPackages lib stdenv haskell-nix;
-    inherit src gitrev pr borsBuild;
+    inherit src gitrev pr;
   } // args);
   project = addExtras (buildHaskellProject {});
   profiledProject = buildHaskellProject { profiling = true; };
@@ -72,18 +70,22 @@ let
   });
   docScripts = pkgs.callPackage ./docs/default.nix { };
   # Scripts for keeping Hackage and Stackage up to date, and CI tasks.
-  # The dontRecurseIntoAttrs prevents these from building on hydra
-  # as not all of them can work in restricted eval mode (as they
-  # are not pure).
-  maintainer-scripts = pkgs.dontRecurseIntoAttrs {
-    update-docs = pkgs.buildPackages.callPackage ./scripts/update-docs.nix { inherit (pkgs.haskellPackages) ghcWithPackages; };
+  # Allow hydra to build update-docs as there is otherwise an extended local build time.
+  maintainer-scripts = recRecurseIntoAttrs {
+    update-docs = pkgs.buildPackages.callPackage ./scripts/update-docs.nix {
+      inherit (pkgs.haskellPackages) ghcWithPackages;
+      mkdocs = mkdocs.overridePythonAttrs (_: {doCheck = false; dontUsePythonImportsCheck = true;});
+    };
 
+    # ToDo: Update the script -- switch to nix-eval-jobs or similar.
+    #       hydra-eval-jobs no longer works locally due to restricted eval.
+    #
     # Because this is going to be used to test caching on hydra, it must not
     # use the darcs package from the haskell.nix we are testing.  For that reason
     # it uses `pkgs.buildPackages.callPackage` not `haskell.callPackage`
     # (We could pull in darcs from a known good haskell.nix for hydra to
     # use)
-    check-hydra = pkgs.buildPackages.callPackage ./scripts/check-hydra.nix {};
+    # check-hydra = pkgs.buildPackages.callPackage ./scripts/check-hydra.nix {};
   };
 
   self = {
