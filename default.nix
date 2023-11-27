@@ -15,8 +15,6 @@
 , gitrev ? pkgs.iohkNix.commitIdFromGitRepoOrZero ./.git
 # GitHub PR number (as a string), set when building a Hydra PR jobset.
 , pr ? null
-# Bors job type (as a string), set when building a Hydra bors jobset.
-, borsBuild ? null
 }:
 with pkgs; with commonLib;
 let
@@ -29,7 +27,7 @@ let
   buildHaskellProject = args: import ./nix/haskell.nix ({
     inherit config pkgs;
     inherit (pkgs) buildPackages lib stdenv haskell-nix;
-    inherit src gitrev pr borsBuild;
+    inherit src gitrev pr;
   } // args);
   project = addExtras (buildHaskellProject {});
   profiledProject = buildHaskellProject { profiling = true; };

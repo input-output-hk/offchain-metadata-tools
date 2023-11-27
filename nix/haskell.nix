@@ -13,8 +13,6 @@
 , src
 # GitHub PR number (when building a PR jobset on Hydra)
 , pr ? null
-# Bors job type (when building a bors jobset on Hydra)
-, borsBuild ? null
 # Version info, to be passed when not building from a git work tree
 , gitrev ? null
 , libsodium-vrf ? pkgs.libsodium-vrf

@@ -14,7 +14,7 @@
 , projectArgs ? {
     config = { allowUnfree = false; inHydra = true; };
     gitrev = metadata-server.rev;
-    inherit pr borsBuild sourcesOverride;
+    inherit pr sourcesOverride;
   }
 
 # The systems that the jobset will be built for.
@@ -37,9 +37,6 @@
 
 # GitHub PR number (as a string), provided as a Hydra input
 , pr ? null
-
-# Can be "staging" or "trying" to indicate that this is a bors jobset
-, borsBuild ? null
 
 # Platform filter string for jobset.
 , platform ? "all"
