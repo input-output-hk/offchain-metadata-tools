@@ -14,12 +14,10 @@ executable metadata-webhook
                      , bytestring
                      , containers
                      , directory
-                     , esqueleto
                      , github-webhooks
                      , http-client
                      , http-types
                      , lens
-                     , lens-aeson
                      , metadata-lib
                      , metadata-store-postgres
                      , monad-logger

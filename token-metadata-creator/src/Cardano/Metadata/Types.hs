@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE DerivingStrategies #-}
@@ -29,6 +28,8 @@ module Cardano.Metadata.Types
     , evaluatePolicy
     , prettyPolicy
     , verifyPolicy
+    , serialiseScriptToCBOR
+    , deserialiseScriptFromCBOR
     , Name (..)
     , Description (..)
     , Logo (..)
@@ -55,23 +56,21 @@ module Cardano.Metadata.Types
 import Cardano.Prelude
 
 import Cardano.Api
-    ( MaryEra
+    ( AllegraEra
     , PaymentExtendedKey
     , PaymentKey
     , Script (..)
     , ScriptHash
-    , ScriptInEra (..)
-    , ScriptLanguageInEra (..)
+    , ShelleyEra
     , SigningKey
-    , SimpleScriptVersion (..)
-    , TimeLocksSupported (..)
-    , adjustSimpleScriptVersion
+    , SimpleScript (..)
     , hashScript
     , serialiseToRawBytes
     , serialiseToRawBytesHex
     )
 import Cardano.Api.Shelley
-    ( fromAllegraTimelock
+    ( ShelleyLedgerEra
+    , fromAllegraTimelock
     , fromShelleyMultiSig
     , toAllegraTimelock
     , toShelleyMultiSig
@@ -92,27 +91,22 @@ import Cardano.Crypto.DSIGN
     )
 import Cardano.Crypto.Hash
     ( Blake2b_256, Hash, castHash, hashToBytes, hashWith )
-import Cardano.Ledger.BaseTypes ( StrictMaybe (..) )
-import Cardano.Ledger.Keys ( KeyHash (..), KeyRole (Witness) )
-import Cardano.Ledger.Pretty.Mary ( ppTimelock )
-import Cardano.Ledger.ShelleyMA.Timelocks
-    ( Timelock (RequireAllOf, RequireAnyOf, RequireMOf, RequireSignature, RequireTimeExpire, RequireTimeStart)
-    , ValidityInterval (..)
-    )
+import Cardano.Ledger.Allegra.Scripts ( Timelock )
 import Codec.Picture.Png ( decodePng )
 import Control.Category ( id )
 import Control.Monad.Fail ( fail )
 import Data.Aeson ( FromJSON (..), ToJSON (..), (.:), (.=) )
+import Data.Aeson.Encode.Pretty ( encodePretty )
 import Data.Maybe ( fromJust )
 import Network.URI ( URI (..), parseAbsoluteURI )
-import Ouroboros.Consensus.Shelley.Eras ( StandardCrypto )
 
 import qualified AesonHelpers
 import qualified Cardano.Api.Shelley as Api
 import qualified Cardano.Binary as CBOR
 import qualified Cardano.Crypto.Wallet as CC
+import qualified Cardano.Ledger.Binary as Binary
 import qualified Cardano.Ledger.Keys as Shelley
-import qualified Cardano.Prelude as CBOR ( cborError )
+import qualified Cardano.Ledger.Shelley.Scripts as Shelley
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson
 import qualified Data.ByteString as BS
@@ -132,7 +126,7 @@ newtype Subject = Subject { unSubject :: Text }
     deriving newtype (ToJSON)
 
 hashSubject :: Subject -> Hash Blake2b_256 Subject
-hashSubject = hashWith (CBOR.toStrictByteString . CBOR.encodeString . unSubject)
+hashSubject = hashWith (CBOR.serializeEncoding' . CBOR.encodeString . unSubject)
 
 
 --
@@ -146,14 +140,14 @@ class WellKnownProperty p where
     parseWellKnown :: Aeson.Value -> Aeson.Parser p
 
 hashWellKnownProperty :: WellKnownProperty p => p -> Hash Blake2b_256 Value
-hashWellKnownProperty = castHash . hashWith (CBOR.toStrictByteString . wellKnownToBytes)
+hashWellKnownProperty = castHash . hashWith (CBOR.serializeEncoding' . wellKnownToBytes)
 
 data Value
 newtype Property = Property { unProperty :: Text }
     deriving (Show, Eq, Ord)
 
 hashProperty :: Property -> Hash Blake2b_256 Property
-hashProperty = hashWith (CBOR.toStrictByteString . CBOR.encodeString . unProperty)
+hashProperty = hashWith (CBOR.serializeEncoding' . CBOR.encodeString . unProperty)
 
 newtype Decimals = Decimals { unDecimals :: Int }
   deriving (Eq, Show)
@@ -170,53 +164,57 @@ instance WellKnownProperty Decimals where
 
 data Policy = Policy
     { rawPolicy :: Text
-    , getPolicy :: ScriptInEra MaryEra
+    , getPolicy :: SimpleScript
     } deriving (Eq, Show)
 
--- FIXME: obsolete serialization methods (cf. cardano-node#207936dafd0f352bafc89b6c4822a636e80a3f01):
+-- The wire format of a policy is the hex-encoded CBOR of a pair
+-- @[tag, script]@ where tag 0 marks a Shelley 'MultiSig' script and tag
+-- 1 an Allegra 'Timelock' script. This format is frozen: policies
+-- serialised with it exist in registry entries in the wild.
 
-parseScriptJson :: Aeson.Value -> Aeson.Parser (ScriptInEra MaryEra)
-parseScriptJson v =
-    toMinimumSimpleScriptVersion
-             <$> parseJSON v
-        where
-          toMinimumSimpleScriptVersion s =
-            case adjustSimpleScriptVersion SimpleScriptV1 s of
-              Nothing -> ScriptInEra SimpleScriptV2InMary
-                                     (SimpleScript SimpleScriptV2 s)
-              Just s' -> ScriptInEra SimpleScriptV1InMary
-                                     (SimpleScript SimpleScriptV1 s')
+parseScriptJson :: Aeson.Value -> Aeson.Parser SimpleScript
+parseScriptJson = parseJSON
 
-serialiseScriptToCBOR :: (ScriptInEra MaryEra) -> ByteString
-serialiseScriptToCBOR (ScriptInEra SimpleScriptV1InMary (SimpleScript _v s)) = CBOR.serializeEncoding' $
-       CBOR.encodeListLen 2
-    <> CBOR.encodeWord 0
-    <> CBOR.toCBOR (toShelleyMultiSig s)
-serialiseScriptToCBOR (ScriptInEra SimpleScriptV2InMary (SimpleScript _v s)) = CBOR.serializeEncoding' $
-       CBOR.encodeListLen 2
-    <> CBOR.encodeWord 1
-    <> CBOR.toCBOR (toAllegraTimelock s :: Timelock StandardCrypto)
+serialiseScriptToCBOR :: SimpleScript -> ByteString
+serialiseScriptToCBOR script =
+    -- Scripts without time locks are serialised in the (older) Shelley
+    -- 'MultiSig' format (tag 0), all others in the Allegra 'Timelock'
+    -- format (tag 1), as the original two-script-version cardano-api
+    -- did.
+    case toShelleyMultiSig script of
+        Right multisig -> CBOR.serializeEncoding' $
+               CBOR.encodeListLen 2
+            <> CBOR.encodeWord 0
+            <> CBOR.encodePreEncoded (Binary.serialize' shelleyProtVer
+                 (multisig :: Shelley.MultiSig (ShelleyLedgerEra ShelleyEra)))
+        Left _ -> CBOR.serializeEncoding' $
+               CBOR.encodeListLen 2
+            <> CBOR.encodeWord 1
+            <> CBOR.encodePreEncoded (Binary.serialize' allegraProtVer
+                 (toAllegraTimelock script :: Timelock (ShelleyLedgerEra AllegraEra)))
 
-deserialiseScriptFromCBOR :: ByteString -> Either CBOR.DecoderError (ScriptInEra MaryEra)
+deserialiseScriptFromCBOR :: ByteString -> Either Binary.DecoderError SimpleScript
 deserialiseScriptFromCBOR bs =
-    CBOR.decodeAnnotator "Script" decodeScript (LBS.fromStrict bs)
+    Binary.decodeFullAnnotator allegraProtVer "Script" decodeScript (LBS.fromStrict bs)
       where
-        decodeScript :: CBOR.Decoder s (CBOR.Annotator (ScriptInEra MaryEra))
+        decodeScript :: forall s. Binary.Decoder s (Binary.Annotator SimpleScript)
         decodeScript = do
-          CBOR.decodeListLenOf 2
-          tag <- CBOR.decodeWord8
+          Binary.decodeListLenOf 2
+          tag <- Binary.decodeWord8
 
           case tag of
-            0 -> fmap (fmap convert) CBOR.fromCBOR
-              where
-                convert = (ScriptInEra SimpleScriptV1InMary) . (SimpleScript SimpleScriptV1) . fromShelleyMultiSig
-            1 -> fmap (fmap convert) CBOR.fromCBOR
-              where
-                convert = (ScriptInEra SimpleScriptV2InMary) . (SimpleScript SimpleScriptV2) . (fromAllegraTimelock TimeLocksInSimpleScriptV2)
+            0 -> fmap (fmap fromShelleyMultiSig)
+                   (Binary.decCBOR :: Binary.Decoder s (Binary.Annotator (Shelley.MultiSig (ShelleyLedgerEra ShelleyEra))))
+            1 -> fmap (fmap fromAllegraTimelock)
+                   (Binary.decCBOR :: Binary.Decoder s (Binary.Annotator (Timelock (ShelleyLedgerEra AllegraEra))))
 
-            _ -> CBOR.cborError $ CBOR.DecoderErrorUnknownTag "Script" tag
+            _ -> Binary.cborError $ Binary.DecoderErrorUnknownTag "Script" tag
 
--- end FIXME
+shelleyProtVer :: Binary.Version
+shelleyProtVer = Binary.natVersion @2
+
+allegraProtVer :: Binary.Version
+allegraProtVer = Binary.natVersion @3
 
 instance WellKnownProperty Policy where
     wellKnownPropertyName _ =
@@ -234,18 +232,11 @@ instance WellKnownProperty Policy where
             }
 
 prettyPolicy :: Policy -> Text
-prettyPolicy = \case
-    Policy _ (ScriptInEra _ (SimpleScript SimpleScriptV1 s)) ->
-        show $ ppTimelock $ Api.toAllegraTimelock s
-    Policy _ (ScriptInEra _ (SimpleScript SimpleScriptV2 s)) ->
-        show $ ppTimelock $ Api.toAllegraTimelock s
-#if !(MIN_VERSION_base(4,14,0))
-    _ -> panic "impossible pattern match"
-#endif
+prettyPolicy = T.decodeUtf8 . LBS.toStrict . encodePretty . toJSON . getPolicy
 
 hashPolicy :: Policy -> ScriptHash
-hashPolicy (Policy _ (ScriptInEra _ script)) =
-    hashScript script
+hashPolicy (Policy _ script) =
+    hashScript (SimpleScript script)
 
 verifyPolicy
     :: Policy
@@ -263,45 +254,33 @@ evaluatePolicy
     :: Policy
     -> [AttestationSignature]
     -> Either Text ()
-evaluatePolicy (Policy _ script) sigs =
-    case script of
-        ScriptInEra _ (SimpleScript SimpleScriptV1 s) ->
-            evaluateScript $ Api.toAllegraTimelock s
-        ScriptInEra _ (SimpleScript SimpleScriptV2 s) ->
-            evaluateScript $ Api.toAllegraTimelock s
-#if !(MIN_VERSION_base(4,14,0))
-        _ -> panic "impossible pattern match"
-#endif
+evaluatePolicy (Policy _ script) sigs
+    | isValidScript script =
+        Right ()
+    | otherwise =
+        Left "Unable to validate the monetary policy now and with current attestations."
   where
-    evaluateScript :: Timelock StandardCrypto -> Either Text ()
-    evaluateScript s
-        | isValidScript hashes (ValidityInterval SNothing SNothing) s =
-            Right ()
-        | otherwise =
-            Left "Unable to validate the monetary policy now and with current attestations."
+    keyHashes :: Set (Api.Hash Api.PaymentKey)
+    keyHashes = Set.fromList
+        $ Api.verificationKeyHash . Api.PaymentVerificationKey . Shelley.VKey . _attestationSignature_publicKey <$> sigs
 
-    hashes :: Set (KeyHash 'Witness StandardCrypto)
-    hashes = Set.fromList
-        $ Shelley.hashKey . Shelley.VKey . _attestationSignature_publicKey <$> sigs
-
+    -- Time locks are treated as always satisfiable: we only check that
+    -- the policy can be validated with the provided attestations.
     isValidScript
-        :: (crypto ~ StandardCrypto)
-        => Set (KeyHash 'Witness crypto)
-        -> ValidityInterval
-        -> Timelock crypto
+        :: SimpleScript
         -> Bool
-    isValidScript _vhks (ValidityInterval _start _) (RequireTimeStart _lockStart) =
+    isValidScript (RequireTimeAfter _lockStart) =
         True
-    isValidScript _vhks (ValidityInterval _ _end) (RequireTimeExpire _lockExp) =
+    isValidScript (RequireTimeBefore _lockExp) =
         True
-    isValidScript vhks _vi (RequireSignature hash) =
-        Set.member hash vhks
-    isValidScript vhks vi (RequireAllOf xs) =
-        all (isValidScript vhks vi) xs
-    isValidScript vhks vi (RequireAnyOf xs) =
-        any (isValidScript vhks vi) xs
-    isValidScript vhks vi (RequireMOf m xs) =
-        m <= sum (fmap (\x -> if isValidScript vhks vi x then 1 else 0) xs)
+    isValidScript (RequireSignature hash) =
+        Set.member hash keyHashes
+    isValidScript (RequireAllOf xs) =
+        all isValidScript xs
+    isValidScript (RequireAnyOf xs) =
+        any isValidScript xs
+    isValidScript (RequireMOf m xs) =
+        m <= sum (fmap (\x -> if isValidScript x then 1 else 0) xs)
 
 -- | "name" is a well-known property whose value must be a string
 newtype Name = Name { unName :: Text }
@@ -398,13 +377,13 @@ validateMetadataName = fmap Name .
     (validateMinLength 1 >=> validateMaxLength 50)
 
 
-validateScriptInEra :: MonadFail f => ByteString -> f (ScriptInEra MaryEra)
-validateScriptInEra =
+validateScript :: MonadFail f => ByteString -> f SimpleScript
+validateScript =
     either (fail . show) pure . deserialiseScriptFromCBOR
 
 validateMetadataPolicy :: MonadFail f => Text -> f Policy
 validateMetadataPolicy t = Policy t <$>
-    (validateBase16 >=> validateScriptInEra) t
+    (validateBase16 >=> validateScript) t
 
 validateMetadataTicker :: MonadFail f => Text -> f Ticker
 validateMetadataTicker = fmap Ticker .
@@ -551,7 +530,7 @@ hashSequenceNumber
     :: SequenceNumber
     -> Hash Blake2b_256 SequenceNumber
 hashSequenceNumber =
-    hashWith (CBOR.toStrictByteString . CBOR.encodeWord . fromIntegral)
+    hashWith (CBOR.serializeEncoding' . CBOR.encodeWord . fromIntegral)
 
 
 --
@@ -591,7 +570,8 @@ instance MakeAttestationSignature PaymentKey where
             }
       where
         -- Very ugly cast of a 'PaymentKey' into a SignKeyDSign
-        Just prv = rawDeserialiseSignKeyDSIGN (serialiseToRawBytes key)
+        prv = fromMaybe (panic "makeAttestationSignature: unable to decode signing key")
+            $ rawDeserialiseSignKeyDSIGN (serialiseToRawBytes key)
 
 instance MakeAttestationSignature PaymentExtendedKey where
     makeAttestationSignature key hashes =
@@ -603,7 +583,8 @@ instance MakeAttestationSignature PaymentExtendedKey where
             }
       where
         -- Very ugly cast of a 'PaymentExtendedKey' into an 'XPrv'
-        Right xprv = CC.xprv (serialiseToRawBytes key)
+        xprv = either (panic . ("makeAttestationSignature: unable to decode extended signing key: " <>) . T.pack) identity
+             $ CC.xprv (serialiseToRawBytes key)
         -- NOTE: We can 'safely' cast to VerKeyDSIGN and SigDSIGN for
         -- verification because the signature verification algorithm is the
         -- same for extended and normal keys.

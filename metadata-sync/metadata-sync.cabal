@@ -21,14 +21,12 @@ library
                      , filepath
                      , postgresql-simple
                      , lens
-                     , lens-aeson
                      , metadata-lib
                      , monad-logger
                      , mtl
                      , optparse-applicative
                      , persistent
                      , persistent-postgresql
-                     , persistent-template
                      , resource-pool
                      , safe-exceptions
                      , scientific
@@ -66,10 +64,9 @@ test-suite integration-tests
                 , containers
                 , directory
                 , hedgehog
-                , hspec <2.9
+                , hspec
                 , http-client
                 , lens
-                , lens-aeson
                 , metadata-lib
                 , metadata-sync
                 , monad-logger
@@ -82,7 +79,6 @@ test-suite integration-tests
                 , servant
                 , servant-client
                 , servant-server
-                , smallcheck
                 , tagged
                 , tasty
                 , tasty-hedgehog

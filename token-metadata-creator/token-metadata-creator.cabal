@@ -6,6 +6,7 @@ license:             Apache-2.0
 copyright:           2020 Input Output (Hong Kong) Ltd.
 author:              Obsidian Systems LLC
 maintainer:          operations@iohk.io
+extra-source-files:  test/fixtures/*.json
 
 flag development
     description: Disable `-Werror`
@@ -30,15 +31,14 @@ library
                , cardano-api
                , cardano-crypto
                , JuicyPixels
+               , aeson-pretty
+               , cardano-ledger-allegra
+               , cardano-ledger-binary
                , cardano-ledger-core
-               , cardano-ledger-shelley-ma
-               , cardano-ledger-pretty
-               , ouroboros-consensus-shelley
                , cardano-ledger-shelley
-               , cardano-slotting
                , cardano-binary
                , containers
-               , strict-containers
+               , cardano-strict-containers
                , cborg
                , time
                , co-log
@@ -73,9 +73,7 @@ executable token-metadata-creator
                      , metadata-lib
                      , text
                      , cardano-api
-                     , cardano-cli
                      , time
-                     , cardano-slotting
   hs-source-dirs:      app
   default-language:    Haskell2010
   default-extensions: NoImplicitPrelude
@@ -83,3 +81,26 @@ executable token-metadata-creator
   if (!flag(development))
     ghc-options: -Werror -Wall
   other-modules:       Config
+
+test-suite golden-tests
+  type:                exitcode-stdio-1.0
+  main-is:             golden-tests.hs
+  hs-source-dirs:      test
+  build-depends:       base
+                     , aeson
+                     , base16-bytestring
+                     , bytestring
+                     , cardano-prelude
+                     , directory
+                     , filepath
+                     , metadata-lib
+                     , tasty
+                     , tasty-hunit
+                     , text
+                     , token-metadata-creator
+                     , validation
+  default-language:    Haskell2010
+  default-extensions: NoImplicitPrelude
+                      OverloadedStrings
+  if (!flag(development))
+    ghc-options: -Werror -Wall

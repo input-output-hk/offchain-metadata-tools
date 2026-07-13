@@ -36,10 +36,8 @@ library
                      , base64-bytestring
                      , bytestring
                      , canonical-json
-                     , cardano-api
                      , co-log
                      , filepath
-                     , cardano-crypto
                      , cardano-crypto-class
                      , casing
                      , comonad
@@ -50,12 +48,11 @@ library
                      , github-webhooks
                      , hashable
                      , hedgehog
-                     , hspec <2.9
+                     , hspec
                      , http-api-data
                      , http-client
                      , http-types
                      , lens
-                     , lens-aeson
                      , megaparsec
                      , memory
                      , mmorph
@@ -71,7 +68,6 @@ library
                      , servant-client
                      , servant-github-webhook
                      , servant-server
-                     , smallcheck
                      , tasty
                      , tasty-hedgehog
                      , tasty-hspec
@@ -106,13 +102,12 @@ test-suite unit-tests
                 , base >=4.12 && <5
                 , base64-bytestring
                 , bytestring
-                , cardano-api
                 , cardano-crypto-class
                 , co-log
                 , containers
                 , filepath
                 , hedgehog
-                , hspec <2.9
+                , hspec
                 , hspec-wai
                 , http-client
                 , http-types
@@ -124,13 +119,13 @@ test-suite unit-tests
                 , raw-strings-qq
                 , servant
                 , servant-client
-                , smallcheck
                 , tasty
                 , tasty-hedgehog
                 , tasty-hspec
                 , tasty-hunit
                 , tasty-quickcheck
                 , text
+                , transformers
                 , unordered-containers
                 , validation
                 , vector

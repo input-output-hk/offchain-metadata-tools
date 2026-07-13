@@ -8,9 +8,11 @@ module Test.Cardano.Metadata.Generators where
 import qualified Cardano.Crypto.DSIGN.Class as Crypto
 import qualified Cardano.Crypto.DSIGN.Ed25519 as Crypto
 import qualified Cardano.Crypto.Seed as Crypto
-import Control.Monad.Except
+import Control.Monad.IO.Class ( MonadIO, liftIO )
 import Control.Monad.Morph ( hoist )
 import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.Key as Key
+import qualified Data.Aeson.KeyMap as KM
 import Data.Aeson.TH
 import Data.Functor.Identity ( runIdentity )
 import qualified Data.HashMap.Strict as HM
@@ -249,7 +251,7 @@ propertyValue =
     , pure $ Aeson.Null
     ]
     [ Aeson.Array . V.fromList <$> Gen.list (Range.linear 0 5) propertyValue
-    , Aeson.Object . HM.fromList <$> Gen.list (Range.linear 0 5) ((,) <$> Gen.text (Range.linear 1 64) Gen.unicodeAll <*> propertyValue)
+    , Aeson.Object . KM.fromList <$> Gen.list (Range.linear 0 5) ((,) <$> (Key.fromText <$> Gen.text (Range.linear 1 64) Gen.unicodeAll) <*> propertyValue)
     ]
 
 eitherWord8 :: MonadGen m => m (Either Word8 Word8)

@@ -26,7 +26,6 @@ import Data.ByteArray.Encoding
     ( Base (Base16, Base64), convertFromBase, convertToBase )
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy as BSL
-import qualified Data.HashMap.Strict as HM
 import Data.Hashable ( Hashable )
 import Data.Int ( Int64 )
 import Data.Maybe ( fromMaybe )
@@ -238,7 +237,7 @@ instance Read HashFn where
 
 instance Aeson.ToJSON v => Aeson.ToJSON (AttestedProperty v) where
   toJSON (AttestedProperty v sigs sequenceNumber) =
-    Aeson.Object . HM.fromList $
+    Aeson.object
       [ ("value", Aeson.toJSON v)
       , ("signatures", Aeson.toJSON sigs)
       , ("sequenceNumber", Aeson.toJSON sequenceNumber)
@@ -252,7 +251,7 @@ instance Aeson.FromJSON v => Aeson.FromJSON (AttestedProperty v) where
     <*> obj .: "sequenceNumber"
 
 instance ToJSON AnnotatedSignature where
-  toJSON (AnnotatedSignature sig pubKey) = Aeson.Object . HM.fromList $
+  toJSON (AnnotatedSignature sig pubKey) = Aeson.object
     [ ("signature", Aeson.String $ T.decodeUtf8 $ convertToBase Base16 $ rawSerialiseSigDSIGN sig)
     , ("publicKey", Aeson.String $ T.decodeUtf8 $ convertToBase Base16 $ rawSerialiseVerKeyDSIGN pubKey)
     ]

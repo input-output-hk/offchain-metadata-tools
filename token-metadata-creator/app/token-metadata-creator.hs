@@ -13,9 +13,7 @@
 
 import Cardano.Prelude hiding ( log )
 
-import Cardano.Api ( AsType (AsPaymentExtendedKey, AsPaymentKey) )
-import Cardano.CLI.Shelley.Key ( readSigningKeyFile )
-import Cardano.CLI.Types ( SigningKeyFile (..) )
+import qualified Cardano.Api as Api
 import Cardano.Metadata.GoguenRegistry
     ( GoguenRegistryEntry (..)
     , PartialGoguenRegistryEntry
@@ -239,16 +237,25 @@ handleEntryUpdateArguments (EntryUpdateArguments fInfo keyfile props newEntryInf
 
     readKeyFile :: FilePath -> IO SomeSigningKey
     readKeyFile skFname = do
-        asNormalKey   <- fmap SomeSigningKey <$>
-            readSigningKeyFile AsPaymentKey (SigningKeyFile skFname)
-        asExtendedKey <- fmap SomeSigningKey <$>
-            readSigningKeyFile AsPaymentExtendedKey (SigningKeyFile skFname)
-
-        dieOnLeft "Error reading key file" $
-            left show $ asNormalKey `orElse_` asExtendedKey
-
+        asEnvelope <- Api.readFileTextEnvelopeAnyOf keyTypes (Api.File skFname)
+        case asEnvelope of
+            Right key -> pure key
+            Left envelopeErr -> do
+                -- Fall back to bech32-encoded keys, which the
+                -- `cardano-cli` key reader used to accept too.
+                contents <- T.strip <$> readFile skFname
+                dieOnLeft "Error reading key file" $
+                    left (const (show envelopeErr)) $
+                        Api.deserialiseAnyOfFromBech32 bech32KeyTypes contents
       where
-        orElse_ a b = either (const b) Right a
+        keyTypes =
+            [ Api.FromSomeType (Api.AsSigningKey Api.AsPaymentKey) SomeSigningKey
+            , Api.FromSomeType (Api.AsSigningKey Api.AsPaymentExtendedKey) SomeSigningKey
+            ]
+        bech32KeyTypes =
+            [ Api.FromSomeType (Api.AsSigningKey Api.AsPaymentKey) SomeSigningKey
+            , Api.FromSomeType (Api.AsSigningKey Api.AsPaymentExtendedKey) SomeSigningKey
+            ]
 
     parseJSON :: Either Text Aeson.Value -> IO (PartialGoguenRegistryEntry)
     parseJSON registryJSON = dieOnLeft "Parse error" $ do

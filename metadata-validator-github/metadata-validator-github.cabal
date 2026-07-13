@@ -21,7 +21,6 @@ executable metadata-validator-github
                      , http-client
                      , http-types
                      , lens
-                     , lens-aeson
                      , megaparsec
                      , metadata-lib
                      , monad-logger

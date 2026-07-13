@@ -12,7 +12,7 @@ in {
       };
       offchainMetadataToolsPkgs = lib.mkOption {
         type = lib.types.attrs;
-        default = (import ../../. {}).project;
+        default = (import ../../. {}).project.hsPkgs;
         defaultText = "offchain-metadata-tools pkgs";
         description = ''
           The offchain-metadata-tools package set.

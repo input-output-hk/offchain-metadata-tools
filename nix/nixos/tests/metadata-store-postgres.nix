@@ -32,9 +32,6 @@ in
         ensureUsers = [
           {
             name = "${postgresUser}";
-            ensurePermissions = {
-              "DATABASE ${database}" = "ALL PRIVILEGES";
-            };
           }
         ];
         identMap = ''
@@ -47,6 +44,13 @@ in
         '';
       };
 
+      # `ensurePermissions` no longer exists and PostgreSQL 15+ needs
+      # explicit schema grants.
+      systemd.services.postgresql.postStart = pkgs.lib.mkAfter ''
+        $PSQL -tAc 'GRANT ALL PRIVILEGES ON DATABASE ${database} TO "${postgresUser}";'
+        $PSQL -d ${database} -tAc 'GRANT ALL ON SCHEMA public TO "${postgresUser}";'
+      '';
+
       users = {
         mutableUsers = false;
 
@@ -56,12 +60,19 @@ in
 
           # Create a system user that matches the database user so that we
           # can use peer authentication.
-          "${user}".isSystemUser = true;
+          "${user}" = {
+            isSystemUser = true;
+            group = user;
+          };
         };
+
+        groups."${user}" = {};
       };
 
       services.metadata-server = {
         enable = true;
+
+        metadataServerPkgs = haskellPackages;
 
         user = user;
 

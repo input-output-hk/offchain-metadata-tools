@@ -11,7 +11,6 @@ module Cardano.Metadata.Webhook.Types where
 import Data.Aeson ( FromJSON, ToJSON, parseJSON, toJSON, (.:), (.:?) )
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString as BS
-import qualified Data.HashMap.Strict as HM
 import Data.List.NonEmpty ( NonEmpty )
 import qualified Data.List.NonEmpty as NE
 import Data.Text ( Text )
@@ -44,7 +43,7 @@ instance FromJSON PushEvent' where
     <*> obj .: "repository"
 
 instance ToJSON PushEvent' where
-  toJSON (PushEvent' headCommit repoInfo) = Aeson.Object $ HM.fromList $
+  toJSON (PushEvent' headCommit repoInfo) = Aeson.object
     [ ("head_commit", toJSON headCommit)
     , ("repository", toJSON repoInfo)
     ]
@@ -65,7 +64,7 @@ instance FromJSON Commit where
 
 instance ToJSON Commit where
   toJSON (Commit added modified removed) =
-    Aeson.Object $ HM.fromList
+    Aeson.object
       [ ("added"    , toJSON $ maybe [] NE.toList added)
       , ("modified" , toJSON $ maybe [] NE.toList modified)
       , ("removed"  , toJSON $ maybe [] NE.toList removed)
@@ -82,7 +81,7 @@ instance FromJSON RepositoryInfo where
     <$> obj .: "contents_url"
 
 instance ToJSON RepositoryInfo where
-  toJSON (RepositoryInfo contentsUrl) = Aeson.Object $ HM.fromList $
+  toJSON (RepositoryInfo contentsUrl) = Aeson.object
     [("contents_url", toJSON contentsUrl)]
 
 type GetEntryFromFile = RepositoryInfo -> Text -> IO (Maybe Weakly.Metadata)

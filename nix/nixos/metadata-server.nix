@@ -14,7 +14,7 @@ in {
       };
       metadataServerPkgs = lib.mkOption {
         type = lib.types.attrs;
-        default = (import ../../. {}).project;
+        default = (import ../../. {}).project.hsPkgs;
         defaultText = "metadata-server pkgs";
         description = ''
           The metadata-server packages and library that should be used.

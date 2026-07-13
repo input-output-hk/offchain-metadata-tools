@@ -28,7 +28,6 @@ module Cardano.Metadata.Server.Types where
 import Data.Aeson ( FromJSON, ToJSON, (.:), (.:?) )
 import qualified Data.Aeson as Aeson
 import Data.Aeson.TH
-import qualified Data.HashMap.Strict as HM
 import Text.Casing
 
 import Cardano.Metadata.Types.Common ( PropertyName, Subject )
@@ -46,7 +45,7 @@ data BatchRequest
   deriving (Eq, Show)
 
 instance ToJSON BatchRequest where
-  toJSON (BatchRequest subjs propNames) = Aeson.Object . HM.fromList $
+  toJSON (BatchRequest subjs propNames) = Aeson.object
     [ ("subjects", Aeson.toJSON subjs)
     , ("properties", Aeson.toJSON propNames)
     ]
