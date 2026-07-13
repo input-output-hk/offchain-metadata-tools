@@ -799,10 +799,11 @@ cat <<EOF > metadata-config.nix
   };
 
   # PostgreSQL 15+ requires explicit grants; `ensurePermissions` no
-  # longer exists.
+  # longer exists. The postgresql service puts `psql` on PATH and sets
+  # PGPORT, so a bare `psql` connects as the superuser.
   systemd.services.postgresql.postStart = pkgs.lib.mkAfter ''
-    \$PSQL -tAc 'GRANT ALL PRIVILEGES ON DATABASE \${config.services.metadata-server.postgres.database} TO "\${config.services.metadata-server.postgres.user}";'
-    \$PSQL -d \${config.services.metadata-server.postgres.database} -tAc 'GRANT ALL ON SCHEMA public TO "\${config.services.metadata-server.postgres.user}";'
+    psql -tAc 'GRANT ALL PRIVILEGES ON DATABASE \${config.services.metadata-server.postgres.database} TO "\${config.services.metadata-server.postgres.user}";'
+    psql -d \${config.services.metadata-server.postgres.database} -tAc 'GRANT ALL ON SCHEMA public TO "\${config.services.metadata-server.postgres.user}";'
   '';
 
   nix.settings.substituters = [
