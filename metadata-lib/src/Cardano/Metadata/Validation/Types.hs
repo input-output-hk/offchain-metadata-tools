@@ -108,7 +108,7 @@ instance ToJSON Metadata where
   toJSON meta@(Metadata subject _ _) = Aeson.Object $ KM.fromList $
     [ ("subject", Aeson.toJSON subject)
     ]
-    <> ((\(k, v) -> (Key.fromText k, Aeson.toJSON v)) <$> (fromPropertyNameList $ M.toList $ metaProperties meta))
+    <> (Bifunctor.bimap Key.fromText Aeson.toJSON <$> (fromPropertyNameList $ M.toList $ metaProperties meta))
 
 instance FromJSON Metadata where
   parseJSON = Aeson.withObject "Weakly-typed Metadata" $ \obj ->

@@ -6,6 +6,7 @@ import Data.Aeson ( FromJSON, ToJSON, (.:) )
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Key as Key
 import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Bifunctor as Bifunctor
 import qualified Data.HashMap.Strict as HM
 
 import Cardano.Metadata.Types.Common
@@ -27,10 +28,10 @@ instance ToJSON Metadata where
   toJSON (Metadata subject properties) = Aeson.Object $ KM.fromList $
     [ ("subject", Aeson.toJSON subject)
     ]
-    <> ((\(k, v) -> (Key.fromText k, Aeson.toJSON v)) <$> (fromPropertyNameList $ HM.toList properties))
+    <> (Bifunctor.bimap Key.fromText Aeson.toJSON <$> (fromPropertyNameList $ HM.toList properties))
 
 instance FromJSON Metadata where
   parseJSON = Aeson.withObject "Weakly-typed Metadata" $ \obj ->
     Metadata
     <$> obj .: "subject"
-    <*> (traverse Aeson.parseJSON $ HM.fromList $ toPropertyNameList $ fmap (\(k, v) -> (Key.toText k, v)) $ KM.toList $ KM.delete "subject" obj)
+    <*> (traverse Aeson.parseJSON $ HM.fromList $ toPropertyNameList $ fmap (Bifunctor.first Key.toText) $ KM.toList $ KM.delete "subject" obj)
