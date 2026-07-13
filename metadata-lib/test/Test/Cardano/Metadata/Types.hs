@@ -9,11 +9,11 @@ module Test.Cardano.Metadata.Types
 
 import Data.Aeson ( FromJSON, ToJSON )
 import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.Key as Key
+import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Bifunctor as Bifunctor
 import Data.ByteArray.Encoding ( Base (Base16), convertToBase )
 import qualified Data.ByteString.Lazy.Char8 as BLC
-import qualified Data.Aeson.Key as Key
-import qualified Data.Aeson.KeyMap as KM
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -21,8 +21,8 @@ import Hedgehog ( Gen, forAll, property, (===) )
 import qualified Hedgehog as H ( Property )
 import Hedgehog.Internal.Property ( forAllT )
 import Test.Tasty ( TestTree, testGroup )
-import Test.Tasty.HUnit ( Assertion, testCase, (@?=) )
 import Test.Tasty.Hedgehog
+import Test.Tasty.HUnit ( Assertion, testCase, (@?=) )
 import Text.RawString.QQ ( r )
 import Text.Read ( readEither )
 

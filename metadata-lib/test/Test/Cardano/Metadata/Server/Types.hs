@@ -11,8 +11,8 @@ import qualified Data.Aeson as Aeson
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Vector as V
 import Test.Tasty ( TestTree, testGroup )
-import Test.Tasty.HUnit ( Assertion, testCase, (@?=) )
 import Test.Tasty.Hedgehog
+import Test.Tasty.HUnit ( Assertion, testCase, (@?=) )
 import Text.RawString.QQ
 
 import Cardano.Metadata.Server.Types

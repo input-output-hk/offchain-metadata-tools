@@ -13,8 +13,7 @@ import System.FilePath ( takeExtension, (</>) )
 
 import Cardano.Metadata.GoguenRegistry
     ( GoguenRegistryEntry (..), parseRegistryEntry, validateEntry )
-import Cardano.Metadata.Types
-    ( Policy (..), serialiseScriptToCBOR )
+import Cardano.Metadata.Types ( Policy (..), serialiseScriptToCBOR )
 
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson

@@ -5,7 +5,8 @@ module Cardano.Metadata.Sync.Config where
 import Control.Applicative ( optional )
 import Control.Exception ( bracket )
 import qualified Data.ByteString.Char8 as BC
-import Data.Pool ( Pool, defaultPoolConfig, destroyAllResources, newPool, setNumStripes )
+import Data.Pool
+    ( Pool, defaultPoolConfig, destroyAllResources, newPool, setNumStripes )
 import qualified Data.Pool as Pool
 import Data.Text ( Text )
 import qualified Data.Text as T

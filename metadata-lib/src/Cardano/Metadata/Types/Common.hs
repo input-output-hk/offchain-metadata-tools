@@ -40,8 +40,8 @@ import Quiet ( Quiet (Quiet) )
 import System.FilePath.Posix ( takeBaseName, takeExtensions )
 import Text.Casing ( fromHumps, toCamel )
 import Text.ParserCombinators.ReadP ( choice, string )
-import Text.Read ( readEither, readPrec )
 import qualified Text.Read as Read ( lift )
+import Text.Read ( readEither, readPrec )
 import Web.HttpApiData ( FromHttpApiData )
 
 -- | The metadata subject, the on-chain identifier

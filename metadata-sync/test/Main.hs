@@ -41,8 +41,8 @@ import Cardano.Metadata.Types.Common ( Subject (..), unPropertyName )
 import Database.PostgreSQL.Simple
     ( Connection, execute, executeMany, query, withTransaction )
 import Database.PostgreSQL.Simple.Types ( Identifier (..), Only (..) )
-import Test.Cardano.Metadata.Generators ( ComplexType )
 import qualified Test.Cardano.Metadata.Generators as Gen
+import Test.Cardano.Metadata.Generators ( ComplexType )
 import Test.Cardano.Metadata.Store
 
 newtype DbHost = DbHost { _dbHost :: Text }
