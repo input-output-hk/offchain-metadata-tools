@@ -11,7 +11,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-import Cardano.Prelude hiding ( log )
+import Cardano.Prelude
 
 import qualified Cardano.Api as Api
 import Cardano.Metadata.GoguenRegistry
@@ -49,6 +49,7 @@ import Control.Exception.Safe ( handleAny )
 import Data.Validation
 import System.Directory ( doesFileExist, renameFile )
 import System.Environment ( lookupEnv )
+import System.Exit ( die )
 import System.IO ( hFileSize )
 
 import Cardano.Metadata.Types.Common ( File (File) )
@@ -81,6 +82,7 @@ import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy.Char8 as BL8
 import qualified Data.Text as T
+import qualified Data.Text.IO as TIO
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TL
 import qualified Options.Applicative as OA
@@ -232,7 +234,7 @@ handleEntryUpdateArguments (EntryUpdateArguments fInfo keyfile props newEntryInf
   where
     dieOnLeft :: Text -> Either Text a -> IO a
     dieOnLeft lbl eVal = case eVal of
-        Left err  -> die $ lbl <> ": " <> err
+        Left err  -> die $ T.unpack $ lbl <> ": " <> err
         Right val -> pure val
 
     readKeyFile :: FilePath -> IO SomeSigningKey
@@ -243,7 +245,7 @@ handleEntryUpdateArguments (EntryUpdateArguments fInfo keyfile props newEntryInf
             Left envelopeErr -> do
                 -- Fall back to bech32-encoded keys, which the
                 -- `cardano-cli` key reader used to accept too.
-                contents <- T.strip <$> readFile skFname
+                contents <- T.strip <$> TIO.readFile skFname
                 dieOnLeft "Error reading key file" $
                     left (const (show envelopeErr)) $
                         Api.deserialiseAnyOfFromBech32 bech32KeyTypes contents
@@ -290,7 +292,7 @@ handleValidate logSeverity fpA mFpB = do
     parseFile :: (MonadIO m, WithLog env Message m) => (Text -> m a) -> FilePath -> m (File a)
     parseFile parserA fp = do
       size     <- liftIO $ withFile fp IO.ReadMode $ hFileSize
-      contents <- liftIO $ handleAny (const mempty) $ readFile fp
+      contents <- liftIO $ handleAny (const mempty) $ TIO.readFile fp
       a        <- parserA contents
       pure (File a (fromInteger size) fp)
 

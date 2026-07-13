@@ -126,7 +126,7 @@ newtype Subject = Subject { unSubject :: Text }
     deriving newtype (ToJSON)
 
 hashSubject :: Subject -> Hash Blake2b_256 Subject
-hashSubject = hashWith (CBOR.serializeEncoding' . CBOR.encodeString . unSubject)
+hashSubject = hashWith (CBOR.serialize' . CBOR.encodeString . unSubject)
 
 
 --
@@ -140,14 +140,14 @@ class WellKnownProperty p where
     parseWellKnown :: Aeson.Value -> Aeson.Parser p
 
 hashWellKnownProperty :: WellKnownProperty p => p -> Hash Blake2b_256 Value
-hashWellKnownProperty = castHash . hashWith (CBOR.serializeEncoding' . wellKnownToBytes)
+hashWellKnownProperty = castHash . hashWith (CBOR.serialize' . wellKnownToBytes)
 
 data Value
 newtype Property = Property { unProperty :: Text }
     deriving (Show, Eq, Ord)
 
 hashProperty :: Property -> Hash Blake2b_256 Property
-hashProperty = hashWith (CBOR.serializeEncoding' . CBOR.encodeString . unProperty)
+hashProperty = hashWith (CBOR.serialize' . CBOR.encodeString . unProperty)
 
 newtype Decimals = Decimals { unDecimals :: Int }
   deriving (Eq, Show)
@@ -182,12 +182,12 @@ serialiseScriptToCBOR script =
     -- format (tag 1), as the original two-script-version cardano-api
     -- did.
     case toShelleyMultiSig script of
-        Right multisig -> CBOR.serializeEncoding' $
+        Right multisig -> CBOR.serialize' $
                CBOR.encodeListLen 2
             <> CBOR.encodeWord 0
             <> CBOR.encodePreEncoded (Binary.serialize' shelleyProtVer
                  (multisig :: Shelley.MultiSig (ShelleyLedgerEra ShelleyEra)))
-        Left _ -> CBOR.serializeEncoding' $
+        Left _ -> CBOR.serialize' $
                CBOR.encodeListLen 2
             <> CBOR.encodeWord 1
             <> CBOR.encodePreEncoded (Binary.serialize' allegraProtVer
@@ -530,7 +530,7 @@ hashSequenceNumber
     :: SequenceNumber
     -> Hash Blake2b_256 SequenceNumber
 hashSequenceNumber =
-    hashWith (CBOR.serializeEncoding' . CBOR.encodeWord . fromIntegral)
+    hashWith (CBOR.serialize' . CBOR.encodeWord . fromIntegral)
 
 
 --
