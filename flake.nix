@@ -22,8 +22,9 @@
   outputs = inputs@{ self, nixpkgs, haskellNix, iohkNix, CHaP, flake-utils, ... }:
     let
       supportedSystems = [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ];
-      # Systems for which Hydra CI jobs are defined, matching the old release.nix.
-      ciSystems = [ "x86_64-linux" "x86_64-darwin" ];
+      # Systems for which Hydra CI jobs are defined (the old release.nix
+      # covered x86_64-linux and x86_64-darwin).
+      ciSystems = [ "x86_64-linux" "x86_64-darwin" "aarch64-darwin" ];
     in
     (flake-utils.lib.eachSystem supportedSystems (system:
       let
