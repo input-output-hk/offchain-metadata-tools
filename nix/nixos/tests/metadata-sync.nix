@@ -43,9 +43,11 @@ in
       };
 
       # `ensurePermissions` no longer exists and PostgreSQL 15+ needs
-      # explicit schema grants. The postgresql service puts `psql` on PATH
-      # and sets PGPORT, so a bare `psql` connects as the superuser.
-      systemd.services.postgresql.postStart = pkgs.lib.mkAfter ''
+      # explicit schema grants. These run in postgresql-setup.service
+      # (not postgresql.service) so they fire *after* ensureDatabases has
+      # created the database; that service puts `psql` on PATH and sets
+      # PGPORT, so a bare `psql` connects as the superuser.
+      systemd.services.postgresql-setup.postStart = pkgs.lib.mkAfter ''
         psql -tAc 'GRANT ALL PRIVILEGES ON DATABASE ${database} TO "${postgresUser}";'
         psql -d ${database} -tAc 'GRANT ALL ON SCHEMA public TO "${postgresUser}";'
       '';
