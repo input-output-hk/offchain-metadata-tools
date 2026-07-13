@@ -94,6 +94,11 @@ in
     start_all()
 
     server.wait_for_open_port(${toString postgresPort})
+    # postgresql-setup.service (oneshot) creates the database/user and runs
+    # our schema GRANTs; it only reports active once those have completed, so
+    # wait for it before connecting or we race the grants (PostgreSQL 15+
+    # denies schema public by default).
+    server.wait_for_unit("postgresql-setup.service")
 
     server.succeed(
         "${haskellPackages.metadata-store-postgres.components.tests.integration-tests}/bin/integration-tests \

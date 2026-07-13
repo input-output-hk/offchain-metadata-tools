@@ -146,7 +146,11 @@ in {
       };
 
       wantedBy = [ "multi-user.target" ];
-      after = [ "postgres.service" ];
+      # postgresql-setup.service (when services.postgresql is used) creates
+      # the database/user and grants schema privileges; start after it so we
+      # don't try to create tables before those grants land. After= on a unit
+      # that doesn't exist (external DB) is a harmless no-op.
+      after = [ "postgres.service" "postgresql-setup.service" ];
       requires = [ "postgresql.service" ];
     };
 
