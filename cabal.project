@@ -28,6 +28,17 @@ packages:
   ./token-metadata-creator
   ./metadata-sync
 
+-- The Hackage release of servant-github-webhook (0.4.2.0, unmaintained
+-- since 2019) predates aeson 2 and does not compile against it. Use the
+-- input-output-hk fork, whose master has been updated for aeson 2. This
+-- lets a plain `cabal build` (no Nix) work out of the box; the Nix build
+-- picks up the same source-repository-package.
+source-repository-package
+  type: git
+  location: https://github.com/input-output-hk/servant-github-webhook
+  tag: 9418ceed4b962368d90079143987e1fc67d27b31
+  --sha256: 0nww2v0skzx6jkx1ik46zmmz7gm8wgf29gqzn5ay519kzdga1wqh
+
 -- Disable all tests belonging to dependencies.
 tests: False
 
