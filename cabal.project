@@ -13,9 +13,11 @@ repository cardano-haskell-packages
     c00aae8461a256275598500ea0e187588c35a5d5d7454fb57eac18d9edb86a56
     d4a35cd3121aa00d18544bb0ac01c3e1691d618f462c46129271bccf39f7e8ee
 
+-- Index states as used by cardano-node 10.5.x, a known-coherent set
+-- for the cardano-api 10.x line.
 index-state:
-  , hackage.haskell.org 2026-07-01T00:00:00Z
-  , cardano-haskell-packages 2026-07-01T00:00:00Z
+  , hackage.haskell.org 2025-06-03T08:07:10Z
+  , cardano-haskell-packages 2025-07-17T12:00:21Z
 
 packages:
   ./metadata-lib
@@ -53,4 +55,4 @@ package metadata-sync
 constraints:
     -- Stay on the node-10.x line of cardano-api; 11.x restructured
     -- the module hierarchy again.
-    cardano-api < 11
+    cardano-api ^>= 10.16
