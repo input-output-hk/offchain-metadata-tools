@@ -226,9 +226,9 @@ handleEntryUpdateArguments (EntryUpdateArguments fInfo keyfile props newEntryInf
         DraftStatusFinal -> do
             dieOnLeft "Finalizing" finalVerificationStatus
             renameFile (draftFilename fInfo) $ canonicalFilename fInfo
-            putStrLn $ canonicalFilename fInfo
+            putStrLn $ T.pack $ canonicalFilename fInfo
         DraftStatusDraft -> do
-            putStrLn $ draftFilename fInfo
+            putStrLn $ T.pack $ draftFilename fInfo
 
     exitSuccess
   where
