@@ -4,13 +4,13 @@ module Cardano.Metadata.Sync where
 
 import qualified Data.Aeson as Aeson
 import Data.Functor ( void )
-import Data.String ( fromString )
 import Data.Text ( Text )
 import qualified Data.Text as T
 import Data.Traversable ( forM )
 import Database.PostgreSQL.Simple
-    ( Connection, execute, executeMany, withTransaction )
-import Database.PostgreSQL.Simple.Types ( Identifier (..), In (..), Only (..) )
+    ( Connection, execute, executeMany, formatQuery, withTransaction )
+import Database.PostgreSQL.Simple.Types
+    ( Identifier (..), In (..), Only (..), Query (..) )
 import System.Directory ( listDirectory )
 import System.FilePath.Posix ( takeBaseName )
 import System.IO.Temp ( withSystemTempDirectory )
@@ -46,6 +46,8 @@ write conn tableName kvs =
 
     void $ execute conn "TRUNCATE ?" (Only table)
 
+    tableIdent <- formatQuery conn "?" (Only table)
+
     let dat = fmap (\(Subject k, v) -> (k, v)) kvs
 
-    void $ executeMany conn ("INSERT INTO " <> fromString (T.unpack tableName) <> " VALUES (?,?)") dat
+    void $ executeMany conn ("INSERT INTO " <> Query tableIdent <> " VALUES (?,?)") dat
