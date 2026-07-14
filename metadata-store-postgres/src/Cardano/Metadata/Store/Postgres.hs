@@ -26,6 +26,7 @@ module Cardano.Metadata.Store.Postgres
 
 import Cardano.Metadata.Store.Types
 import Control.Exception.Safe
+import Control.Monad ( unless )
 import Control.Monad.IO.Class ( MonadIO )
 import Control.Monad.Reader ( ReaderT, runReaderT )
 import Data.Aeson ( FromJSON, FromJSONKey, ToJSON, ToJSONKey )
@@ -33,6 +34,7 @@ import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Encoding.Internal as Aeson
 import qualified Data.Aeson.Key as Key
 import qualified Data.Aeson.Types as Aeson
+import Data.Char ( isAsciiLower, isAsciiUpper, isDigit )
 import Data.Coerce ( coerce )
 import qualified Data.Map.Strict as M
 import Data.Pool
@@ -48,6 +50,7 @@ import Prelude hiding ( init, read )
 
 data PostgresKeyValueException = UniqueKeyConstraintViolated
                                | FailedToDecodeJSONValue String Text
+                               | InvalidTableName Text
   deriving (Eq, Show, Exception)
 
 data KeyValue k v = KeyValue { _kvConnPool    :: Pool SqlBackend
@@ -71,7 +74,9 @@ init
   -- ^ Database table name
   -> IO (KeyValue k v)
   -- ^ Resulting key-value store
-init pool tableName =
+init pool tableName = do
+  checkTableName tableName
+
   withBackendFromPool pool $ do
     createTable tableName
 
@@ -103,6 +108,8 @@ withBackendFromPool pool action = withResource pool (runReaderT action)
 
 read :: (ToJSONKey k, FromJSON v) => k -> KeyValue k v -> IO (Maybe v)
 read k (KeyValue pool tableName) = do
+  checkTableName tableName
+
   results <- withBackendFromPool pool $
     Sql.rawSql
       ("SELECT value FROM " <> tableName <> " WHERE \"key\" = ?")
@@ -110,15 +117,17 @@ read k (KeyValue pool tableName) = do
   case results of
     []            -> pure Nothing
     (Single x):[] -> handleJSONDecodeError x $ decodeJSONValue x
-    _xs           -> throw UniqueKeyConstraintViolated
+    _xs           -> throwIO UniqueKeyConstraintViolated
 
 readBatch :: (ToJSONKey k, FromJSON v) => [k] -> KeyValue k v -> IO [v]
-readBatch [] (KeyValue _pool _tableName) = pure []
+readBatch [] (KeyValue _pool tableName) = checkTableName tableName >> pure []
 readBatch ks (KeyValue pool tableName) = do
+  checkTableName tableName
+
   results <- fmap (fmap (\(k, v) -> (Sql.unSingle k, Sql.unSingle v))) $  withBackendFromPool pool $
     Sql.rawSql
-      ("SELECT key, value FROM " <> tableName <> " WHERE \"key\" IN " <> toSqlList ks)
-      []
+      ("SELECT key, value FROM " <> tableName <> " WHERE \"key\" IN (" <> placeholders <> ")")
+      (map toPersistValueJSONKey ks)
   resultMap <- flip foldMap results $ \(k, v) -> do
     v' <- handleJSONDecodeError v $ decodeJSONValue v
     pure $ M.singleton k v'
@@ -129,21 +138,27 @@ readBatch ks (KeyValue pool tableName) = do
       Just v  -> [v]
 
   where
-    toSqlList xs = "('" <> T.intercalate "','" (map toJSONKeyText xs) <> "')"
+    placeholders = T.intercalate "," (map (const "?") ks)
 
 write :: (ToJSONKey k, ToJSON v) => k -> v -> KeyValue k v -> IO ()
-write k v (KeyValue pool tableName) = withBackendFromPool pool $ do
-  Sql.rawExecute
-    ("INSERT INTO " <> tableName <> " (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value")
-    [ toPersistValueJSONKey k
-    , toPersistValueJSON v
-    ]
+write k v (KeyValue pool tableName) = do
+  checkTableName tableName
+
+  withBackendFromPool pool $ do
+    Sql.rawExecute
+      ("INSERT INTO " <> tableName <> " (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value")
+      [ toPersistValueJSONKey k
+      , toPersistValueJSON v
+      ]
 
 delete :: ToJSONKey k => k -> KeyValue k v -> IO ()
-delete k (KeyValue pool tableName) = withBackendFromPool pool $ do
-  Sql.rawExecute
-    ("DELETE FROM " <> tableName <> " WHERE \"key\" = ?")
-    [toPersistValueJSONKey k]
+delete k (KeyValue pool tableName) = do
+  checkTableName tableName
+
+  withBackendFromPool pool $ do
+    Sql.rawExecute
+      ("DELETE FROM " <> tableName <> " WHERE \"key\" = ?")
+      [toPersistValueJSONKey k]
 
 update :: (ToJSONKey k, ToJSON v, FromJSON v) => (v -> Maybe v) -> k -> KeyValue k v -> IO ()
 update fv k kvs = do
@@ -156,6 +171,8 @@ update fv k kvs = do
 
 toList :: (FromJSONKey k, FromJSON v) => KeyValue k v -> IO [(k, v)]
 toList (KeyValue pool tableName) = do
+  checkTableName tableName
+
   results <- withBackendFromPool pool $
     Sql.rawSql
       ("SELECT key, value FROM " <> tableName)
@@ -166,8 +183,11 @@ toList (KeyValue pool tableName) = do
     pure (k, v)
 
 empty :: KeyValue k v -> IO ()
-empty (KeyValue pool tableName) = withBackendFromPool pool $
-  Sql.rawExecute ("TRUNCATE " <> tableName) []
+empty (KeyValue pool tableName) = do
+  checkTableName tableName
+
+  withBackendFromPool pool $
+    Sql.rawExecute ("TRUNCATE " <> tableName) []
 
 decodeJSONValue :: FromJSON v => Text -> Either String v
 decodeJSONValue = Aeson.eitherDecode . TLE.encodeUtf8 . TL.fromStrict
@@ -182,7 +202,7 @@ decodeJSONKey t = case Aeson.fromJSONKey of
     Aeson.parseEither pv v
 
 handleJSONDecodeError :: Text -> Either String a -> IO a
-handleJSONDecodeError t = either (\err -> throw $ FailedToDecodeJSONValue err t) pure
+handleJSONDecodeError t = either (\err -> throwIO $ FailedToDecodeJSONValue err t) pure
 
 toPersistValueJSONKey :: ToJSONKey k => k -> PersistValue
 toPersistValueJSONKey = toPersistValue . toJSONKeyText
@@ -192,3 +212,23 @@ toJSONKeyText k =
   case Aeson.toJSONKey of
     Aeson.ToJSONKeyText  f _ -> Key.toText (f k)
     Aeson.ToJSONKeyValue _ f -> TL.toStrict $ TLE.decodeUtf8 $ Aeson.encodingToLazyByteString $ f k
+
+-- | The table name is spliced directly into raw SQL statements (Postgres
+-- does not support binding identifiers as query parameters), so it is
+-- restricted to a safe subset of SQL identifier characters to rule out SQL
+-- injection via a malicious @--db-table@ value.
+isSafeTableName :: Text -> Bool
+isSafeTableName t =
+  not (T.null t)
+    && not (isDigit (T.head t))
+    && T.all isSafeChar t
+  where
+    isSafeChar c = isAsciiLower c || isAsciiUpper c || isDigit c || c == '_'
+
+-- | Every function in this module that splices a table name into a raw SQL
+-- statement calls this first, rather than relying solely on the check in
+-- 'init', so that validation doesn't silently lapse if a 'KeyValue' is ever
+-- constructed some other way in future.
+checkTableName :: Text -> IO ()
+checkTableName tableName =
+  unless (isSafeTableName tableName) $ throwIO (InvalidTableName tableName)
