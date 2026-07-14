@@ -111,11 +111,11 @@ propName = Gen.choice [ pure $ PropertyName "description"
 -- 22P05) and it is not meaningful metadata content, so values that
 -- round-trip through the database must not contain it.
 unicodeAllNoNul :: MonadGen m => m Char
-unicodeAllNoNul = Gen.filter (/= '\0') Gen.unicodeAll
+unicodeAllNoNul = Gen.filterT (/= '\0') Gen.unicodeAll
 
 -- | Like 'Gen.unicode' but excluding the NUL character (see 'unicodeAllNoNul').
 unicodeNoNul :: MonadGen m => m Char
-unicodeNoNul = Gen.filter (/= '\0') Gen.unicode
+unicodeNoNul = Gen.filterT (/= '\0') Gen.unicode
 
 subject :: MonadGen m => m Subject
 subject = Subject <$> Gen.text (Range.linear 1 256) unicodeAllNoNul
