@@ -106,8 +106,19 @@ propName = Gen.choice [ pure $ PropertyName "description"
                       , fmap (PropertyName) $ Gen.text (Range.linear 0 128) Gen.unicodeAll
                       ]
 
+-- | Like 'Gen.unicodeAll' but excluding the NUL character. PostgreSQL's
+-- @text@/@jsonb@ types cannot store @\\NUL@ (it is rejected with SQLSTATE
+-- 22P05) and it is not meaningful metadata content, so values that
+-- round-trip through the database must not contain it.
+unicodeAllNoNul :: MonadGen m => m Char
+unicodeAllNoNul = Gen.filter (/= '\0') Gen.unicodeAll
+
+-- | Like 'Gen.unicode' but excluding the NUL character (see 'unicodeAllNoNul').
+unicodeNoNul :: MonadGen m => m Char
+unicodeNoNul = Gen.filter (/= '\0') Gen.unicode
+
 subject :: MonadGen m => m Subject
-subject = Subject <$> Gen.text (Range.linear 1 256) Gen.unicodeAll
+subject = Subject <$> Gen.text (Range.linear 1 256) unicodeAllNoNul
 
 metadataValue :: MonadGen m => m Text
 metadataValue = Gen.text (Range.linear 0 128) Gen.unicodeAll
@@ -240,18 +251,18 @@ validationMetadata' = do
   validationMetadataSignedWith skey subj
 
 propertyName :: MonadGen m => m PropertyName
-propertyName = PropertyName <$> Gen.text (Range.linear 1 64) Gen.unicode
+propertyName = PropertyName <$> Gen.text (Range.linear 1 64) unicodeNoNul
 
 propertyValue :: MonadGen m => m Aeson.Value
 propertyValue =
   Gen.recursive Gen.choice
-    [ Aeson.String <$> Gen.text (Range.linear 1 64) Gen.unicode
+    [ Aeson.String <$> Gen.text (Range.linear 1 64) unicodeNoNul
     , Aeson.Number <$> fromIntegral <$> Gen.word8 Range.constantBounded
     , Aeson.Bool <$> Gen.bool
     , pure $ Aeson.Null
     ]
     [ Aeson.Array . V.fromList <$> Gen.list (Range.linear 0 5) propertyValue
-    , Aeson.Object . KM.fromList <$> Gen.list (Range.linear 0 5) ((,) <$> (Key.fromText <$> Gen.text (Range.linear 1 64) Gen.unicodeAll) <*> propertyValue)
+    , Aeson.Object . KM.fromList <$> Gen.list (Range.linear 0 5) ((,) <$> (Key.fromText <$> Gen.text (Range.linear 1 64) unicodeAllNoNul) <*> propertyValue)
     ]
 
 eitherWord8 :: MonadGen m => m (Either Word8 Word8)
