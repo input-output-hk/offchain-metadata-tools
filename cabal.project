@@ -28,17 +28,6 @@ packages:
   ./token-metadata-creator
   ./metadata-sync
 
--- The Hackage release of servant-github-webhook (0.4.2.0, unmaintained
--- since 2019) predates aeson 2 and does not compile against it. Use the
--- input-output-hk fork, whose master has been updated for aeson 2. This
--- lets a plain `cabal build` (no Nix) work out of the box; the Nix build
--- picks up the same source-repository-package.
-source-repository-package
-  type: git
-  location: https://github.com/input-output-hk/servant-github-webhook
-  tag: 9418ceed4b962368d90079143987e1fc67d27b31
-  --sha256: 0nww2v0skzx6jkx1ik46zmmz7gm8wgf29gqzn5ay519kzdga1wqh
-
 -- Disable all tests belonging to dependencies.
 tests: False
 
@@ -67,3 +56,14 @@ constraints:
     -- Stay on the node-10.x line of cardano-api; 11.x restructured
     -- the module hierarchy again.
     cardano-api ^>= 10.16
+
+-- The Hackage release of servant-github-webhook (0.4.2.0, unmaintained
+-- since 2019) predates aeson 2 and does not compile against it. Use the
+-- input-output-hk fork, whose master has been updated for aeson 2. This
+-- lets a plain `cabal build` (no Nix) work out of the box; the Nix build
+-- picks up the same source-repository-package.
+source-repository-package
+  type: git
+  location: https://github.com/tsani/servant-github-webhook
+  tag: 4160919432643e7f891dccf1ce5599264fe32795
+  --sha256: 1adzyicl8xrxxa0pbxz9d0pvb5pxbqnh8dwlrlgg3gdcjgr71983
