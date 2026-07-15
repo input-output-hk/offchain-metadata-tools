@@ -6,6 +6,22 @@ maintainer:          mail@sevanspowell.net
 build-type:          Simple
 extra-source-files:  CHANGELOG
 
+library
+  hs-source-dirs:      lib
+  exposed-modules:     Cardano.Metadata.Webhook.Secret
+
+  build-depends:       base
+                     , bytestring
+
+  ghc-options:          -Wall
+                        -Wcompat
+                        -fwarn-redundant-constraints
+                        -fwarn-incomplete-patterns
+                        -fwarn-unused-imports
+                        -Wincomplete-record-updates
+                        -Wincomplete-uni-patterns
+                        -Wno-unsafe
+
 executable metadata-webhook
   hs-source-dirs:      src
   main-is:             Main.hs
@@ -20,6 +36,7 @@ executable metadata-webhook
                      , lens
                      , metadata-lib
                      , metadata-store-postgres
+                     , metadata-webhook
                      , monad-logger
                      , mtl
                      , optparse-applicative
@@ -49,3 +66,16 @@ executable metadata-webhook
 
   other-modules:        Paths_metadata_webhook
                         Config
+
+test-suite unit-tests
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:       test
+  main-is:              Main.hs
+
+  build-depends:        base
+                      , bytestring
+                      , metadata-webhook
+                      , tasty
+                      , tasty-hunit
+
+  ghc-options:          -Wall

@@ -15,17 +15,23 @@ import qualified Database.Persist.Postgresql as Postgresql
 import qualified Network.Wai.Handler.Warp as Warp
 import qualified Options.Applicative as Opt
 import System.Environment ( lookupEnv )
+import System.Exit ( die )
 import qualified Text.Regex as R
 
 import qualified Cardano.Metadata.Store.Postgres as Store
 import Cardano.Metadata.Store.Postgres.Config ( Opts (..), pgConnectionString )
+import Cardano.Metadata.Webhook.Secret ( resolveWebhookSecret )
 import Cardano.Metadata.Webhook.Server
 import Cardano.Metadata.Webhook.Types
 import Config ( opts )
 
 main :: IO ()
 main = do
-  key         <- maybe mempty C8.pack <$> lookupEnv "METADATA_WEBHOOK_SECRET"
+  secretEnv <- lookupEnv "METADATA_WEBHOOK_SECRET"
+  key <- case resolveWebhookSecret secretEnv of
+    Left err -> die err
+    Right k  -> pure k
+
   githubToken <- GitHubToken . maybe "" T.pack <$> lookupEnv "METADATA_GITHUB_TOKEN"
 
   options@(Opts { optDbConnections       = numDbConns
