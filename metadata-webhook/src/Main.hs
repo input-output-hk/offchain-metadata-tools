@@ -32,7 +32,10 @@ main = do
     Left err -> die err
     Right k  -> pure k
 
-  githubToken <- GitHubToken . maybe "" T.pack <$> lookupEnv "METADATA_GITHUB_TOKEN"
+  githubToken <- resolveGithubToken <$> lookupEnv "METADATA_GITHUB_TOKEN"
+  case githubToken of
+    Nothing -> putStrLn "METADATA_GITHUB_TOKEN not set (or empty); GitHub API requests will be made anonymously and are subject to GitHub's public rate limits."
+    Just _  -> pure ()
 
   WebhookOpts { optGithubOwner = githubOwner
               , optGithubRepo  = githubRepo

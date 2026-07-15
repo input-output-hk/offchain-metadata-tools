@@ -14,6 +14,7 @@ import qualified Data.ByteString as BS
 import Data.List.NonEmpty ( NonEmpty )
 import qualified Data.List.NonEmpty as NE
 import Data.Text ( Text )
+import qualified Data.Text as T
 import Servant
 import qualified Servant.GitHub.Webhook as SGH
 
@@ -29,6 +30,17 @@ instance HasContextEntry '[GitHubKey] (SGH.GitHubKey result) where
 
 newtype GitHubToken = GitHubToken { ghToken :: Text }
   deriving (Eq, Show)
+
+-- | Normalize the raw METADATA_GITHUB_TOKEN environment variable, treating
+-- both an unset and an empty-string value as "no token" (anonymous GitHub
+-- API access) rather than as a bad token to send. Unlike the webhook
+-- secret, an absent GitHub token is a legitimate configuration -- public
+-- repositories don't need one -- so this never fails closed.
+resolveGithubToken :: Maybe String -> Maybe GitHubToken
+resolveGithubToken Nothing = Nothing
+resolveGithubToken (Just s)
+  | null s    = Nothing
+  | otherwise = Just (GitHubToken (T.pack s))
 
 data PushEvent'
   = PushEvent' { evPushHeadCommit :: Commit

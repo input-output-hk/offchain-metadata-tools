@@ -55,18 +55,24 @@ metadataWebhookUnsigned = pushHook
 -- event for any other repository is ignored before any request is made, so
 -- our GitHub token is never attached to a request whose destination host an
 -- attacker could influence (SSRF + credential exfiltration).
-getFileContent :: GitHubToken -> GitHubRepo -> GetEntryFromFile
-getFileContent (GitHubToken githubToken) expectedRepo repoInfo fileName
+getFileContent :: Maybe GitHubToken -> GitHubRepo -> GetEntryFromFile
+getFileContent mGithubToken expectedRepo repoInfo fileName
   | repoInfoFullName repoInfo /= ghRepoFullName expectedRepo = do
       putStrLn $ "Ignoring push event for repository '" <> T.unpack (repoInfoFullName repoInfo) <> "'; this webhook is only configured to serve '" <> T.unpack (ghRepoFullName expectedRepo) <> "'."
       pure Nothing
   | otherwise = do
       let fileContentsUrl = ghRepoContentsUrl expectedRepo <> fileName
 
-      let options = Wreq.defaults & Wreq.header hAccept .~ ["application/vnd.github.v3.raw"]
-                                  & Wreq.header hUserAgent .~ ["metadata-webhook"]
-                                  & Wreq.header hAuthorization .~ [C8.pack . T.unpack $ githubToken]
-                                  & Wreq.checkResponse .~ (pure mempty)
+      let baseOptions = Wreq.defaults & Wreq.header hAccept .~ ["application/vnd.github.v3.raw"]
+                                      & Wreq.header hUserAgent .~ ["metadata-webhook"]
+                                      & Wreq.checkResponse .~ (pure mempty)
+
+          -- No token means an anonymous request, not a request with a bad
+          -- (empty) credential -- so the Authorization header is omitted
+          -- entirely rather than sent as "".
+          options = case mGithubToken of
+            Nothing                  -> baseOptions
+            Just (GitHubToken token) -> baseOptions & Wreq.header hAuthorization .~ [C8.pack (T.unpack token)]
 
       resp <- Wreq.getWith options (T.unpack fileContentsUrl)
 

@@ -139,6 +139,7 @@ test-suite unit-tests
                         Test.Cardano.Metadata.Validation
                         Test.Cardano.Metadata.Validation.GitHub
                         Test.Cardano.Metadata.Server.Types
+                        Test.Cardano.Metadata.Webhook
 
   ghc-options:          -Wall
                         -Wincomplete-record-updates
