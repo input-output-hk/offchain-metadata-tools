@@ -23,7 +23,7 @@ import Cardano.Metadata.Store.Postgres.Config ( Opts (..), pgConnectionString )
 import Cardano.Metadata.Webhook.Secret ( resolveWebhookSecret )
 import Cardano.Metadata.Webhook.Server
 import Cardano.Metadata.Webhook.Types
-import Config ( opts )
+import Config ( WebhookOpts (..), opts )
 
 main :: IO ()
 main = do
@@ -34,10 +34,15 @@ main = do
 
   githubToken <- GitHubToken . maybe "" T.pack <$> lookupEnv "METADATA_GITHUB_TOKEN"
 
-  options@(Opts { optDbConnections       = numDbConns
-                , optDbMetadataTableName = tableName
-                , optServerPort          = port
-                }) <- Opt.execParser opts
+  WebhookOpts { optGithubOwner = githubOwner
+              , optGithubRepo  = githubRepo
+              , optDbOpts      = options@(Opts { optDbConnections       = numDbConns
+                                                , optDbMetadataTableName = tableName
+                                                , optServerPort          = port
+                                                })
+              } <- Opt.execParser opts
+
+  let githubRepoInfo = GitHubRepo githubOwner githubRepo
 
   let pgConnString = pgConnectionString options
   putStrLn . obfuscatePasswords $ "Connecting to database using connection string: " <> C8.unpack pgConnString
@@ -47,7 +52,7 @@ main = do
       intf <- Store.postgresStore pool (T.pack tableName)
 
       putStrLn $ "Metadata webhook is starting on port " <> show port <> "."
-      liftIO $ Warp.run port (appSigned (gitHubKey $ pure key) intf (getFileContent githubToken))
+      liftIO $ Warp.run port (appSigned (gitHubKey $ pure key) intf (getFileContent githubToken githubRepoInfo))
 
 obfuscatePasswords :: String -> String
 obfuscatePasswords clear = R.subRegex (R.mkRegex "password=\\S+") clear "password=*******"

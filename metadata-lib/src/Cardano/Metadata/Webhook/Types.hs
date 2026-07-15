@@ -70,18 +70,46 @@ instance ToJSON Commit where
       , ("removed"  , toJSON $ maybe [] NE.toList removed)
       ]
 
+-- | Only the repository's full name ("owner/repo") is trusted from the
+-- webhook payload, and only to check it against the server-configured
+-- 'GitHubRepo' -- never to build a URL. The payload previously also carried
+-- a "contents_url" that was used directly to build the GitHub API request,
+-- letting a forged (or otherwise attacker-influenced) payload point that
+-- request at an arbitrary host with our GitHub token attached.
 data RepositoryInfo
-  = RepositoryInfo { repoInfoContentsUrl :: Text
+  = RepositoryInfo { repoInfoFullName :: Text
                    }
   deriving (Eq, Show)
 
 instance FromJSON RepositoryInfo where
   parseJSON = Aeson.withObject "RepositoryInfo" $ \obj ->
     RepositoryInfo
-    <$> obj .: "contents_url"
+    <$> obj .: "full_name"
 
 instance ToJSON RepositoryInfo where
-  toJSON (RepositoryInfo contentsUrl) = Aeson.object
-    [("contents_url", toJSON contentsUrl)]
+  toJSON (RepositoryInfo fullName) = Aeson.object
+    [("full_name", toJSON fullName)]
+
+-- | A server-side pinned GitHub repository. Constructed only from
+-- operator-supplied configuration (CLI/env), never from webhook payload
+-- data, so it can be used to build GitHub API request URLs without
+-- exposing our GitHub token to a host an attacker gets to choose.
+data GitHubRepo
+  = GitHubRepo { ghRepoOwner :: Text
+               , ghRepoName  :: Text
+               }
+  deriving (Eq, Show)
+
+-- | The full name ("owner/repo") of a pinned 'GitHubRepo', in the same
+-- format as GitHub's "full_name" field, for comparison against
+-- 'repoInfoFullName'.
+ghRepoFullName :: GitHubRepo -> Text
+ghRepoFullName (GitHubRepo owner name) = owner <> "/" <> name
+
+-- | The GitHub REST "contents" API URL prefix for fetching files from a
+-- pinned repository, e.g. "https://api.github.com/repos/owner/repo/contents/".
+ghRepoContentsUrl :: GitHubRepo -> Text
+ghRepoContentsUrl repo =
+  "https://api.github.com/repos/" <> ghRepoFullName repo <> "/contents/"
 
 type GetEntryFromFile = RepositoryInfo -> Text -> IO (Maybe Weakly.Metadata)
