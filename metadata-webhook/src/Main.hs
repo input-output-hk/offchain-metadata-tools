@@ -55,7 +55,7 @@ main = do
       intf <- Store.postgresStore pool (T.pack tableName)
 
       putStrLn $ "Metadata webhook is starting on port " <> show port <> "."
-      liftIO $ Warp.run port (appSigned (gitHubKey $ pure key) intf (getFileContent githubToken githubRepoInfo))
+      liftIO $ Warp.run port (appSigned key (gitHubKey $ pure key) intf (getFileContent githubToken githubRepoInfo))
 
 obfuscatePasswords :: String -> String
 obfuscatePasswords clear = R.subRegex (R.mkRegex "password=\\S+") clear "password=*******"

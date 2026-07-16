@@ -5,6 +5,7 @@ module Cardano.Metadata.Webhook.Server where
 import Control.Lens ( (.~), (^.) )
 import Control.Monad.IO.Class ( liftIO )
 import qualified Data.Aeson as Aeson
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as C8
 import qualified Data.ByteString.Lazy.Char8 as BLC
 import Data.Foldable ( traverse_ )
@@ -24,12 +25,19 @@ import Cardano.Metadata.Store.Types ( StoreInterface (..) )
 import Cardano.Metadata.Types.Common ( Subject (Subject) )
 import qualified Cardano.Metadata.Types.Weakly as Weakly
 import Cardano.Metadata.Webhook.API
+import Cardano.Metadata.Webhook.Signature ( requireHubSignature256 )
 import Cardano.Metadata.Webhook.Types
 
 
-appSigned :: GitHubKey -> StoreInterface Subject Weakly.Metadata -> GetEntryFromFile -> Application
-appSigned key intf getEntryFromFile
-  = serveWithContext
+-- | The pinned servant-github-webhook dependency only verifies the legacy
+-- SHA-1 'X-Hub-Signature' (via 'GitHubKey'). 'requireHubSignature256' wraps
+-- the resulting 'Application' with an independent check of the SHA-256
+-- 'X-Hub-Signature-256' header GitHub also sends, so a request must satisfy
+-- both to reach the handlers.
+appSigned :: BS.ByteString -> GitHubKey -> StoreInterface Subject Weakly.Metadata -> GetEntryFromFile -> Application
+appSigned secret key intf getEntryFromFile
+  = requireHubSignature256 secret
+  $ serveWithContext
     (Proxy :: Proxy MetadataWebhookAPISigned)
     (key :. EmptyContext)
     (metadataWebhook intf getEntryFromFile)
