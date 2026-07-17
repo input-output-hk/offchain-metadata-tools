@@ -760,12 +760,22 @@ cat <<EOF > metadata-config.nix
     };
   };
 
+  # Demo only: materialise the webhook secret as an EnvironmentFile. In
+  # production supply this file from a runtime secret store (sops-nix /
+  # agenix) instead of declaring it here, which places it in the Nix store.
+  environment.etc."metadata-webhook.env" = {
+    text = "METADATA_WEBHOOK_SECRET=${METADATA_WEBHOOK_SECRET}\n";
+    mode = "0400";
+  };
+
   services.metadata-webhook = {
     enable = true;
     port = ${METADATA_WEBHOOK_PORT};
-    # Path to a systemd EnvironmentFile setting METADATA_WEBHOOK_SECRET (and,
-    # optionally, METADATA_GITHUB_TOKEN). Keep secrets out of the Nix store.
-    environmentFile = "/run/secrets/metadata-webhook";
+    # The single GitHub repository this webhook serves; the GitHub API URL is
+    # built from these, never from the (attacker-influenced) webhook payload.
+    githubOwner = "cardano-foundation";
+    githubRepo = "cardano-token-registry";
+    environmentFile = "/etc/metadata-webhook.env";
     user = "${METADATA_WEBHOOK_LINUX_USER}";
     postgres = {
       socketdir = config.services.metadata-server.postgres.socketdir;
@@ -799,11 +809,11 @@ cat <<EOF > metadata-config.nix
     '';
   };
 
-  # PostgreSQL 15+ requires explicit grants; `ensurePermissions` no
+  # PostgreSQL 15+ requires explicit grants; \`ensurePermissions\` no
   # longer exists. These run in postgresql-setup.service (not
   # postgresql.service) so they fire *after* ensureDatabases has created
-  # the database; that service puts `psql` on PATH and sets PGPORT, so a
-  # bare `psql` connects as the superuser.
+  # the database; that service puts \`psql\` on PATH and sets PGPORT, so a
+  # bare \`psql\` connects as the superuser.
   systemd.services.postgresql-setup.postStart = pkgs.lib.mkAfter ''
     psql -tAc 'GRANT ALL PRIVILEGES ON DATABASE \${config.services.metadata-server.postgres.database} TO "\${config.services.metadata-server.postgres.user}";'
     psql -d \${config.services.metadata-server.postgres.database} -tAc 'GRANT ALL ON SCHEMA public TO "\${config.services.metadata-server.postgres.user}";'

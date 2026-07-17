@@ -34,6 +34,22 @@ in {
         default = 8081;
         description = "the port the metadata webhook runs on";
       };
+      githubOwner = lib.mkOption {
+        type = lib.types.str;
+        description = ''
+          Owner (user or organization) of the sole GitHub repository this
+          webhook fetches metadata file contents from. The GitHub API URL is
+          built from this and githubRepo; push events for any other repository
+          are ignored.
+        '';
+      };
+      githubRepo = lib.mkOption {
+        type = lib.types.str;
+        description = ''
+          Name of the sole GitHub repository this webhook fetches metadata
+          file contents from (see githubOwner).
+        '';
+      };
       environmentFile = lib.mkOption {
         type = lib.types.str;
         description = ''
@@ -88,6 +104,8 @@ in {
       exec = "metadata-webhook";
       cmd = builtins.filter (x: x != "") [
           "${cfg.package}/bin/${exec}"
+          "--github-owner ${cfg.githubOwner}"
+          "--github-repo ${cfg.githubRepo}"
           "--db ${cfg.postgres.database}"
           "--db-user ${cfg.postgres.user}"
           "--db-host ${cfg.postgres.socketdir}"

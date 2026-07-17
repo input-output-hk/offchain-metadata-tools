@@ -8,6 +8,13 @@ in
 
   nodes = {
     server = { config, ... }: {
+      # Compose the tutorial config as a module (deep merge) rather than `//`,
+      # which would shallow-replace environment.systemPackages (dropping jq)
+      # when metadata-config.nix also sets an environment.* key.
+      imports = [
+        (import "${docScripts}/metadata-config.nix" { inherit config pkgs; sources = { metadata-server = ../../../..; }; })
+      ];
+
       nixpkgs.pkgs = pkgs;
 
       nix.nixPath =
@@ -17,16 +24,13 @@ in
           "/nix/var/nix/profiles/per-user/root/channels"
         ];
 
-      imports = [];
-
       environment.systemPackages = [
         docScripts
         jq
       ];
 
       users.mutableUsers = false;
-
-    } // (import "${docScripts}/metadata-config.nix" { inherit config pkgs; sources = { metadata-server = ../../../..; }; } );
+    };
   };
 
   testScript =
