@@ -24,12 +24,7 @@ in
         jq
       ];
 
-      users = {
-        mutableUsers = false;
-
-        users = {
-        };
-      };
+      users.mutableUsers = false;
 
     } // (import "${docScripts}/metadata-config.nix" { inherit config pkgs; sources = { metadata-server = ../../../..; }; } );
   };

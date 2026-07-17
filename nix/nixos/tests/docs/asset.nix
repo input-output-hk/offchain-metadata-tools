@@ -15,14 +15,7 @@ in
         (sources.cardano-node + "/nix/nixos")
       ];
 
-      users = {
-        mutableUsers = false;
-
-        users = {
-          # For ease of debugging the VM as the `root` user
-          root.password = "";
-        };
-      };
+      users.mutableUsers = false;
 
       environment.systemPackages = [
         cardano-cli

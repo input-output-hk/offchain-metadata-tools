@@ -781,7 +781,7 @@ cat <<EOF > metadata-config.nix
 
   services.postgresql = {
     enable = true;
-    port = $POSTGRES_PORT;
+    settings.port = $POSTGRES_PORT;
     ensureDatabases = [ "\${config.services.metadata-server.postgres.database}" ];
     ensureUsers = [
       {
