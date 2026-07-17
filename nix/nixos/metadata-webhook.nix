@@ -35,34 +35,16 @@ in {
         description = "the port the metadata webhook runs on";
       };
       environmentFile = lib.mkOption {
-        type = with lib.types; nullOr str;
-        default = null;
+        type = lib.types.str;
         description = ''
-          A string path to a systemd environmentFile used to set secrets of:
-            METADATA_GITHUB_TOKEN
-            METADATA_WEBHOOK_SECRET
+          Path to a systemd EnvironmentFile supplying the webhook's secrets:
+            METADATA_WEBHOOK_SECRET (required by the service)
+            METADATA_GITHUB_TOKEN   (optional; omit for anonymous GitHub API access)
 
-          Note that if environmentFile is set, cfg.webHookSecret and cfg.gitHubToken cannot be set.
-        '';
-      };
-      webHookSecret = lib.mkOption {
-        type = with lib.types; nullOr str;
-        default = null;
-        description = ''
-          The GitHub webhook secret.
-          This option is used to set the environment variable METADATA_WEBHOOK_SECRET in the systemd service unit.
-
-          Note that if cfg.webHookSecret is set, cfg.environmentFile cannot be set.
-        '';
-      };
-      gitHubToken = lib.mkOption {
-        type = with lib.types; nullOr str;
-        default = null;
-        description = ''
-          The GitHub token to use to query the GitHub API.
-          This option is used to set the environment variable METADATA_GITHUB_TOKEN in the systemd service unit.
-
-          Note that if cfg.gitHubToken is set, cfg.environmentFile cannot be set.
+          The file is read by systemd at runtime and its contents never enter
+          the Nix store. Point it at a runtime secret (e.g. a sops-nix /
+          agenix decrypted path). This is the only mechanism for supplying the
+          webhook's secrets.
         '';
       };
       postgres = {
@@ -131,12 +113,8 @@ in {
         done
         sleep 1
       '';
-      environment = lib.mkIf (cfg.webHookSecret != null || cfg.gitHubToken != null) {
-        METADATA_GITHUB_TOKEN = toString cfg.gitHubToken;
-        METADATA_WEBHOOK_SECRET = toString cfg.webHookSecret;
-      };
       serviceConfig = {
-        EnvironmentFile = lib.mkIf (cfg.environmentFile != null) cfg.environmentFile;
+        EnvironmentFile = cfg.environmentFile;
         ExecStart = config.services.metadata-webhook.script;
         DynamicUser = true;
         User = config.services.metadata-webhook.user;
@@ -150,19 +128,8 @@ in {
       # the database/user and grants schema privileges; start after it so we
       # don't try to create tables before those grants land. After= on a unit
       # that doesn't exist (external DB) is a harmless no-op.
-      after = [ "postgres.service" "postgresql-setup.service" ];
+      after = [ "postgresql-setup.service" ];
       requires = [ "postgresql.service" ];
     };
-
-    assertions = [
-      {
-        assertion = !(cfg.environmentFile != null && (cfg.webHookSecret != null || cfg.gitHubToken != null));
-        message = "The metadata-webhook nixos service config option environmentFile cannot be declared when webHookSecret and/or gitHubToken options are also declared.";
-      }
-      {
-        assertion = !(cfg.environmentFile == null && cfg.webHookSecret == null && cfg.gitHubToken == null);
-        message = "Either the metadata-webhook nixos service config option environmentFile or webHookSecret and/or gitHubToken options must be declared.";
-      }
-    ];
   };
 }

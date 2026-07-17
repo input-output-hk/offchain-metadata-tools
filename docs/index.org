@@ -763,9 +763,10 @@ cat <<EOF > metadata-config.nix
   services.metadata-webhook = {
     enable = true;
     port = ${METADATA_WEBHOOK_PORT};
-    webHookSecret = "${METADATA_WEBHOOK_SECRET}";
+    # Path to a systemd EnvironmentFile setting METADATA_WEBHOOK_SECRET (and,
+    # optionally, METADATA_GITHUB_TOKEN). Keep secrets out of the Nix store.
+    environmentFile = "/run/secrets/metadata-webhook";
     user = "${METADATA_WEBHOOK_LINUX_USER}";
-    gitHubToken = "";
     postgres = {
       socketdir = config.services.metadata-server.postgres.socketdir;
       port = config.services.metadata-server.postgres.port;
@@ -776,7 +777,7 @@ cat <<EOF > metadata-config.nix
     };
   };
   # Ensure metdata-webhook and metadata-server don't start at the same time. This can cause issues as they both act on the state of the postgresql database.
-  systemd.services.metadata-webhook.after = [ "postgres.service" "metadata-server.service" ];
+  systemd.services.metadata-webhook.after = [ "postgresql.service" "metadata-server.service" ];
 
   services.postgresql = {
     enable = true;
