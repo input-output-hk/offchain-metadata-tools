@@ -1265,8 +1265,7 @@ dependencies.
     https://github.com/input-output-hk/offchain-metadata-tools/tree/master/test/load
 
   #+begin_example
-    $ npm install
-    $ npm test
+    $ nix build '.#checks.x86_64-linux."token-metadata-creator:golden-tests"'
   #+end_example
 
 **** Publication
