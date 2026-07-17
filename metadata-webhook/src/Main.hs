@@ -16,6 +16,7 @@ import qualified Network.Wai.Handler.Warp as Warp
 import qualified Options.Applicative as Opt
 import System.Environment ( lookupEnv )
 import System.Exit ( die )
+import System.IO ( BufferMode (LineBuffering), hSetBuffering, stderr, stdout )
 import qualified Text.Regex as R
 
 import qualified Cardano.Metadata.Store.Postgres as Store
@@ -27,6 +28,9 @@ import Config ( WebhookOpts (..), opts )
 
 main :: IO ()
 main = do
+  hSetBuffering stdout LineBuffering
+  hSetBuffering stderr LineBuffering
+
   -- Parse arguments first: --help, --version and the shell-completion
   -- scripts are handled inside execParser, which then exits, so those
   -- invocations (including the completion generation done at build time)

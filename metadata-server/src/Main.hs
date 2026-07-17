@@ -24,6 +24,7 @@ import qualified Data.Text as T
 import qualified Database.Persist.Postgresql as Postgresql
 import qualified Network.Wai.Handler.Warp as Warp
 import qualified Options.Applicative as Opt
+import System.IO ( BufferMode (LineBuffering), hSetBuffering, stderr, stdout )
 import qualified Text.Regex as R
 
 import Cardano.Metadata.Server ( webApp )
@@ -33,6 +34,9 @@ import Config ( opts )
 
 main :: IO ()
 main = do
+  hSetBuffering stdout LineBuffering
+  hSetBuffering stderr LineBuffering
+
   options@(Opts { optDbConnections = numDbConns
                 , optDbMetadataTableName = tableName
                 , optServerPort = port
