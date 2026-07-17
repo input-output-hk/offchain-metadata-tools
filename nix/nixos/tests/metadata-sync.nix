@@ -24,7 +24,7 @@ in
 
       services.postgresql = {
         enable = true;
-        port = postgresPort;
+        settings.port = postgresPort;
         package = pkgs.postgresql;
         ensureDatabases = [ "${database}" ];
         ensureUsers = [
@@ -56,9 +56,6 @@ in
         mutableUsers = false;
 
         users = {
-          # For ease of debugging the VM as the `root` user
-          root.password = "";
-
           # Create a system user that matches the database user so that we
           # can use peer authentication.
           "${user}" = {

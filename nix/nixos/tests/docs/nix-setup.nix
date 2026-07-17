@@ -28,8 +28,6 @@ in
         mutableUsers = false;
 
         users = {
-          # For ease of debugging the VM as the `root` user
-          root.password = "";
         };
       };
 
