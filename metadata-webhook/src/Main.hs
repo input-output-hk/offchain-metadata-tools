@@ -27,6 +27,20 @@ import Config ( WebhookOpts (..), opts )
 
 main :: IO ()
 main = do
+  -- Parse arguments first: --help, --version and the shell-completion
+  -- scripts are handled inside execParser, which then exits, so those
+  -- invocations (including the completion generation done at build time)
+  -- must not require the runtime environment. Only a real startup proceeds
+  -- past this point, where the webhook secret is then mandatory -- resolved
+  -- eagerly here, before any DB connection or the server is started.
+  WebhookOpts { optGithubOwner = githubOwner
+              , optGithubRepo  = githubRepo
+              , optDbOpts      = options@(Opts { optDbConnections       = numDbConns
+                                                , optDbMetadataTableName = tableName
+                                                , optServerPort          = port
+                                                })
+              } <- Opt.execParser opts
+
   secretEnv <- lookupEnv "METADATA_WEBHOOK_SECRET"
   key <- case resolveWebhookSecret secretEnv of
     Left err -> die err
@@ -36,14 +50,6 @@ main = do
   case githubToken of
     Nothing -> putStrLn "METADATA_GITHUB_TOKEN not set (or empty); GitHub API requests will be made anonymously and are subject to GitHub's public rate limits."
     Just _  -> pure ()
-
-  WebhookOpts { optGithubOwner = githubOwner
-              , optGithubRepo  = githubRepo
-              , optDbOpts      = options@(Opts { optDbConnections       = numDbConns
-                                                , optDbMetadataTableName = tableName
-                                                , optServerPort          = port
-                                                })
-              } <- Opt.execParser opts
 
   let githubRepoInfo = GitHubRepo githubOwner githubRepo
 
