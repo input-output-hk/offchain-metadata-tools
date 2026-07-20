@@ -12,7 +12,7 @@ in {
       };
       metadataServerPkgs = lib.mkOption {
         type = lib.types.attrs;
-        default = (import ../../. {}).project;
+        default = (import ../../. {}).project.hsPkgs;
         defaultText = "metadata-server pkgs";
         description = ''
           The metadata-server packages and library that should be used.
@@ -146,13 +146,17 @@ in {
       };
 
       wantedBy = [ "multi-user.target" ];
-      after = [ "postgres.service" ];
+      # postgresql-setup.service (when services.postgresql is used) creates
+      # the database/user and grants schema privileges; start after it so we
+      # don't try to create tables before those grants land. After= on a unit
+      # that doesn't exist (external DB) is a harmless no-op.
+      after = [ "postgres.service" "postgresql-setup.service" ];
       requires = [ "postgresql.service" ];
     };
 
     assertions = [
       {
-        assertion = !(cfg.environmentFile != null && cfg.webHookSecret != null || cfg.gitHubToken != null);
+        assertion = !(cfg.environmentFile != null && (cfg.webHookSecret != null || cfg.gitHubToken != null));
         message = "The metadata-webhook nixos service config option environmentFile cannot be declared when webHookSecret and/or gitHubToken options are also declared.";
       }
       {

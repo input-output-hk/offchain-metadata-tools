@@ -26,10 +26,12 @@ module Cardano.Metadata.Store.Postgres
 
 import Cardano.Metadata.Store.Types
 import Control.Exception.Safe
-import Control.Monad.Reader
+import Control.Monad.IO.Class ( MonadIO )
+import Control.Monad.Reader ( ReaderT, runReaderT )
 import Data.Aeson ( FromJSON, FromJSONKey, ToJSON, ToJSONKey )
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Encoding.Internal as Aeson
+import qualified Data.Aeson.Key as Key
 import qualified Data.Aeson.Types as Aeson
 import Data.Coerce ( coerce )
 import qualified Data.Map.Strict as M
@@ -188,5 +190,5 @@ toPersistValueJSONKey = toPersistValue . toJSONKeyText
 toJSONKeyText :: ToJSONKey k => k -> Text
 toJSONKeyText k =
   case Aeson.toJSONKey of
-    Aeson.ToJSONKeyText  f _ -> f k
+    Aeson.ToJSONKeyText  f _ -> Key.toText (f k)
     Aeson.ToJSONKeyValue _ f -> TL.toStrict $ TLE.decodeUtf8 $ Aeson.encodingToLazyByteString $ f k

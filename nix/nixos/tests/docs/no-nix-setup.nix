@@ -18,11 +18,14 @@ in
           # For ease of debugging the VM as the `root` user
           root.password = "";
 
-          "metadata-server".isSystemUser = true;
+          "metadata-server" = {
+            isSystemUser = true;
+            group = "metadata-server";
+          };
         };
-      };
 
-      nixpkgs.config.allowUnfree = true;
+        groups."metadata-server" = {};
+      };
 
       environment.systemPackages = [
         docScripts

@@ -14,10 +14,8 @@ executable metadata-server
                      , bytestring
                      , containers
                      , directory
-                     , esqueleto
                      , github-webhooks
                      , lens
-                     , lens-aeson
                      , metadata-lib
                      , metadata-store-postgres
                      , monad-logger

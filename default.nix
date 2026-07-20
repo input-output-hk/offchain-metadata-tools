@@ -1,120 +1,19 @@
-{ system ? builtins.currentSystem
-, crossSystem ? null
-# allows to cutomize haskellNix (ghc and profiling, see ./nix/haskell.nix)
-, config ? {}
-# override scripts with custom configuration
-, customConfig ? {}
-# allows to override dependencies of the project without modifications,
-# eg. to test build against local checkout of nixpkgs and iohk-nix:
-# nix build -f default.nix cardano-shell '{
-#   iohk-nix = ../iohk-nix;
-# }'
-, sourcesOverride ? {}
-# pinned version of nixpkgs augmented with overlays (iohk-nix and our packages).
-, pkgs ? import ./nix { inherit system crossSystem config sourcesOverride; }
-, gitrev ? pkgs.iohkNix.commitIdFromGitRepoOrZero ./.git
-# GitHub PR number (as a string), set when building a Hydra PR jobset.
-, pr ? null
-}:
-with pkgs; with commonLib;
+# Compatibility shim for non-flake use (`nix-build`, and the NixOS
+# module defaults). The flake is the single source of truth.
+{ system ? builtins.currentSystem or "x86_64-linux" }:
 let
-
-  src = pkgs.haskell-nix.haskellLib.cleanGit {
-    name = "offchain-metadata-tools-src";
-    src = ./.;
+  lock = builtins.fromJSON (builtins.readFile ./flake.lock);
+  flakeCompatNode = lock.nodes.flake-compat.locked;
+  flake-compat = fetchTarball {
+    url = "https://github.com/${flakeCompatNode.owner}/${flakeCompatNode.repo}/archive/${flakeCompatNode.rev}.tar.gz";
+    sha256 = flakeCompatNode.narHash;
   };
-
-  buildHaskellProject = args: import ./nix/haskell.nix ({
-    inherit config pkgs;
-    inherit (pkgs) buildPackages lib stdenv haskell-nix;
-    inherit src gitrev pr;
-  } // args);
-  project = addExtras (buildHaskellProject {});
-  profiledProject = buildHaskellProject { profiling = true; };
-  # the Haskell.nix package set, reduced to local packages.
-  projectPkgsOnly = recRecurseIntoAttrs (selectProjectPackages project);
-
-  addExtras = proj: proj // {
-    metadata-validator-github-tarball = pkgs.runCommandNoCC "metadata-validator-github-tarball" { buildInputs = [ pkgs.gnutar pkgs.gzip ]; } ''
-      cp ${proj.metadata-validator-github.components.exes.metadata-validator-github}/bin/metadata-validator-github ./
-      mkdir -p $out/nix-support
-      tar -czvf $out/metadata-validator-github.tar.gz metadata-validator-github
-      echo "file binary-dist $out/metadata-validator-github.tar.gz" > $out/nix-support/hydra-build-products
-    '';
-
-    token-metadata-creator-tarball = pkgs.runCommandNoCC "token-metadata-creator" { buildInputs = [ pkgs.gnutar gzip ]; } ''
-      cp ${proj.token-metadata-creator.components.exes.token-metadata-creator}/bin/token-metadata-creator ./
-      mkdir -p $out/nix-support
-      tar -czvf $out/token-metadata-creator.tar.gz token-metadata-creator
-      echo "file binary-dist $out/token-metadata-creator.tar.gz" > $out/nix-support/hydra-build-products
-    '';
-  };
-  # haskellPackagesMusl64 = recRecurseIntoAttrs
-  #   # the Haskell.nix package set, reduced to local packages.
-  #   (selectProjectPackages pkgs.pkgsCross.musl64.project);
-  # metadataValidatorGitHubTarball = pkgs.runCommandNoCC "metadata-validator-github-tarball" { buildInputs = [ pkgs.gnutar gzip ]; } ''
-  #   cp ${haskellPackagesMusl64.metadata-validator-github.components.exes.metadata-validator-github}/bin/metadata-validator-github ./
-  #   mkdir -p $out/nix-support
-  #   tar -czvf $out/metadata-validator-github.tar.gz metadata-validator-github
-  #   echo "file binary-dist $out/metadata-validator-github.tar.gz" > $out/nix-support/hydra-build-products
-  # '';
-  # tokenMetadataCreatorTarball = pkgs.runCommandNoCC "token-metadata-creator" { buildInputs = [ pkgs.gnutar gzip ]; } ''
-  #   cp ${haskellPackagesMusl64.token-metadata-creator.components.exes.token-metadata-creator}/bin/token-metadata-creator ./
-  #   mkdir -p $out/nix-support
-  #   tar -czvf $out/token-metadata-creator.tar.gz token-metadata-creator
-  #   echo "file binary-dist $out/token-metadata-creator.tar.gz" > $out/nix-support/hydra-build-products
-  # '';
-
-  nixosTests = recRecurseIntoAttrs (import ./nix/nixos/tests {
-    inherit pkgs;
-  });
-  docScripts = pkgs.callPackage ./docs/default.nix { };
-  # Scripts for keeping Hackage and Stackage up to date, and CI tasks.
-  # Allow hydra to build update-docs as there is otherwise an extended local build time.
-  maintainer-scripts = recRecurseIntoAttrs {
-    update-docs = pkgs.buildPackages.callPackage ./scripts/update-docs.nix {
-      inherit (pkgs.haskellPackages) ghcWithPackages;
-      mkdocs = mkdocs.overridePythonAttrs (_: {doCheck = false; dontUsePythonImportsCheck = true;});
-    };
-
-    # ToDo: Update the script -- switch to nix-eval-jobs or similar.
-    #       hydra-eval-jobs no longer works locally due to restricted eval.
-    #
-    # Because this is going to be used to test caching on hydra, it must not
-    # use the darcs package from the haskell.nix we are testing.  For that reason
-    # it uses `pkgs.buildPackages.callPackage` not `haskell.callPackage`
-    # (We could pull in darcs from a known good haskell.nix for hydra to
-    # use)
-    # check-hydra = pkgs.buildPackages.callPackage ./scripts/check-hydra.nix {};
-  };
-
-  self = {
-    inherit pkgs commonLib project profiledProject;
-
-    inherit (project.hsPkgs.metadata-server.identifier) version;
-    inherit (project.hsPkgs.metadata-server.components.exes) metadata-server;
-    inherit (project.hsPkgs.metadata-webhook.components.exes) metadata-webhook;
-    inherit (project.hsPkgs.metadata-sync.components.exes) metadata-sync;
-    inherit (project.hsPkgs.metadata-validator-github.components.exes) metadata-validator-github;
-    inherit (project.hsPkgs.token-metadata-creator.components.exes) token-metadata-creator;
-    inherit (project) metadata-validator-github-tarball token-metadata-creator-tarball;
-
-    inherit maintainer-scripts;
-    # inherit metadataValidatorGitHubTarball tokenMetadataCreatorTarball;
-    inherit nixosTests docScripts;
-
-    inherit (pkgs.iohkNix) checkCabalProject;
-
-    # `tests` are the test suites which have been built.
-    tests = collectComponents' "tests" projectPkgsOnly;
-
-    checks = recurseIntoAttrs {
-      # `checks.tests` collect results of executing the tests:
-      tests = collectChecks projectPkgsOnly;
-    };
-
-    shell = import ./shell.nix { inherit pkgs; metadataPackages = self; withHoogle = true; };
-    shell-prof = import ./shell.nix { inherit pkgs; metadataPackages = self; withHoogle = true; profiling = true; };
-    cabalShell = import ./nix/cabal-shell.nix { inherit pkgs; metadataPackages = self; };
-  };
-in self
+  self = (import flake-compat { src = ./.; }).defaultNix;
+in
+{
+  inherit (self) hydraJobs nixosModules;
+  project = self.project.${system};
+  packages = self.packages.${system};
+  devShells = self.devShells.${system};
+  pkgs = self.legacyPackages.${system};
+}

@@ -13,7 +13,8 @@ module Test.Cardano.Metadata.Validation.GitHub
 
 import Colog ( LoggerT (LoggerT), Message, runLoggerT, usingLoggerT )
 import Control.Monad.Except
-    ( Except, MonadError, catchError, lift, runExcept, throwError )
+    ( Except, MonadError, catchError, runExcept, throwError )
+import Control.Monad.Trans.Class ( lift )
 import Data.Foldable ( traverse_ )
 import Hedgehog ( forAll, property, (===) )
 import qualified Hedgehog as H ( Property )

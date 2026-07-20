@@ -1,4 +1,4 @@
-name: update-docs + check-stylish-haskell
+name: CI
 
 on: push
 
@@ -6,24 +6,54 @@ env:
   LC_ALL: en_US.UTF-8
 
 jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+            extra_nix_config: |
+              trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+              substituters = https://cache.iog.io https://cache.nixos.org/
+              experimental-features = nix-command flakes
+              accept-flake-config = true
+
+      - name: Build executables and run tests
+        run: |
+          nix build --accept-flake-config \
+            .#metadata-server \
+            .#metadata-sync \
+            .#metadata-validator-github \
+            .#metadata-webhook \
+            .#token-metadata-creator
+          nix build --accept-flake-config -L \
+            '.#checks.x86_64-linux."metadata-lib:test:unit-tests"' \
+            '.#checks.x86_64-linux."token-metadata-creator:test:golden-tests"'
+
   update-docs:
     if: github.ref == 'refs/heads/master'
     name: Update docs
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Install Nix
-        uses: cachix/install-nix-action@v20
+        uses: cachix/install-nix-action@v31
         with:
             extra_nix_config: |
               trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
               substituters = https://cache.iog.io https://cache.nixos.org/
+              experimental-features = nix-command flakes
+              accept-flake-config = true
 
-      - name: Run nix-build
+      - name: Run update-docs
         run: |
-          nix-build -A maintainer-scripts.update-docs -o update-docs.sh
+          nix build --accept-flake-config .#update-docs -o update-docs.sh
           ./update-docs.sh
 
   check-stylish-haskell:
@@ -31,14 +61,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Install Nix
-        uses: cachix/install-nix-action@v20
+        uses: cachix/install-nix-action@v31
         with:
             extra_nix_config: |
               trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
               substituters = https://cache.iog.io https://cache.nixos.org/
+              experimental-features = nix-command flakes
+              accept-flake-config = true
 
-      - name: Run nix-shell
-        run: nix-shell --run .github/check-stylish.sh
+      - name: Run stylish-haskell check
+        run: nix develop --accept-flake-config -c .github/check-stylish.sh

@@ -32,9 +32,6 @@ in
         ensureUsers = [
           {
             name = "${postgresUser}";
-            ensurePermissions = {
-              "DATABASE ${database}" = "ALL PRIVILEGES";
-            };
           }
         ];
         identMap = ''
@@ -47,6 +44,16 @@ in
         '';
       };
 
+      # `ensurePermissions` no longer exists and PostgreSQL 15+ needs
+      # explicit schema grants. These run in postgresql-setup.service
+      # (not postgresql.service) so they fire *after* ensureDatabases has
+      # created the database; that service puts `psql` on PATH and sets
+      # PGPORT, so a bare `psql` connects as the superuser.
+      systemd.services.postgresql-setup.postStart = pkgs.lib.mkAfter ''
+        psql -tAc 'GRANT ALL PRIVILEGES ON DATABASE ${database} TO "${postgresUser}";'
+        psql -d ${database} -tAc 'GRANT ALL ON SCHEMA public TO "${postgresUser}";'
+      '';
+
       users = {
         mutableUsers = false;
 
@@ -56,12 +63,19 @@ in
 
           # Create a system user that matches the database user so that we
           # can use peer authentication.
-          "${user}".isSystemUser = true;
+          "${user}" = {
+            isSystemUser = true;
+            group = user;
+          };
         };
+
+        groups."${user}" = {};
       };
 
       services.metadata-server = {
         enable = true;
+
+        metadataServerPkgs = haskellPackages;
 
         user = user;
 
@@ -80,6 +94,11 @@ in
     start_all()
 
     server.wait_for_open_port(${toString postgresPort})
+    # postgresql-setup.service (oneshot) creates the database/user and runs
+    # our schema GRANTs; it only reports active once those have completed, so
+    # wait for it before connecting or we race the grants (PostgreSQL 15+
+    # denies schema public by default).
+    server.wait_for_unit("postgresql-setup.service")
 
     server.succeed(
         "${haskellPackages.metadata-store-postgres.components.tests.integration-tests}/bin/integration-tests \

@@ -8,7 +8,8 @@ import Control.Monad ( join, void )
 import Control.Monad.IO.Class ( liftIO )
 import Control.Monad.Logger ( runNoLoggingT )
 import qualified Data.Aeson as Aeson
-import qualified Data.HashMap.Strict as HM
+import qualified Data.Aeson.Key as Key
+import qualified Data.Aeson.KeyMap as KM
 import Data.Pool ( Pool, destroyAllResources )
 import Data.Proxy ( Proxy (Proxy) )
 import Data.Tagged ( Tagged, unTagged )
@@ -40,8 +41,8 @@ import Cardano.Metadata.Types.Common ( Subject (..), unPropertyName )
 import Database.PostgreSQL.Simple
     ( Connection, execute, executeMany, query, withTransaction )
 import Database.PostgreSQL.Simple.Types ( Identifier (..), Only (..) )
-import Test.Cardano.Metadata.Generators ( ComplexType )
 import qualified Test.Cardano.Metadata.Generators as Gen
+import Test.Cardano.Metadata.Generators ( ComplexType )
 import Test.Cardano.Metadata.Store
 
 newtype DbHost = DbHost { _dbHost :: Text }
@@ -152,6 +153,6 @@ toList conn table = do
 genKvs :: MonadGen m => m [(Subject, Aeson.Value)]
 genKvs =
   let
-    kv = (,) <$> Gen.subject <*> (fmap (Aeson.Object . HM.fromList) $ Gen.list (Range.linear 0 20) ((,) <$> (unPropertyName <$> Gen.propertyName) <*> Gen.propertyValue))
+    kv = (,) <$> Gen.subject <*> (fmap (Aeson.Object . KM.fromList) $ Gen.list (Range.linear 0 20) ((,) <$> (Key.fromText . unPropertyName <$> Gen.propertyName) <*> Gen.propertyValue))
   in
     Gen.list (Range.linear 0 15) kv

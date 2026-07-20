@@ -11,11 +11,9 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-import Cardano.Prelude hiding ( log )
+import Cardano.Prelude
 
-import Cardano.Api ( AsType (AsPaymentExtendedKey, AsPaymentKey) )
-import Cardano.CLI.Shelley.Key ( readSigningKeyFile )
-import Cardano.CLI.Types ( SigningKeyFile (..) )
+import qualified Cardano.Api as Api
 import Cardano.Metadata.GoguenRegistry
     ( GoguenRegistryEntry (..)
     , PartialGoguenRegistryEntry
@@ -51,6 +49,7 @@ import Control.Exception.Safe ( handleAny )
 import Data.Validation
 import System.Directory ( doesFileExist, renameFile )
 import System.Environment ( lookupEnv )
+import System.Exit ( die )
 import System.IO ( hFileSize )
 
 import Cardano.Metadata.Types.Common ( File (File) )
@@ -83,6 +82,7 @@ import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy.Char8 as BL8
 import qualified Data.Text as T
+import qualified Data.Text.IO as TIO
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TL
 import qualified Options.Applicative as OA
@@ -226,29 +226,38 @@ handleEntryUpdateArguments (EntryUpdateArguments fInfo keyfile props newEntryInf
         DraftStatusFinal -> do
             dieOnLeft "Finalizing" finalVerificationStatus
             renameFile (draftFilename fInfo) $ canonicalFilename fInfo
-            putStrLn $ canonicalFilename fInfo
+            putStrLn $ T.pack $ canonicalFilename fInfo
         DraftStatusDraft -> do
-            putStrLn $ draftFilename fInfo
+            putStrLn $ T.pack $ draftFilename fInfo
 
     exitSuccess
   where
     dieOnLeft :: Text -> Either Text a -> IO a
     dieOnLeft lbl eVal = case eVal of
-        Left err  -> die $ lbl <> ": " <> err
+        Left err  -> die $ T.unpack $ lbl <> ": " <> err
         Right val -> pure val
 
     readKeyFile :: FilePath -> IO SomeSigningKey
     readKeyFile skFname = do
-        asNormalKey   <- fmap SomeSigningKey <$>
-            readSigningKeyFile AsPaymentKey (SigningKeyFile skFname)
-        asExtendedKey <- fmap SomeSigningKey <$>
-            readSigningKeyFile AsPaymentExtendedKey (SigningKeyFile skFname)
-
-        dieOnLeft "Error reading key file" $
-            left show $ asNormalKey `orElse_` asExtendedKey
-
+        asEnvelope <- Api.readFileTextEnvelopeAnyOf keyTypes (Api.File skFname)
+        case asEnvelope of
+            Right key -> pure key
+            Left envelopeErr -> do
+                -- Fall back to bech32-encoded keys, which the
+                -- `cardano-cli` key reader used to accept too.
+                contents <- T.strip <$> TIO.readFile skFname
+                dieOnLeft "Error reading key file" $
+                    left (const (show envelopeErr)) $
+                        Api.deserialiseAnyOfFromBech32 bech32KeyTypes contents
       where
-        orElse_ a b = either (const b) Right a
+        keyTypes =
+            [ Api.FromSomeType (Api.AsSigningKey Api.AsPaymentKey) SomeSigningKey
+            , Api.FromSomeType (Api.AsSigningKey Api.AsPaymentExtendedKey) SomeSigningKey
+            ]
+        bech32KeyTypes =
+            [ Api.FromSomeType (Api.AsSigningKey Api.AsPaymentKey) SomeSigningKey
+            , Api.FromSomeType (Api.AsSigningKey Api.AsPaymentExtendedKey) SomeSigningKey
+            ]
 
     parseJSON :: Either Text Aeson.Value -> IO (PartialGoguenRegistryEntry)
     parseJSON registryJSON = dieOnLeft "Parse error" $ do
@@ -283,7 +292,7 @@ handleValidate logSeverity fpA mFpB = do
     parseFile :: (MonadIO m, WithLog env Message m) => (Text -> m a) -> FilePath -> m (File a)
     parseFile parserA fp = do
       size     <- liftIO $ withFile fp IO.ReadMode $ hFileSize
-      contents <- liftIO $ handleAny (const mempty) $ readFile fp
+      contents <- liftIO $ handleAny (const mempty) $ TIO.readFile fp
       a        <- parserA contents
       pure (File a (fromInteger size) fp)
 

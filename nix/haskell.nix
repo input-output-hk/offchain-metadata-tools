@@ -1,148 +1,82 @@
 ############################################################################
 # Builds Haskell packages with Haskell.nix
+#
+# This file returns the arguments for `haskell-nix.cabalProject'`.
 ############################################################################
-{ lib
-, stdenv
-, pkgs
-, haskell-nix
-, buildPackages
-, config ? {}
-# Enable profiling
-, profiling ? config.haskellNix.profiling or false
-# Project top-level source tree
-, src
-# GitHub PR number (when building a PR jobset on Hydra)
-, pr ? null
-# Version info, to be passed when not building from a git work tree
-, gitrev ? null
-, libsodium-vrf ? pkgs.libsodium-vrf
-}:
+{ CHaP }:
+{ pkgs, lib, config, ... }:
 let
-  haskell = pkgs.haskell-nix;
-
-  # Chop out a subdirectory of the source, so that the package is only
-  # rebuilt when something in the subdirectory changes.
-  filterSubDir = subDir: {
-    src = haskell.haskellLib.cleanSourceWith { inherit src subDir; };
-    package.isProject = true;  # fixme: Haskell.nix
-  };
-
-  pkg-set = haskell-nix.cabalProject ({
-    inherit src;
-    compiler-nix-name = "ghc8107";
-    modules = [
-      # Add source filtering to local packages
-      {
-        packages.metadata-lib = filterSubDir "metadata-lib";
-        packages.metadata-server = filterSubDir "metadata-server";
-        packages.metadata-webhook = filterSubDir "metadata-webhook";
-        packages.metadata-sync = filterSubDir "metadata-sync";
-        packages.metadata-store-postgres = filterSubDir "metadata-store-postgres";
-        packages.metadata-validator-github = filterSubDir "metadata-validator-github";
-      }
-      # Enable release flag (optimization and -Werror) on all local packages
-      {
-        packages.metadata-lib.flags.release = true;
-        packages.metadata-server.flags.release = true;
-        packages.metadata-webhook.flags.release = true;
-        packages.metadata-sync.flags.release = true;
-        packages.metadata-store-postgres.flags.release = true;
-        packages.metadata-validator-github.flags.release = true;
-      }
-      {
-        packages.metadata-server.components.exes.metadata-server.postInstall = optparseCompletionPostInstall;
-        packages.metadata-webhook.components.exes.metadata-webhook.postInstall = optparseCompletionPostInstall;
-        packages.metadata-sync.components.exes.metadata-sync.postInstall = optparseCompletionPostInstall;
-        packages.metadata-validator-github.components.exes.metadata-validator-github.postInstall = optparseCompletionPostInstall;
-      }
-      # Enable profiling on executables if the profiling argument is set.
-      (lib.optionalAttrs profiling {
-        enableLibraryProfiling = true;
-        packages.metadata-server.components.exes.metadata-server.enableProfiling = true;
-        packages.metadata-webhook.components.exes.metadata-webhook.enableProfiling = true;
-        packages.metadata-sync.components.exes.metadata-sync.enableProfiling = true;
-        packages.metadata-validator-github.components.exes.metadata-validator-github.enableProfiling = true;
-        # Needed for profiled builds to fix an issue loading recursion-schemes part of makeBaseFunctor
-        # that is missing from the `_p` output.  See https://gitlab.haskell.org/ghc/ghc/-/issues/18320
-        packages.plutus-core.components.library.ghcOptions = [ "-fexternal-interpreter" ];
-      })
-
-      # Musl libc fully static build
-      (lib.optionalAttrs stdenv.hostPlatform.isMusl (let
-        staticLibs = with pkgs; [ zlib openssl libffi gmp6 libsodium-vrf ];
-
-        # Module options which add GHC flags and libraries for a fully static build
-        fullyStaticOptions = {
-          enableShared = false;
-          enableStatic = true;
-          configureFlags = map (drv: "--ghc-option=-optl=-L${drv}/lib") staticLibs;
-        };
-      in {
-        # Apply fully static options to our Haskell executables
-        packages.metadata-server.components.benchmarks.restore = fullyStaticOptions;
-        packages.metadata-webhook.components.exes.cardano-wallet = fullyStaticOptions;
-        packages.metadata-validator-github.components.tests.integration = fullyStaticOptions;
-
-        # systemd can't be statically linked - disable lobemo-scribe-journal
-        packages.cardano-node.flags.systemd = false;
-
-        # Haddock not working for cross builds and is not needed anyway
-        doHaddock = false;
-      }))
-
-      # Allow installation of a newer version of Win32 than what is
-      # included with GHC. The packages in this list are all those
-      # installed with GHC, except for Win32.
-      { nonReinstallablePkgs =
-        [ "rts" "ghc-heap" "ghc-prim" "integer-gmp" "integer-simple" "base"
-          "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
-          # ghcjs custom packages
-          "ghcjs-prim" "ghcjs-th"
-          "ghc-boot"
-          "ghc" "array" "binary" "bytestring" "containers"
-          "filepath" "ghc-boot" "ghc-compact" "ghc-prim"
-          # "ghci" "haskeline"
-          "hpc"
-          "mtl" "parsec" "text" "transformers"
-          "xhtml"
-          # "stm" "terminfo"
-        ];
-      }
-      {
-        packages.metadata-store-postgres.components.tests.integration-tests.doCheck = false;
-        packages.metadata-sync.components.tests.integration-tests.doCheck = false;
-      }
-      ({ pkgs, ... }: {
-        packages = lib.genAttrs [ "cardano-config" ] (_: {
-          components.library.build-tools = [ pkgs.buildPackages.buildPackages.gitMinimal ];
-        });
-      })
-    ];
-  });
-
   # This exe component postInstall script adds shell completion
-  # scripts. These completion
-  # scripts will be picked up automatically if the resulting
-  # derivation is installed, e.g. by `nix-env -i`.
-  optparseCompletionPostInstall = lib.optionalString stdenv.hostPlatform.isUnix ''
-    exeName=$(ls -1 $out/bin | head -n1)  # fixme add $exeName to Haskell.nix
+  # scripts. These completion scripts will be picked up automatically
+  # if the resulting derivation is installed, e.g. by `nix profile install`.
+  optparseCompletionPostInstall = exeName: lib.optionalString pkgs.stdenv.hostPlatform.isUnix ''
     bashCompDir="$out/share/bash-completion/completions"
     zshCompDir="$out/share/zsh/vendor-completions"
     fishCompDir="$out/share/fish/vendor_completions.d"
     mkdir -p "$bashCompDir" "$zshCompDir" "$fishCompDir"
-    "$out/bin/$exeName" --bash-completion-script "$out/bin/$exeName" >"$bashCompDir/$exeName"
-    "$out/bin/$exeName" --zsh-completion-script "$out/bin/$exeName" >"$zshCompDir/_$exeName"
-    "$out/bin/$exeName" --fish-completion-script "$out/bin/$exeName" >"$fishCompDir/$exeName.fish"
+    "$out/bin/${exeName}" --bash-completion-script "$out/bin/${exeName}" >"$bashCompDir/${exeName}"
+    "$out/bin/${exeName}" --zsh-completion-script "$out/bin/${exeName}" >"$zshCompDir/_${exeName}"
+    "$out/bin/${exeName}" --fish-completion-script "$out/bin/${exeName}" >"$fishCompDir/${exeName}.fish"
   '';
-
-  # setGitRev is a postInstall script to stamp executables with
-  # version info. It uses the "gitrev" argument, if set. Otherwise,
-  # the revision is sourced from the local git work tree.
-  setGitRev = ''${buildPackages.haskellBuildUtils}/bin/set-git-rev "${gitrev'}" $out/bin/*'';
-  # package with libsodium:
-  setLibSodium = "ln -s ${libsodium-vrf}/bin/libsodium-23.dll $out/bin/libsodium-23.dll";
-  gitrev' = if (gitrev == null)
-    then buildPackages.commonLib.commitIdFromGitRepoOrZero ../.git
-    else gitrev;
 in
-  pkg-set
+{
+  name = "offchain-metadata-tools";
+  src = ../.;
+  compiler-nix-name = lib.mkDefault "ghc967";
+
+  # Resolve the cardano-haskell-packages repository (declared in
+  # cabal.project) to the CHaP flake input.
+  inputMap = { "https://chap.intersectmbo.org/" = CHaP; };
+
+  shell = {
+    name = "metadata-shell";
+    withHoogle = true;
+    tools = {
+      cabal = "latest";
+      haskell-language-server = "latest";
+      hlint = "latest";
+    };
+    nativeBuildInputs = with pkgs.pkgsBuildBuild; [
+      ghcid
+      git
+      pkg-config
+      stylish-haskell
+      postgresql # for the metadata-store-postgres/metadata-sync integration tests
+    ];
+  };
+
+  modules = [
+    # NOTE: servant-github-webhook is unmaintained (last release 2019) and
+    # its Hackage version does not compile against aeson 2. cabal.project
+    # pulls it from the aeson-2-updated input-output-hk fork via a
+    # source-repository-package, which haskell.nix builds from the same
+    # source -- so no patch module is needed here.
+
+    # Install shell completion scripts alongside the executables.
+    {
+      packages.metadata-server.components.exes.metadata-server.postInstall =
+        optparseCompletionPostInstall "metadata-server";
+      packages.metadata-webhook.components.exes.metadata-webhook.postInstall =
+        optparseCompletionPostInstall "metadata-webhook";
+      packages.metadata-sync.components.exes.metadata-sync.postInstall =
+        optparseCompletionPostInstall "metadata-sync";
+      packages.metadata-validator-github.components.exes.metadata-validator-github.postInstall =
+        optparseCompletionPostInstall "metadata-validator-github";
+      packages.token-metadata-creator.components.exes.token-metadata-creator.postInstall =
+        optparseCompletionPostInstall "token-metadata-creator";
+    }
+
+    # The integration tests need a running PostgreSQL instance; they are
+    # run by the NixOS tests (nix/nixos/tests) instead.
+    {
+      packages.metadata-store-postgres.components.tests.integration-tests.doCheck = false;
+      packages.metadata-sync.components.tests.integration-tests.doCheck = false;
+    }
+
+    # Musl (fully static) build tweaks.
+    ({ lib, pkgs, ... }: lib.mkIf pkgs.stdenv.hostPlatform.isMusl {
+      # Haddock is not working for cross builds and is not needed anyway.
+      doHaddock = false;
+    })
+  ];
+}

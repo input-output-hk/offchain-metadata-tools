@@ -9,8 +9,8 @@ import qualified Hedgehog as H ( Property )
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 import Test.Tasty ( TestTree, testGroup )
-import Test.Tasty.HUnit ( Assertion, testCase, (@?=) )
 import Test.Tasty.Hedgehog
+import Test.Tasty.HUnit ( Assertion, testCase, (@?=) )
 
 -- import           Test.Cardano.Helpers             (prop_functor_laws)
 

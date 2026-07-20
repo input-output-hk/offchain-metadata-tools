@@ -26,8 +26,8 @@ import qualified Hedgehog.Range as Range
 import Numeric.Natural ( Natural )
 import System.FilePath.Posix ( addExtension, dropExtension, takeExtension )
 import Test.Tasty ( TestTree, testGroup )
-import Test.Tasty.HUnit ( Assertion, testCase, (@?=) )
 import Test.Tasty.Hedgehog
+import Test.Tasty.HUnit ( Assertion, testCase, (@?=) )
 import Text.RawString.QQ ( r )
 
 import Test.Cardano.Helpers ( prop_json_roundtrips )

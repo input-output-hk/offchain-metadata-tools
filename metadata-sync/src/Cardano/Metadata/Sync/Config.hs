@@ -5,12 +5,12 @@ module Cardano.Metadata.Sync.Config where
 import Control.Applicative ( optional )
 import Control.Exception ( bracket )
 import qualified Data.ByteString.Char8 as BC
-import Data.Pool ( Pool, createPool, destroyAllResources )
+import Data.Pool
+    ( Pool, defaultPoolConfig, destroyAllResources, newPool, setNumStripes )
 import qualified Data.Pool as Pool
 import Data.Text ( Text )
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
-import Data.Time.Clock ( NominalDiffTime )
 import Database.PostgreSQL.Simple ( Connection )
 import qualified Database.PostgreSQL.Simple as Sql
 import qualified Network.Wai.Handler.Warp as Warp
@@ -77,12 +77,13 @@ mkConnectionPool
   -- ^ Maximum number of postgresql connections to allow
   -> IO (Pool Connection)
 mkConnectionPool connectionStr numConns =
-  createPool
-    (Sql.connectPostgreSQL connectionStr)
-    Sql.close
-    1                       -- Number of sub-pools
-    (10 :: NominalDiffTime) -- Amount of time for which an unused connection is kept open
-    numConns
+  newPool $
+    setNumStripes (Just 1) $
+    defaultPoolConfig
+      (Sql.connectPostgreSQL connectionStr)
+      Sql.close
+      10       -- Amount of time (seconds) for which an unused connection is kept open
+      numConns
 
 withConnectionPool
   :: BC.ByteString
