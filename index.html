@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
     <head>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -10,14 +10,15 @@
         <link rel="shortcut icon" href="img/favicon.ico">
         <title>Off-chain metadata tools</title>
         <link href="css/bootstrap.min.css" rel="stylesheet">
-        <link href="css/font-awesome.min.css" rel="stylesheet">
+        <link href="css/fontawesome.min.css" rel="stylesheet">
+        <link href="css/brands.min.css" rel="stylesheet">
+        <link href="css/solid.min.css" rel="stylesheet">
+        <link href="css/v4-font-face.min.css" rel="stylesheet">
         <link href="css/base.css" rel="stylesheet">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css">
-
-        <script src="js/jquery-1.10.2.min.js" defer></script>
-        <script src="js/bootstrap.min.js" defer></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-        <script>hljs.initHighlightingOnLoad();</script> 
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
     </head>
 
     <body class="homepage">
@@ -25,7 +26,7 @@
             <div class="container">
                 <a class="navbar-brand" href=".">Off-chain metadata tools</a>
                 <!-- Expander button -->
-                <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-collapse">
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
@@ -33,17 +34,17 @@
                 <div id="navbar-collapse" class="navbar-collapse collapse">
                         <!-- Main navigation -->
                         <ul class="nav navbar-nav">
-                            <li class="navitem active">
-                                <a href="." class="nav-link">Manual</a>
+                            <li class="nav-item">
+                                <a href="." class="nav-link active" aria-current="page">Manual</a>
                             </li>
-                            <li class="navitem">
+                            <li class="nav-item">
                                 <a href="api/latest/" class="nav-link">API</a>
                             </li>
                         </ul>
 
-                    <ul class="nav navbar-nav ml-auto">
+                    <ul class="nav navbar-nav ms-md-auto">
                         <li class="nav-item">
-                            <a href="#" class="nav-link" data-toggle="modal" data-target="#mkdocs_search_modal">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
                                 <i class="fa fa-search"></i> Search
                             </a>
                         </li>
@@ -58,7 +59,7 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="https://github.com/input-output-hk/offchain-metadata-tools/edit/master/docs/index.md" class="nav-link"><i class="fa fa-github"></i> Edit on GitHub</a>
+                                <a href="https://github.com/input-output-hk/offchain-metadata-tools/edit/master/docs/index.md" class="nav-link"><i class="fa-brands fa-github"></i> Edit on GitHub</a>
                             </li>
                     </ul>
                 </div>
@@ -67,33 +68,33 @@
 
         <div class="container">
             <div class="row">
-                    <div class="col-md-3"><div class="navbar-light navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
     <div class="navbar-header">
-        <button type="button" class="navbar-toggler collapsed" data-toggle="collapse" data-target="#toc-collapse" title="Table of Contents">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
             <span class="fa fa-angle-down"></span>
         </button>
     </div>
 
     
-    <div id="toc-collapse" class="navbar-collapse collapse card bg-secondary">
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
         <ul class="nav flex-column">
             
-            <li class="nav-item" data-level="2"><a href="#tutorials" class="nav-link">Tutorials</a>
+            <li class="nav-item" data-bs-level="2"><a href="#tutorials" class="nav-link">Tutorials</a>
               <ul class="nav flex-column">
               </ul>
             </li>
             
-            <li class="nav-item" data-level="2"><a href="#how-to" class="nav-link">How-to</a>
+            <li class="nav-item" data-bs-level="2"><a href="#how-to" class="nav-link">How-to</a>
               <ul class="nav flex-column">
               </ul>
             </li>
             
-            <li class="nav-item" data-level="2"><a href="#reference" class="nav-link">Reference</a>
+            <li class="nav-item" data-bs-level="2"><a href="#reference" class="nav-link">Reference</a>
               <ul class="nav flex-column">
               </ul>
             </li>
             
-            <li class="nav-item" data-level="2"><a href="#explanation" class="nav-link">Explanation</a>
+            <li class="nav-item" data-bs-level="2"><a href="#explanation" class="nav-link">Explanation</a>
               <ul class="nav flex-column">
               </ul>
             </li>
@@ -691,8 +692,7 @@ target="structure-diagram"}.</p>
 <li>Set up the metadata-server to read metadata</li>
 <li>Set up the metadata-webhook to write metadata</li>
 <li>
-<p>Set up a GitHub repository to receive metadata create/update
-    requests</p>
+<p>Set up a GitHub repository to receive metadata create/update requests</p>
 </li>
 <li>
 <p>Core services</p>
@@ -782,9 +782,6 @@ cat &lt;&lt;EOF &gt; metadata-config.nix
     ensureUsers = [
       {
         name = "\${config.services.metadata-server.postgres.user}";
-        ensurePermissions = {
-          "DATABASE \${config.services.metadata-server.postgres.database}" = "ALL PRIVILEGES";
-        };
       }
     ];
     identMap = ''
@@ -798,11 +795,21 @@ cat &lt;&lt;EOF &gt; metadata-config.nix
     '';
   };
 
-  nix.binaryCaches = [
+  # PostgreSQL 15+ requires explicit grants; `ensurePermissions` no
+  # longer exists. These run in postgresql-setup.service (not
+  # postgresql.service) so they fire *after* ensureDatabases has created
+  # the database; that service puts `psql` on PATH and sets PGPORT, so a
+  # bare `psql` connects as the superuser.
+  systemd.services.postgresql-setup.postStart = pkgs.lib.mkAfter ''
+    psql -tAc 'GRANT ALL PRIVILEGES ON DATABASE \${config.services.metadata-server.postgres.database} TO "\${config.services.metadata-server.postgres.user}";'
+    psql -d \${config.services.metadata-server.postgres.database} -tAc 'GRANT ALL ON SCHEMA public TO "\${config.services.metadata-server.postgres.user}";'
+  '';
+
+  nix.settings.substituters = [
     "https://cache.nixos.org"
-    "https://hydra.iohk.io"
+    "https://cache.iog.io"
   ];
-  nix.binaryCachePublicKeys = [
+  nix.settings.trusted-public-keys = [
     "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
     "hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="
   ];
@@ -1143,9 +1150,8 @@ development shell for which
 provides all dependencies.</p>
 <p>To enter a development shell with a compiler, build tools, and
 system libraries, but without Haskell packages, use
-<code>nix-shell default.nix -A
-cabal-shell</code>{.verbatim}. You can then use cabal to build all Haskell
-package dependencies.</p>
+<code>nix-shell default.nix -A cabal-shell</code>{.verbatim}. You can then use
+cabal to build all Haskell package dependencies.</p>
 </li>
 </ol>
 <h3 id="make-a-release">Make a release<a class="headerlink" href="#make-a-release" title="Permanent link">&para;</a></h3>
@@ -1157,26 +1163,24 @@ package dependencies.</p>
 <li>[ ] Update the versions of all sub-projects.</li>
 <li>[ ] Update the CHANGELOG.</li>
 <li>[ ] Ensure that a new version of the api docs have been created
-    under a new folder, and the symbolic link at docs/api/latest has
-    been updated.</li>
+  under a new folder, and the symbolic link at docs/api/latest has
+  been updated.</li>
 <li>[ ] Deploy offchain-metadata-tools to testnet such that
-    metadata-server is available at
-    <a href="https://metadata.cardano-testnet.iohkdev.io/">https://metadata.cardano-testnet.iohkdev.io/</a> and new metadata
-    can be added in
-    <a href="https://github.com/input-output-hk/metadata-registry-testnet">https://github.com/input-output-hk/metadata-registry-testnet</a>.</li>
+  metadata-server is available at
+  <a href="https://metadata.cardano-testnet.iohkdev.io/">https://metadata.cardano-testnet.iohkdev.io/</a> and new metadata
+  can be added in
+  <a href="https://github.com/input-output-hk/metadata-registry-testnet">https://github.com/input-output-hk/metadata-registry-testnet</a>.</li>
 </ul>
 </li>
 <li>
 <p>Create the release notes</p>
 <ul>
 <li>[ ] Add a draft release to
-    <a href="https://github.com/input-output-hk/offchain-metadata-tools/releases">https://github.com/input-output-hk/offchain-metadata-tools/releases</a>,
-    so that the release notes can be reviewed.<ul>
+  <a href="https://github.com/input-output-hk/offchain-metadata-tools/releases">https://github.com/input-output-hk/offchain-metadata-tools/releases</a>,
+  so that the release notes can be reviewed.</li>
 <li>[ ] Include CHANGELOG updates in the release notes.</li>
-<li>[ ] Include the binaries for the master builds of
-    executables of the project, as well as their sha256 sum.</li>
-</ul>
-</li>
+<li>[ ] Include the binaries for the master builds of executables of
+    the project, as well as their sha256 sum.</li>
 </ul>
 </li>
 <li>
@@ -1187,35 +1191,35 @@ can be executed./</p>
 <ul>
 <li>
 <p>[ ] Verify the release notes point to relevant API documentation
-    and manual.</p>
+  and manual.</p>
 </li>
 <li>
-<p>[ ] Download release artifacts from the release page and make
-    them available on <code>$PATH</code>{.verbatim}.</p>
+<p>[ ] Download release artifacts from the release page and make them
+  available on <code>$PATH</code>{.verbatim}.</p>
 </li>
 <li>
-<p>[ ] Go over e2e acceptance tests ->
-    <a href="https://github.com/input-output-hk/offchain-metadata-tools/tree/master/test/Acceptance.md">https://github.com/input-output-hk/offchain-metadata-tools/tree/master/test/Acceptance.md</a></p>
+<p>[ ] Go over e2e acceptance tests -&gt;
+  <a href="https://github.com/input-output-hk/offchain-metadata-tools/tree/master/test/Acceptance.md">https://github.com/input-output-hk/offchain-metadata-tools/tree/master/test/Acceptance.md</a></p>
 </li>
 <li>
 <p>[ ] Run locally automated scenarios from
-    <a href="https://github.com/input-output-hk/offchain-metadata-tools/tree/master/token-metadata-creator/test">https://github.com/input-output-hk/offchain-metadata-tools/tree/master/token-metadata-creator/test</a></p>
+  <a href="https://github.com/input-output-hk/offchain-metadata-tools/tree/master/token-metadata-creator/test">https://github.com/input-output-hk/offchain-metadata-tools/tree/master/token-metadata-creator/test</a></p>
 </li>
 <li>
 <p>[ ] Run pre-release load tests from
-    <a href="https://github.com/input-output-hk/offchain-metadata-tools/tree/master/test/load">https://github.com/input-output-hk/offchain-metadata-tools/tree/master/test/load</a></p>
+  <a href="https://github.com/input-output-hk/offchain-metadata-tools/tree/master/test/load">https://github.com/input-output-hk/offchain-metadata-tools/tree/master/test/load</a></p>
 </li>
 </ul>
-<p><code>{=html}
-&lt;!-- --&gt;</code>
-    $ npm install
-    $ npm test</p>
+<!-- -->
+<pre><code>$ npm install
+$ npm test
+</code></pre>
 </li>
 <li>
 <p>Publication</p>
 <ul>
 <li>[ ] Once everyone has signed off (i.e. Tech lead, QA, Ops &amp;
-    Release manager), publish the release.</li>
+  Release manager), publish the release.</li>
 </ul>
 </li>
 </ol>
@@ -1383,7 +1387,7 @@ provides:</p>
 <p>The following is a diagram that shows how the various components of this
 project work together to form the metadata system:</p>
 <p><img alt="Structure of metadata
-system" src="structure-diagram.svg" title="structure-diagram" /></p>
+system" src="structure-diagram.svg" />{#structure-diagram}</p>
 <h2 id="explanation">Explanation<a class="headerlink" href="#explanation" title="Permanent link">&para;</a></h2>
 <h3 id="why-is-metadata-store-postgres-packaged-as-a-separate-library">Why is metadata-store-postgres packaged as a separate library?<a class="headerlink" href="#why-is-metadata-store-postgres-packaged-as-a-separate-library" title="Permanent link">&para;</a></h3>
 <p>Our haskell.nix Nix infrastructure used to have issues with postgres,
@@ -1430,19 +1434,20 @@ with (from the root directory of this project):</p>
             <hr>
             <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
         </footer>
+        <script src="js/bootstrap.bundle.min.js"></script>
         <script>
             var base_url = ".",
                 shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
         </script>
-        <script src="js/base.js" defer></script>
-        <script src="search/main.js" defer></script>
+        <script src="js/base.js"></script>
+        <script src="search/main.js"></script>
 
         <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title" id="searchModalLabel">Search</h4>
-                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <p>From here you can search these documents. Enter your search terms below.</p>
@@ -1462,7 +1467,7 @@ with (from the root directory of this project):</p>
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
-                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
               <table class="table">
@@ -1502,5 +1507,5 @@ with (from the root directory of this project):</p>
 </html>
 
 <!--
-MkDocs version : 1.2.1
+MkDocs version : 1.6.1
 -->
