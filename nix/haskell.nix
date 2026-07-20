@@ -48,9 +48,9 @@ in
   modules = [
     # NOTE: servant-github-webhook is unmaintained (last release 2019) and
     # its Hackage version does not compile against aeson 2. cabal.project
-    # pulls it from the aeson-2-updated input-output-hk fork via a
-    # source-repository-package, which haskell.nix builds from the same
-    # source -- so no patch module is needed here.
+    # pulls it from the tsani upstream repo via a source-repository-package,
+    # which haskell.nix builds from the same source -- so no patch module is
+    # needed here.
 
     # Install shell completion scripts alongside the executables.
     {
