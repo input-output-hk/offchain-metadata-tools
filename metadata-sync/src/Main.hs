@@ -9,6 +9,7 @@ import Data.Time.Clock ( NominalDiffTime )
 import Database.PostgreSQL.Simple ( Connection, close, connectPostgreSQL )
 import qualified Network.Wai.Handler.Warp as Warp
 import qualified Options.Applicative as Opt
+import System.IO ( BufferMode (LineBuffering), hSetBuffering, stderr, stdout )
 import qualified Text.Regex as R
 
 import qualified Cardano.Metadata.Sync as Sync
@@ -23,6 +24,9 @@ import Cardano.Metadata.Sync.Config
 
 main :: IO ()
 main = do
+  hSetBuffering stdout LineBuffering
+  hSetBuffering stderr LineBuffering
+
   options@(Opts { optDbConnections = numDbConns
                 , optDbMetadataTableName = tableName
                 , optGitURL = gitURL

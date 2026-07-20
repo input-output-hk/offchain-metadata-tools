@@ -143,10 +143,9 @@ See [the docs](https://input-output-hk.github.io/offchain-metadata-tools/#build-
 
 ## How to test
 
-Pre-requisite: `token-metadata-creator` must be available on your `$PATH`.
+The `token-metadata-creator` golden tests validate a set of pinned
+token-registry entries (see `test/fixtures`). Run them with:
 
 ```
-$ cd test
-$ npm install
-$ npm test
+$ nix build '.#checks.x86_64-linux."token-metadata-creator:golden-tests"'
 ```

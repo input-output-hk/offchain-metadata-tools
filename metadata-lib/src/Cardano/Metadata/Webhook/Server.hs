@@ -5,6 +5,7 @@ module Cardano.Metadata.Webhook.Server where
 import Control.Lens ( (.~), (^.) )
 import Control.Monad.IO.Class ( liftIO )
 import qualified Data.Aeson as Aeson
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as C8
 import qualified Data.ByteString.Lazy.Char8 as BLC
 import Data.Foldable ( traverse_ )
@@ -24,12 +25,19 @@ import Cardano.Metadata.Store.Types ( StoreInterface (..) )
 import Cardano.Metadata.Types.Common ( Subject (Subject) )
 import qualified Cardano.Metadata.Types.Weakly as Weakly
 import Cardano.Metadata.Webhook.API
+import Cardano.Metadata.Webhook.Signature ( requireHubSignature256 )
 import Cardano.Metadata.Webhook.Types
 
 
-appSigned :: GitHubKey -> StoreInterface Subject Weakly.Metadata -> GetEntryFromFile -> Application
-appSigned key intf getEntryFromFile
-  = serveWithContext
+-- | The pinned servant-github-webhook dependency only verifies the legacy
+-- SHA-1 'X-Hub-Signature' (via 'GitHubKey'). 'requireHubSignature256' wraps
+-- the resulting 'Application' with an independent check of the SHA-256
+-- 'X-Hub-Signature-256' header GitHub also sends, so a request must satisfy
+-- both to reach the handlers.
+appSigned :: BS.ByteString -> GitHubKey -> StoreInterface Subject Weakly.Metadata -> GetEntryFromFile -> Application
+appSigned secret key intf getEntryFromFile
+  = requireHubSignature256 secret
+  $ serveWithContext
     (Proxy :: Proxy MetadataWebhookAPISigned)
     (key :. EmptyContext)
     (metadataWebhook intf getEntryFromFile)
@@ -47,35 +55,48 @@ metadataWebhook intf getEntryFromFile = (\a (_, b) -> pushHook intf getEntryFrom
 metadataWebhookUnsigned :: StoreInterface Subject Weakly.Metadata -> GetEntryFromFile -> Server MetadataWebhookAPIUnsigned
 metadataWebhookUnsigned = pushHook
 
-getFileContent :: GitHubToken -> GetEntryFromFile
-getFileContent (GitHubToken githubToken) repoInfo fileName = do
-  let
-    rawContentsUrl     = repoInfoContentsUrl repoInfo
-    substitutionSuffix = "{+path}"
-  fileContentsUrl <- case T.stripSuffix substitutionSuffix rawContentsUrl of
-    Nothing  -> error $ "Repository contents URL '" <> T.unpack rawContentsUrl <> "' is missing '" <> T.unpack substitutionSuffix <> "' substitution suffix."
-    Just url -> pure $ url <> fileName
-
-  let options = Wreq.defaults & Wreq.header hAccept .~ ["application/vnd.github.v3.raw"]
-                              & Wreq.header hUserAgent .~ ["metadata-webhook"]
-                              & Wreq.header hAuthorization .~ [C8.pack . T.unpack $ githubToken]
-                              & Wreq.checkResponse .~ (pure mempty)
-
-  resp <- Wreq.getWith options (T.unpack fileContentsUrl)
-
-  case resp ^. Wreq.responseStatus of
-    s | s /= ok200 -> do
-      putStrLn $ "Failed to get file contents from URL: '" <> T.unpack fileContentsUrl <> "'."
+-- | Fetch a file's contents from the GitHub repository pinned by
+-- 'GitHubRepo' -- never from a URL supplied by the webhook payload itself.
+--
+-- The webhook payload's repository info is only used to check that the
+-- event actually belongs to the repository we're configured for; a push
+-- event for any other repository is ignored before any request is made, so
+-- our GitHub token is never attached to a request whose destination host an
+-- attacker could influence (SSRF + credential exfiltration).
+getFileContent :: Maybe GitHubToken -> GitHubRepo -> GetEntryFromFile
+getFileContent mGithubToken expectedRepo repoInfo fileName
+  | repoInfoFullName repoInfo /= ghRepoFullName expectedRepo = do
+      putStrLn $ "Ignoring push event for repository '" <> T.unpack (repoInfoFullName repoInfo) <> "'; this webhook is only configured to serve '" <> T.unpack (ghRepoFullName expectedRepo) <> "'."
       pure Nothing
-    _              ->
-      let
-        rawContents = resp ^. Wreq.responseBody
-      in
-        case Aeson.eitherDecode rawContents of
-          Left err    -> do
-            putStrLn $ "Failed to decode contents of file '" <> T.unpack fileName <> "' into an Entry', error was: '" <> err <> "', contents of file were: '" <> BLC.unpack rawContents <> "'."
-            pure Nothing
-          Right entry -> pure (Just entry)
+  | otherwise = do
+      let fileContentsUrl = ghRepoContentsUrl expectedRepo <> fileName
+
+      let baseOptions = Wreq.defaults & Wreq.header hAccept .~ ["application/vnd.github.v3.raw"]
+                                      & Wreq.header hUserAgent .~ ["metadata-webhook"]
+                                      & Wreq.checkResponse .~ (pure mempty)
+
+          -- No token means an anonymous request, not a request with a bad
+          -- (empty) credential -- so the Authorization header is omitted
+          -- entirely rather than sent as "".
+          options = case mGithubToken of
+            Nothing                  -> baseOptions
+            Just (GitHubToken token) -> baseOptions & Wreq.header hAuthorization .~ [C8.pack (T.unpack token)]
+
+      resp <- Wreq.getWith options (T.unpack fileContentsUrl)
+
+      case resp ^. Wreq.responseStatus of
+        s | s /= ok200 -> do
+          putStrLn $ "Failed to get file contents from URL: '" <> T.unpack fileContentsUrl <> "'."
+          pure Nothing
+        _              ->
+          let
+            rawContents = resp ^. Wreq.responseBody
+          in
+            case Aeson.eitherDecode rawContents of
+              Left err    -> do
+                putStrLn $ "Failed to decode contents of file '" <> T.unpack fileName <> "' into an Entry', error was: '" <> err <> "', contents of file were: '" <> BLC.unpack rawContents <> "'."
+                pure Nothing
+              Right entry -> pure (Just entry)
 
 -- API handlers
 pushHook :: StoreInterface Subject Weakly.Metadata -> GetEntryFromFile -> RepoWebhookEvent -> PushEvent' -> Handler ()

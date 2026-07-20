@@ -19,6 +19,7 @@ library
                        Cardano.Metadata.Webhook.Types
                        Cardano.Metadata.Webhook.API
                        Cardano.Metadata.Webhook.Server
+                       Cardano.Metadata.Webhook.Signature
                        Cardano.Metadata.Transform
                        Cardano.Metadata.Transform.Reader
                        Cardano.Metadata.Validation.GitHub
@@ -42,6 +43,7 @@ library
                      , casing
                      , comonad
                      , containers
+                     , cryptonite
                      , deepseq
                      , directory
                      , github
@@ -129,6 +131,7 @@ test-suite unit-tests
                 , unordered-containers
                 , validation
                 , vector
+                , wai
                 , wai-extra
                 , warp
 
@@ -139,6 +142,7 @@ test-suite unit-tests
                         Test.Cardano.Metadata.Validation
                         Test.Cardano.Metadata.Validation.GitHub
                         Test.Cardano.Metadata.Server.Types
+                        Test.Cardano.Metadata.Webhook
 
   ghc-options:          -Wall
                         -Wincomplete-record-updates
