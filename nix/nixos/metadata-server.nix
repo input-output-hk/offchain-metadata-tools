@@ -36,6 +36,23 @@ in {
         default = 8080;
         description = "the port the metadata server runs on";
       };
+      environmentFile = lib.mkOption {
+        type = with lib.types; nullOr str;
+        default = null;
+        description = ''
+          Optional path to a systemd EnvironmentFile. Not needed for the
+          default local socket setup, which authenticates as the peer user.
+
+          For a remote database, set PGPASSWORD here rather than passing
+          --db-pass, which would put the password on the command line where
+          any local user can read it out of ps. libpq picks PGPASSWORD up
+          from the environment, and PGPASSFILE works the same way.
+
+          The file is read by systemd at runtime and its contents never enter
+          the Nix store. Point it at a runtime secret path, e.g. one decrypted
+          by sops-nix or agenix.
+        '';
+      };
       postgres = {
         socketdir = lib.mkOption {
           type = lib.types.str;
@@ -103,6 +120,7 @@ in {
         sleep 1
       '';
       serviceConfig = {
+        EnvironmentFile = lib.mkIf (cfg.environmentFile != null) cfg.environmentFile;
         ExecStart = config.services.metadata-server.script;
         DynamicUser = true;
         User = config.services.metadata-server.user;

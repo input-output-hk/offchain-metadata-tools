@@ -21,7 +21,7 @@ metadata-webhook --github-owner OWNER --github-repo REPO --db DB_NAME --db-user 
 | `--github-repo`     | yes      | --                  | Name of the sole GitHub repository this webhook will fetch file contents from                   |
 | `--db`              | yes      | --                  | Name of the database to store and read metadata from                                            |
 | `--db-user`         | yes      | --                  | User to connect to the metadata database with                                                   |
-| `--db-pass`         | no       | (none)              | Password to connect to the metadata database with                                               |
+| `--db-pass`         | no       | (none)              | Password to connect to the metadata database with. Prefer `PGPASSWORD` (see below); this option puts the password on the command line, where any local user can read it out of `ps` |
 | `--db-host`         | no       | `/run/postgresql`   | Host for the metadata database connection                                                       |
 | `--db-port`         | no       | `5432`              | Port for the metadata database connection                                                       |
 | `--db-table`        | no       | `metadata`          | Table in the database to store metadata in. Must be a plain SQL identifier (letters, digits, underscore; not digit-led) -- anything else is rejected at startup |
@@ -40,6 +40,14 @@ API request is made.
 | ---                        | ---      | ---                                                                                                |
 | `METADATA_WEBHOOK_SECRET`  | yes      | The shared secret configured on the GitHub webhook, used to verify request signatures. If this is unset or empty, the process logs an error and exits immediately -- it never starts up with an empty (i.e. publicly guessable) key |
 | `METADATA_GITHUB_TOKEN`    | no       | A GitHub token attached as the `Authorization` header when fetching file contents, needed for private repositories or to avoid GitHub's public API rate limits. If unset or empty, requests are made anonymously (no `Authorization` header is sent) |
+| `PGPASSWORD`               | no       | Database password, read by libpq. Only needed for a remote database; the default local socket setup authenticates as the peer user. `PGPASSFILE` works the same way |
+
+## Database password
+
+Prefer `PGPASSWORD` (or `PGPASSFILE`) over `--db-pass`. Arguments are visible
+in `ps` to every local user, whereas libpq reads these variables straight from
+the process environment. The NixOS module's `environmentFile` is the intended
+way to supply them, so the value never reaches the Nix store either.
 
 ## Request signature verification
 
