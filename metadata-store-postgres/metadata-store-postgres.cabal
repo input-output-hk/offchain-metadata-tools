@@ -1,8 +1,13 @@
 cabal-version:       >=1.10
 name:                metadata-store-postgres
 version:             0.4.0.0
-author:              Samuel Evans-Powell
-maintainer:          mail@sevanspowell.net
+homepage:            https://github.com/input-output-hk/offchain-metadata-tools
+bug-reports:         https://github.com/input-output-hk/offchain-metadata-tools/issues
+license:             Apache-2.0
+license-file:        LICENSE
+copyright:           2020-2026 Input Output Global Inc (IOG).
+author:              Samuel Evans-Powell, IOHK Engineering Team
+maintainer:          operations@iohk.io
 build-type:          Simple
 extra-source-files:  CHANGELOG
 
