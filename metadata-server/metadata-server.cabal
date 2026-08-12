@@ -1,6 +1,6 @@
 cabal-version:       >=1.10
 name:                metadata-server
-version:             0.4.0.0
+version:             0.5.0.0
 homepage:            https://github.com/input-output-hk/offchain-metadata-tools
 bug-reports:         https://github.com/input-output-hk/offchain-metadata-tools/issues
 license:             Apache-2.0
