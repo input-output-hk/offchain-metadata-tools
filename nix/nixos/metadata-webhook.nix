@@ -56,6 +56,12 @@ in {
           Path to a systemd EnvironmentFile supplying the webhook's secrets:
             METADATA_WEBHOOK_SECRET (required by the service)
             METADATA_GITHUB_TOKEN   (optional; omit for anonymous GitHub API access)
+            PGPASSWORD              (optional; only for a remote database)
+
+          For a remote database, set PGPASSWORD here rather than passing
+          --db-pass, which would put the password on the command line where
+          any local user can read it out of ps. libpq picks PGPASSWORD up
+          from the environment, and PGPASSFILE works the same way.
 
           The file is read by systemd at runtime and its contents never enter
           the Nix store. Point it at a runtime secret (e.g. a sops-nix /

@@ -1,10 +1,13 @@
 cabal-version:       2.2
 name:                token-metadata-creator
-version:             0.4.0.0
+version:             0.5.0.0
 synopsis:            A library and CLI for manipulating data for the Metadata Server CIP
+homepage:            https://github.com/input-output-hk/offchain-metadata-tools
+bug-reports:         https://github.com/input-output-hk/offchain-metadata-tools/issues
 license:             Apache-2.0
-copyright:           2020 Input Output (Hong Kong) Ltd.
-author:              Obsidian Systems LLC
+license-file:        LICENSE
+copyright:           2020-2026 Input Output Global Inc (IOG).
+author:              Obsidian Systems LLC, IOHK Engineering Team
 maintainer:          operations@iohk.io
 extra-source-files:  test/fixtures/*.json
 
