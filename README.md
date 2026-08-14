@@ -51,8 +51,8 @@ See [our releases](https://github.com/input-output-hk/offchain-metadata-tools/re
 
 For the bleeding-edge the following are available (use these with caution):
 
-  - [token-metadata-creator](https://hydra.iohk.io/job/Cardano/offchain-metadata-tools/musl64.token-metadata-creator-tarball.x86_64-linux/latest/download/1)
-  - [metadata-validator-github](https://hydra.iohk.io/job/Cardano/offchain-metadata-tools/musl64.metadata-validator-github-tarball.x86_64-linux/latest/download/1)
+  - [token-metadata-creator](https://ci.iog.io/job/input-output-hk-offchain-metadata-tools/master/x86_64-linux.token-metadata-creator-tarball/latest/download/1)
+  - [metadata-validator-github](https://ci.iog.io/job/input-output-hk-offchain-metadata-tools/master/x86_64-linux.metadata-validator-github-tarball/latest/download/1)
 
 ## Building
 
