@@ -4,9 +4,15 @@ on:
   pull_request:
   push:
     branches: [master]
+    # Filter patterns are globs, not regexes: [0-9]+ is one or more digits and
+    # '.' is literal. The release job re-checks the shape properly in shell.
+    tags: ['v[0-9]+.[0-9]+.[0-9]+.[0-9]+']
+  # Lets the release job be re-run against an existing tag without having to
+  # delete and re-push it.
+  workflow_dispatch:
 
-# Least privilege by default; only the docs-publishing job below opts up to
-# contents: write.
+# Least privilege by default; only the docs-publishing and release jobs below
+# opt up to contents: write.
 permissions:
   contents: read
 
@@ -26,6 +32,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
 
       - name: Install Nix
         uses: cachix/install-nix-action@630ae543ea3a38a9a4166f03376c02c50f408342 # v31.11.0
@@ -34,17 +42,16 @@ jobs:
               trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
               substituters = https://cache.iog.io https://cache.nixos.org/
               experimental-features = nix-command flakes
-              accept-flake-config = true
 
       - name: Build executables and run tests
         run: |
-          nix build --accept-flake-config \
+          nix build \
             .#metadata-server \
             .#metadata-sync \
             .#metadata-validator-github \
             .#metadata-webhook \
             .#token-metadata-creator
-          nix build --accept-flake-config -L \
+          nix build -L \
             '.#checks.x86_64-linux."metadata-lib:test:unit-tests"' \
             '.#checks.x86_64-linux."token-metadata-creator:test:golden-tests"'
 
@@ -57,6 +64,8 @@ jobs:
       contents: write
     steps:
       - name: Checkout
+        # Credentials are deliberately persisted here: update-docs.sh pushes
+        # the generated site to gh-pages with git.
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Install Nix
@@ -66,12 +75,96 @@ jobs:
               trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
               substituters = https://cache.iog.io https://cache.nixos.org/
               experimental-features = nix-command flakes
-              accept-flake-config = true
 
       - name: Run update-docs
         run: |
-          nix build --accept-flake-config .#update-docs -o update-docs.sh
+          nix build .#update-docs -o update-docs.sh
           ./update-docs.sh
+
+  release:
+    # Coarse on purpose: workflow expressions have no regex, so this only keeps
+    # the job off non-tag refs. Push events are already shape-filtered by the
+    # tags glob above; a workflow_dispatch against some other v-prefixed tag
+    # reaches the strict check at the top of the run block below.
+    if: startsWith(github.ref, 'refs/tags/v')
+    name: Attach release artifacts
+    runs-on: ubuntu-latest
+    # Don't attach artifacts built from a tag whose tests didn't pass.
+    needs: build
+    # Needs write access to create the draft release and upload assets to it.
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          # This job authenticates with GH_TOKEN and never pushes with git, so
+          # don't leave a write-scoped token in .git/config while building.
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@630ae543ea3a38a9a4166f03376c02c50f408342 # v31.11.0
+        with:
+            extra_nix_config: |
+              trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+              substituters = https://cache.iog.io https://cache.nixos.org/
+              experimental-features = nix-command flakes
+
+      - name: Build and attach static tarballs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # workflow_dispatch can target any ref and the push filter is only a
+          # glob, so this is the authoritative check on what may be released.
+          # It also rules out tag names carrying shell metacharacters, which
+          # git ref rules otherwise permit.
+          if ! [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Refusing to release from '$GITHUB_REF_NAME'; expected vN.N.N.N"
+            exit 1
+          fi
+
+          # gh release upload requires the release to exist already, so create
+          # a draft first if one isn't there. Publishing and the release notes
+          # stay a manual step.
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
+            || gh release create "$GITHUB_REF_NAME" --draft --verify-tag \
+                 --title "$GITHUB_REF_NAME" --notes "Release notes to follow."
+
+          # --builders "" --max-jobs 0 makes this substitute-only, so an asset
+          # can only come from the cache, i.e. from the Hydra build of this
+          # commit. A runner rebuild would be plausible but unverified. The tag
+          # points at a master commit Hydra builds, but it may not have caught
+          # up yet, so wait rather than fail. Re-run via workflow_dispatch if
+          # this gives up.
+          build_cached() {
+            local attempt
+            for attempt in $(seq 1 60); do
+              if nix build --builders "" --max-jobs 0 \
+                   ".#${1}-tarball" -o "result-${1}"; then
+                return 0
+              fi
+              echo "${1}-tarball not in the cache yet (attempt ${attempt}/60); waiting 60s..."
+              sleep 60
+            done
+            echo "Gave up waiting for ${1}-tarball to reach the cache." >&2
+            return 1
+          }
+
+          # The tarball derivations emit a bare <pkg>.tar.gz, so stamp the tag
+          # and platform into the asset name; a downloaded file should say what
+          # it is. Keep the list in sync with staticTarballs in flake.nix.
+          for pkg in metadata-validator-github token-metadata-creator; do
+            build_cached "$pkg"
+            install -m 644 "result-${pkg}/${pkg}.tar.gz" \
+              "${pkg}-${GITHUB_REF_NAME}-linux-amd64.tar.gz"
+          done
+
+          sha256sum ./*-"${GITHUB_REF_NAME}"-linux-amd64.tar.gz \
+            > "sha256sums-${GITHUB_REF_NAME}.txt"
+
+          gh release upload "$GITHUB_REF_NAME" --clobber \
+            ./*-"${GITHUB_REF_NAME}"-linux-amd64.tar.gz \
+            "sha256sums-${GITHUB_REF_NAME}.txt"
 
   check-stylish-haskell:
     name: Check Stylish Haskell
@@ -79,6 +172,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
 
       - name: Install Nix
         uses: cachix/install-nix-action@630ae543ea3a38a9a4166f03376c02c50f408342 # v31.11.0
@@ -87,7 +182,6 @@ jobs:
               trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
               substituters = https://cache.iog.io https://cache.nixos.org/
               experimental-features = nix-command flakes
-              accept-flake-config = true
 
       - name: Run stylish-haskell check
-        run: nix develop --accept-flake-config -c .github/check-stylish.sh
+        run: nix develop -c .github/check-stylish.sh
