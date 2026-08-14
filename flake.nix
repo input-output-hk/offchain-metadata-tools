@@ -70,6 +70,10 @@
           tar -czvf $out/${name}.tar.gz ${name}
           echo "file binary-dist $out/${name}.tar.gz" > $out/nix-support/hydra-build-products
         '';
+        # metadata-{server,sync,webhook} deliberately have no tarball: they link
+        # libpq, and the musl cross builds the full postgresql server, whose
+        # configure fails with "cannot build PL/Perl because libperl is not a
+        # shared library". They ship via the nixos modules instead.
         staticTarballs = lib.optionalAttrs (system == "x86_64-linux") {
           metadata-validator-github-tarball = staticTarball "metadata-validator-github";
           token-metadata-creator-tarball = staticTarball "token-metadata-creator";
