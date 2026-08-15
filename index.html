@@ -180,8 +180,7 @@ change your network magic to "1097911063" (i.e. use
 regular transactions require fees! So the first thing we'll need
 to do is find (or create) an address with some funds. If you
 already have an address with some funds, feel free to use that
-and skip to [<em>the next section</em>]{.spurious-link
-target="* Choosing a UTxO"}, but set the <code>PAYMENT_ADDR</code>
+and skip to <em>the next section</em>, but set the <code>PAYMENT_ADDR</code>
 environment variable accordingly.</p>
 <p>We'll create our payment keys and address:</p>
 <pre><code>echo
@@ -686,8 +685,7 @@ Yoroi, and other products that use this metadata.</p>
 <h3 id="running-your-own-metadata-system">Running your own metadata system<a class="headerlink" href="#running-your-own-metadata-system" title="Permanent link">&para;</a></h3>
 <p>The metadata system is made up of a few components, each of which we
 will set up separately. To get a visual overview of what we will be
-creating, you can refer to the [<em>Structure diagram</em>]{.spurious-link
-target="structure-diagram"}.</p>
+creating, you can refer to the <em>Structure diagram</em>.</p>
 <p>We need to:</p>
 <ul>
 <li>Set up a Postgres DB to store metadata</li>
@@ -1093,12 +1091,8 @@ the webhook settings page.</p>
 <p>Pull request validation</p>
 <p>Letting just anyone commit metadata to your repository is likely
 not what you want. We recommend accepting pull requests to your
-repository and using
-[<em>metadata-validator-github</em>]{.spurious-link
-target="<em> metadata-validator-github"} and
-[</em>token-metadata-creator<em>]{.spurious-link
-target="</em>token-metadata-creator"} to automate some of the
-vetting of PRs.</p>
+repository and using <em>metadata-validator-github</em> and
+<em>token-metadata-creator</em> to automate some of the vetting of PRs.</p>
 <p>One easy way to do this is with GitHub actions. Create the
 following file in your repository:</p>
 <pre><code>mkdir -p .github/workflows
@@ -1109,17 +1103,12 @@ touch .github/workflows/ci.yaml
 This should always be the most up-to-date version of the PR
 validation script that we use.</p>
 <p>This script will automatically fetch the latest versions of the
-[<em>metadata-validator-github</em>]{.spurious-link
-target="<em>metadata-validator-github"} and
-[</em>token-metadata-creator<em>]{.spurious-link
-target="</em>token-metadata-creator"} tools and run them on every PR
-to your repository.</p>
+<em>metadata-validator-github</em> and <em>token-metadata-creator</em> tools
+and run them on every PR to your repository.</p>
 <p>By default, the validation script ensures that metadata files
 are written to the "mappings" directory, so when adding metadata
 from now on, make sure to add it to the "mappings" directory.
-See [<em>here</em>]{.spurious-link
-target="* Why are metadata entries kept in a separate directory (e.g. \"mappings\")?"}
-for an explanation of why this is.</p>
+See <em>here</em> for an explanation of why this is.</p>
 <p>Congratulations on setting up your own metadata system!</p>
 </li>
 </ol>
@@ -1261,29 +1250,23 @@ API.</p>
 <li>
 <p>Cardano.Metadata.Server.Types</p>
 <p>Types required to define the API specified in
-[<em>Cardano.Metadata.Server.API</em>]{.spurious-link
-target="*Cardano.Metadata.Server.API"}.</p>
+<em>Cardano.Metadata.Server.API</em>.</p>
 </li>
 <li>
 <p>Cardano.Metadata.Server</p>
 <p>The logic of the metadata-server, and a web application. The
-application issues read commands to a
-[<em>StoreInterface</em>]{.spurious-link
-target="*Cardano.Metadata.Store.Types"}, which determines how
-reading is actually performed.</p>
+application issues read commands to a <em>StoreInterface</em>, which
+determines how reading is actually performed.</p>
 </li>
 <li>
 <p>Cardano.Metadata.Store.Types</p>
 <p>Defines the interface for reading/writing/deleting/updating the
 storage layer of the metadata-server. Implementations must pass
-the set of tests specified in
-[<em>Test.Cardano.Metadata.Store</em>]{.spurious-link
-target="*Test.Cardano.Metadata.Store"}.</p>
+the set of tests specified in <em>Test.Cardano.Metadata.Store</em>.</p>
 </li>
 <li>
 <p>Cardano.Metadata.Store.Simple</p>
-<p>A simple implementation of the [<em>above</em>]{.spurious-link
-target="*Cardano.Metadata.Store.Types"}, used only for testing.</p>
+<p>A simple implementation of the <em>above</em>, used only for testing.</p>
 </li>
 <li>
 <p>Cardano.Metadata.Types.Common</p>
@@ -1310,8 +1293,7 @@ monadic/applicative style in a way that makes sense.</p>
 </li>
 <li>
 <p>Cardano.Metadata.Transform.Reader</p>
-<p>An implementation of the [<em>above</em>]{.spurious-link
-target="*Cardano.Metadata.Transform"}.</p>
+<p>An implementation of the <em>above</em>.</p>
 </li>
 <li>
 <p>Cardano.Metadata.Validation.Rules</p>
@@ -1335,18 +1317,13 @@ metadata storage layer.</p>
 </li>
 <li>
 <p>Cardano.Metadata.Webhook.Types</p>
-<p>Types used to define the [<em>above</em>]{.spurious-link
-target="*Cardano.Metadata.Webhook.API"} and to decode JSON
-events from GitHub.</p>
+<p>Types used to define the <em>above</em> and to decode JSON events from
+GitHub.</p>
 </li>
 <li>
 <p>Cardano.Metadata.Webhook.Server</p>
-<p>Implementation of the [<em>webhook API</em>]{.spurious-link
-target="<em>Cardano.Metadata.Webhook.API"}. Like the
-[</em>metadata-server<em>]{.spurious-link
-target="</em>Cardano.Metadata.Server"}, is also defined against an
-[<em>interface to the storage layer</em>]{.spurious-link
-target="*Cardano.Metadata.Store.Types"}.</p>
+<p>Implementation of the <em>webhook API</em>. Like the <em>metadata-server</em>,
+is also defined against an <em>interface to the storage layer</em>.</p>
 </li>
 <li>
 <p>Test.Cardano.Helpers</p>
@@ -1359,18 +1336,16 @@ target="*Cardano.Metadata.Store.Types"}.</p>
 <li>
 <p>Test.Cardano.Metadata.Store</p>
 <p>A set of property tests that implementations of the
-[<em>StoreInterfaces</em>]{.spurious-link
-target="*Cardano.Metadata.Store.Types"} should pass to be
-considered valid implementations.</p>
+<em>StoreInterfaces</em> should pass to be considered valid
+implementations.</p>
 </li>
 </ol>
 </li>
 <li>
 <p>metadata-server</p>
 <p>Service that provides read-only access to metadata, keyed by
-metadata subject and optionally, property name. Uses a [<em>Postgres
-database as the storage layer</em>]{.spurious-link
-target="*metadata-store-postgres"}.</p>
+metadata subject and optionally, property name. Uses a <em>Postgres
+database as the storage layer</em>.</p>
 </li>
 <li>
 <p>metadata-validator-github</p>
@@ -1384,8 +1359,7 @@ target="*metadata-store-postgres"}.</p>
 <li>
 <p>metadata-store-postgres</p>
 <p>Haskell library that provides a Postgres implementation of the
-[<em>interface to the metadata storage layer</em>]{.spurious-link
-target="*Cardano.Metadata.Store.Types"}.</p>
+<em>interface to the metadata storage layer</em>.</p>
 </li>
 <li>
 <p>metadata-webhook</p>
