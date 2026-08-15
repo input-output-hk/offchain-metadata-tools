@@ -112,6 +112,14 @@ however mean that some of these tutorials require a preamble, to ensure
 they work in the test environment. You can safely ignore anything listed
 under a \"Preamble\" heading.</p>
 <h3 id="minting-your-first-asset">Minting your first asset<a class="headerlink" href="#minting-your-first-asset" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p><strong>To be updated.</strong> This tutorial has not been revalidated against a
+current version of <code>cardano-node</code>{.verbatim}, and its automated test
+is disabled in <code>nix/nixos/tests/default.nix</code>{.verbatim}. It targets a
+retired testnet and uses <code>cardano-cli</code>{.verbatim} options that no
+longer exist. Read it as a description of the workflow rather than as
+a working script.</p>
+</blockquote>
 <p>The off-chain metadata ecosystem provides a system for you to associate
 data with asset IDs generated when minting an asset. This might be to
 give a more friendly name to the asset, or to describe the asset in more
@@ -857,6 +865,12 @@ curl localhost:${METADATA_SERVER_PORT}/metadata/b377d03a568dde663534e040fc32a573
 </li>
 <li>
 <p>Other (non-NixOS)</p>
+<blockquote>
+<p><strong>To be updated.</strong> This section is written against PostgreSQL
+11 configuration internals, and its automated test is disabled
+in <code>nix/nixos/tests/default.nix</code>{.verbatim}. The NixOS section
+above is tested and current; prefer it where possible.</p>
+</blockquote>
 <ol>
 <li>
 <p>Preamble</p>
@@ -1119,9 +1133,9 @@ for an explanation of why this is.</p>
 </ul>
 <h2 id="how-to">How-to<a class="headerlink" href="#how-to" title="Permanent link">&para;</a></h2>
 <h3 id="set-up-the-nix-cache">Set up the Nix cache<a class="headerlink" href="#set-up-the-nix-cache" title="Permanent link">&para;</a></h3>
-<p>For both building with <code>nix-build</code>{.verbatim} and using
-<code>nix-shell</code>{.verbatim}, it might take a very long time if you do not
-have the Cardano binary cache set up. Adding the IOHK binary cache to
+<p>For both building with <code>nix build</code>{.verbatim} and using
+<code>nix develop</code>{.verbatim}, it might take a very long time if you do not
+have the Cardano binary cache set up. Adding the IOG binary cache to
 your Nix configuration will speed up builds a lot, since many things
 will have been built already by our CI.</p>
 <p>If you find you are building packages that are not defined in this
@@ -1131,15 +1145,15 @@ not have this set up properly.</p>
 <ol>
 <li>
 <p>On non-NixOS, edit /etc/nix/nix.conf and add the following lines:</p>
-<pre><code>substituters        = https://hydra.iohk.io https://iohk.cachix.org https://cache.nixos.org/
-trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= iohk.cachix.org-1:DpRUyj7h7V830dp/i6Nti+NEO2/nhblbov/8MW7Rqoo= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+<pre><code>substituters        = https://cache.iog.io https://cache.nixos.org/
+trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
 </code></pre>
 </li>
 <li>
 <p>On NixOS, set the following NixOS options:</p>
-<pre><code>nix = {
-  binaryCaches          = [ "https://hydra.iohk.io" "https://iohk.cachix.org" ];
-  binaryCachePublicKeys = [ "hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=" "iohk.cachix.org-1:DpRUyj7h7V830dp/i6Nti+NEO2/nhblbov/8MW7Rqoo=" ];
+<pre><code>nix.settings = {
+  substituters        = [ "https://cache.iog.io" ];
+  trusted-public-keys = [ "hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=" ];
 };
 </code></pre>
 </li>
@@ -1148,21 +1162,23 @@ trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=
 <ol>
 <li>
 <p>Using Nix</p>
-<p>From the root directory of the project
-<code>nix-build -A project</code>{.verbatim} will build all project components,
-including test suites.</p>
-<p>To build a particular executable, say
-<code>token-metadata-creator</code>{.verbatim}, use
-<code>nix-build -A token-metadata-creator</code>{.verbatim}.</p>
-<p>To enter a development shell, use
-<code>nix-shell default.nix -A shell</code>{.verbatim}. This will enter a
-development shell for which
+<p>From the root directory of the project, <code>nix build</code>{.verbatim}
+builds the default package, <code>metadata-server</code>{.verbatim}. To build a
+particular executable, say <code>token-metadata-creator</code>{.verbatim}, use
+<code>nix build .#token-metadata-creator</code>{.verbatim}.</p>
+<p>The executables provided are <code>metadata-server</code>{.verbatim},
+<code>metadata-sync</code>{.verbatim}, <code>metadata-validator-github</code>{.verbatim},
+<code>metadata-webhook</code>{.verbatim} and
+<code>token-metadata-creator</code>{.verbatim}.</p>
+<p>To build everything CI builds, including the test suites, NixOS
+tests and static tarballs, use
+<code>nix build .#hydraJobs.x86_64-linux.required</code>{.verbatim}.</p>
+<p>To enter a development shell, use <code>nix develop</code>{.verbatim}. This
+will enter a development shell for which
 <a href="https://github.com/input-output-hk/haskell.nix/">haskell.nix</a>
-provides all dependencies.</p>
-<p>To enter a development shell with a compiler, build tools, and
-system libraries, but without Haskell packages, use
-<code>nix-shell default.nix -A cabal-shell</code>{.verbatim}. You can then use
-cabal to build all Haskell package dependencies.</p>
+provides all dependencies, and in which <code>cabal build</code>{.verbatim}
+works directly. Use <code>nix develop .#profiled</code>{.verbatim} for the same
+shell with library profiling enabled.</p>
 </li>
 </ol>
 <h3 id="make-a-release">Make a release<a class="headerlink" href="#make-a-release" title="Permanent link">&para;</a></h3>
@@ -1176,10 +1192,10 @@ cabal to build all Haskell package dependencies.</p>
 <li>[ ] Ensure that a new version of the api docs have been created
   under a new folder, and the symbolic link at docs/api/latest has
   been updated.</li>
-<li>[ ] Deploy offchain-metadata-tools to testnet such that
-  metadata-server is available at
-  <a href="https://metadata.cardano-testnet.iohkdev.io/">https://metadata.cardano-testnet.iohkdev.io/</a> and new metadata
-  can be added in
+<li>[ ] Deploy offchain-metadata-tools to the playground testnets
+  (preprod/preview) such that metadata-server is available at
+  <a href="https://metadata.play.dev.cardano.org/">https://metadata.play.dev.cardano.org/</a> and new metadata can be
+  added in
   <a href="https://github.com/input-output-hk/metadata-registry-testnet">https://github.com/input-output-hk/metadata-registry-testnet</a>.</li>
 </ul>
 </li>
@@ -1190,8 +1206,10 @@ cabal to build all Haskell package dependencies.</p>
   <a href="https://github.com/input-output-hk/offchain-metadata-tools/releases">https://github.com/input-output-hk/offchain-metadata-tools/releases</a>,
   so that the release notes can be reviewed.</li>
 <li>[ ] Include CHANGELOG updates in the release notes.</li>
-<li>[ ] Include the binaries for the master builds of executables of
-    the project, as well as their sha256 sum.</li>
+<li>[ ] Check that the release job has attached the static tarballs
+    and their sha256sums file to the draft. Pushing a
+    <code>vN.N.N.N</code>{.verbatim} tag runs it; it can be re-run from the
+    Actions tab with workflow~dispatch~.</li>
 </ul>
 </li>
 <li>
@@ -1213,7 +1231,8 @@ can be executed./</p>
   <a href="https://github.com/input-output-hk/offchain-metadata-tools/tree/master/test/Acceptance.md">https://github.com/input-output-hk/offchain-metadata-tools/tree/master/test/Acceptance.md</a></p>
 </li>
 <li>
-<p>[ ] Run locally automated scenarios from
+<p>[ ] Run the token-metadata-creator golden tests, which validate
+  the pinned registry entries under
   <a href="https://github.com/input-output-hk/offchain-metadata-tools/tree/master/token-metadata-creator/test">https://github.com/input-output-hk/offchain-metadata-tools/tree/master/token-metadata-creator/test</a></p>
 </li>
 <li>
@@ -1434,7 +1453,7 @@ code blocks. These are our documentation scripts.</p>
 to run the scripts in a minimal environment and ensure that they pass.</p>
 <p>If you wish to run the scripts on your own machine, you can build them
 with (from the root directory of this project):</p>
-<pre><code>nix-build default.nix -A docScripts
+<pre><code>nix build .#docScripts
 </code></pre>
 <p>and find them in <code>./result/bin/*</code>{.verbatim}.</p></div>
             </div>
