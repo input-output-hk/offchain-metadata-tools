@@ -26,7 +26,13 @@ in
 
     echo "Preprocessing..."
     echo "   Removing org-mode peculiarities..."
-    pandoc --filter ${filterName} docs/index.org -o docs/index.md
+    # -smart stops the writer backslash-escaping " and ', which mkdocs then
+    # renders literally. -inline_code_attributes stops org =verbatim= spans
+    # emitting pandoc's `code`{.verbatim} attribute syntax, which mkdocs does
+    # not parse and shows as text.
+    pandoc --filter ${filterName} \
+      -t markdown-smart-inline_code_attributes \
+      docs/index.org -o docs/index.md
 
     echo "Building..."
     rm -rf site
