@@ -105,20 +105,19 @@
 
 <h2 id="tutorials">Tutorials<a class="headerlink" href="#tutorials" title="Permanent link">&para;</a></h2>
 <p>As much as possible, the commands in these tutorials are tested. The
-source code blocks are \"tangled\" out of this documentation file and
-into bash scripts that are executed in a test environment. This is to
-ensure that our documentation is up-to-date and working. This does
-however mean that some of these tutorials require a preamble, to ensure
-they work in the test environment. You can safely ignore anything listed
-under a \"Preamble\" heading.</p>
+source code blocks are "tangled" out of this documentation file and into
+bash scripts that are executed in a test environment. This is to ensure
+that our documentation is up-to-date and working. This does however mean
+that some of these tutorials require a preamble, to ensure they work in
+the test environment. You can safely ignore anything listed under a
+"Preamble" heading.</p>
 <h3 id="minting-your-first-asset">Minting your first asset<a class="headerlink" href="#minting-your-first-asset" title="Permanent link">&para;</a></h3>
 <blockquote>
 <p><strong>To be updated.</strong> This tutorial has not been revalidated against a
-current version of <code>cardano-node</code>{.verbatim}, and its automated test
-is disabled in <code>nix/nixos/tests/default.nix</code>{.verbatim}. It targets a
-retired testnet and uses <code>cardano-cli</code>{.verbatim} options that no
-longer exist. Read it as a description of the workflow rather than as
-a working script.</p>
+current version of <code>cardano-node</code>, and its automated test is disabled
+in <code>nix/nixos/tests/default.nix</code>. It targets a retired testnet and
+uses <code>cardano-cli</code> options that no longer exist. Read it as a
+description of the workflow rather than as a working script.</p>
 </blockquote>
 <p>The off-chain metadata ecosystem provides a system for you to associate
 data with asset IDs generated when minting an asset. This might be to
@@ -155,38 +154,36 @@ cardano-cli can communicate with the node:</p>
 </code></pre>
 <p>We also need to set the network ID to use in subsequent
 cardano-cli commmands. This will vary depending on whether or
-not you\'re working on a testnet
-(<code>--testnet-magic ...</code>{.verbatim}) or mainnet
-(<code>--mainnet</code>{.verbatim}). Set it appropriately.</p>
+not you're working on a testnet (<code>--testnet-magic ...</code>) or
+mainnet (<code>--mainnet</code>). Set it appropriately.</p>
 <pre><code>export NETWORK_ID="--testnet-magic 1097911063"
 </code></pre>
 <p>Note that if you do set it incorrectly the cardano-cli will give
 you an error message that will help you determine the correct
 value, so feel free to just choose something for now.</p>
-<p>You can run the following cardano-cli command to test it\'s
+<p>You can run the following cardano-cli command to test it's
 ability to communicate with the node:</p>
 <pre><code>cardano-cli query protocol-parameters \
             $NETWORK_ID
 </code></pre>
-<p>If this successfully returns some JSON, you\'re good to
-continue.</p>
+<p>If this successfully returns some JSON, you're good to continue.</p>
 <p>If you see an error something like this:</p>
 <pre><code>cardano-cli: HandshakeError (Refused NodeToClientV_8 "version data mismatch: NodeToClientVersionData {networkMagic = NetworkMagic {unNetworkMagic = 1097911063}} /= NodeToClientVersionData {networkMagic = NetworkMagic {unNetworkMagic = 3}}")
 </code></pre>
 <p>That means you chose the wrong network magic (3) and need to
-change your network magic to \"1097911063\" (i.e. use
-\"<code>--testnet-magic 1097911063</code>{.verbatim}\")</p>
+change your network magic to "1097911063" (i.e. use
+"<code>--testnet-magic 1097911063</code>")</p>
 </li>
 <li>
 <p>Funding an address</p>
 <p>The minting of assets is done using regular transactions, and
-regular transactions require fees! So the first thing we\'ll
-need to do is find (or create) an address with some funds. If
-you already have an address with some funds, feel free to use
-that and skip to [<em>the next section</em>]{.spurious-link
+regular transactions require fees! So the first thing we'll need
+to do is find (or create) an address with some funds. If you
+already have an address with some funds, feel free to use that
+and skip to [<em>the next section</em>]{.spurious-link
 target="* Choosing a UTxO"}, but set the <code>PAYMENT_ADDR</code>
 environment variable accordingly.</p>
-<p>We\'ll create our payment keys and address:</p>
+<p>We'll create our payment keys and address:</p>
 <pre><code>echo
 echo "Building payment keys..."
 cardano-cli address key-gen \
@@ -212,7 +209,7 @@ cardano-cli query utxo \
             --address $PAYMENT_ADDR
 </code></pre>
 <p>In our case there are no UTxOs associated with this address, and
-so no funds. We\'ll use the testnet faucet to get some funds:</p>
+so no funds. We'll use the testnet faucet to get some funds:</p>
 <pre><code>echo
 echo "Funding $PAYMENT_ADDR"
 curl -XPOST https://faucet.cardano-testnet.iohkdev.io/send-money/"$PAYMENT_ADDR"?apiKey="$MY_API_KEY"
@@ -224,15 +221,15 @@ cardano-cli query utxo \
             $NETWORK_ID \
             --address $PAYMENT_ADDR
 </code></pre>
-<p>The faucet is only available on the testnet. If you don\'t have
-an API key, you can still get funds from the faucet, you\'ll
-just need to submit this form: <a href="https://developers.cardano.org/en/testnets/cardano/tools/faucet/">Cardano Testnet
+<p>The faucet is only available on the testnet. If you don't have
+an API key, you can still get funds from the faucet, you'll just
+need to submit this form: <a href="https://developers.cardano.org/en/testnets/cardano/tools/faucet/">Cardano Testnet
 Faucet</a>.
-If you\'re on mainnet, you\'ll need to buy some ADA.</p>
+If you're on mainnet, you'll need to buy some ADA.</p>
 </li>
 <li>
 <p>Choosing a UTxO</p>
-<p>We\'ll need to choose an unspent transaction output (UTxO) to be
+<p>We'll need to choose an unspent transaction output (UTxO) to be
 the source of funds for our minting transaction.</p>
 <p>You can browse the unspent transaction outputs associated with
 an address with the following command:</p>
@@ -240,7 +237,7 @@ an address with the following command:</p>
             $NETWORK_ID \
             --address $PAYMENT_ADDR
 </code></pre>
-<p>We\'re just going to use the last UTxO in the list, but you can
+<p>We're just going to use the last UTxO in the list, but you can
 choose whichever UTxO and TxIx you like, as long as it has
 enough funds to cover the transaction fees.</p>
 <pre><code>export UTXO=$(cardano-cli query utxo $NETWORK_ID --address $PAYMENT_ADDR | tail -n1 | awk '{print $1;}')
@@ -248,10 +245,10 @@ export UTXO_TXIX=$(cardano-cli query utxo $NETWORK_ID --address $PAYMENT_ADDR | 
 echo
 echo "UTxO: $UTXO#$UTXO_TXIX"
 </code></pre>
-<p>We\'ll also need to choose an amount of tokens to mint. Here we
+<p>We'll also need to choose an amount of tokens to mint. Here we
 mint the same number of tokens as we have funds available, but
-you can choose any positive integer, there\'s no requirement
-that the amount of tokens minted be equal to the funds used.</p>
+you can choose any positive integer, there's no requirement that
+the amount of tokens minted be equal to the funds used.</p>
 <pre><code>export AMT=$(cardano-cli query utxo $NETWORK_ID --address $PAYMENT_ADDR --mary-era | tail -n1 | awk '{print $3;}')
 echo
 echo "Amount to mint: $AMT"
@@ -260,10 +257,10 @@ echo "Amount to mint: $AMT"
 <li>
 <p>Creating a minting policy</p>
 <p>Tokens are minted under a policy. The policy describes under
-what circumstances new tokens may be minted. We\'re going to
+what circumstances new tokens may be minted. We're going to
 create a simple policy that only allows a single key to mint new
 tokens.</p>
-<p>Instead of re-using our payment keys, we\'ll create new keys for
+<p>Instead of re-using our payment keys, we'll create new keys for
 token minting:</p>
 <pre><code>mkdir policy
 
@@ -287,7 +284,7 @@ echo "}" &gt;&gt; $SCRIPT
 
 cat $SCRIPT
 </code></pre>
-<p>Next we\'ll need to name our asset. An asset\'s ID is made up of
+<p>Next we'll need to name our asset. An asset's ID is made up of
 the policys id (generated from the script) and the assets name
 concatenated with a period:</p>
 <pre><code>export POLICY_ID=$(cardano-cli transaction policyid --script-file $SCRIPT)
@@ -301,14 +298,14 @@ echo "AssetID is: $POLICY_ID.$ASSET_NAME"
 <p>Minting assets</p>
 <p>Now we get to mint our assets! As stated earlier, assets are
 minted with regular transactions.</p>
-<p>We\'ll build a transaction that takes all the ADA in the UTxO we
+<p>We'll build a transaction that takes all the ADA in the UTxO we
 chose and creates two outputs:</p>
 <ul>
 <li>All the ADA in the input UTxO (so we lose none of it)</li>
 <li>The amount of assets we are minting</li>
 </ul>
 <p>To ensure the transaction balances, we include the amount of the
-new asset we\'re minting in the \"mint\" field.</p>
+new asset we're minting in the "mint" field.</p>
 <pre><code>echo
 echo "Building minting transaction..."
 cardano-cli transaction build-raw \
@@ -321,9 +318,9 @@ cardano-cli transaction build-raw \
 
 cat mint.raw
 </code></pre>
-<p>Of course, the transaction doesn\'t balance quite yet, we need
-to pay a fee for the transaction.</p>
-<p>First we\'ll write the protocol parameters for the network to a
+<p>Of course, the transaction doesn't balance quite yet, we need to
+pay a fee for the transaction.</p>
+<p>First we'll write the protocol parameters for the network to a
 file for convenience:</p>
 <pre><code>echo
 echo "Writing protocol parameters..."
@@ -333,9 +330,9 @@ cardano-cli query protocol-parameters \
 
 cat protocol.json
 </code></pre>
-<p>And then we\'ll calculate the fee and minus that amount from the
-transaction output. Note that we use a witness count of \"2\".
-We\'ll later sign this transaction with both the payment key (to
+<p>And then we'll calculate the fee and minus that amount from the
+transaction output. Note that we use a witness count of "2".
+We'll later sign this transaction with both the payment key (to
 use the funds in the UTxO) and the policy key (to permit us to
 mint some assets).</p>
 <pre><code>export FEE=$(cardano-cli transaction calculate-min-fee \
@@ -360,7 +357,7 @@ cat mint.raw
 <p>Note that the cost of minting an asset is just the fee required
 to submit the transaction.</p>
 <p>We need to sign the transaction firstly with the key associated
-with the UTxO we\'re trying to spend, and secondly with the
+with the UTxO we're trying to spend, and secondly with the
 signing key that grants us the right to mint new tokens under a
 given policy:</p>
 <pre><code>cardano-cli transaction sign \
@@ -372,7 +369,7 @@ given policy:</p>
 
 cat mint.signed
 </code></pre>
-<p>Once that\'s done, we can submit our transaction to the chain:</p>
+<p>Once that's done, we can submit our transaction to the chain:</p>
 <pre><code>echo
 echo "Submiting minting transaction..."
 cardano-cli transaction submit \
@@ -400,7 +397,7 @@ export UTXO=$(cardano-cli query utxo $NETWORK_ID --address $PAYMENT_ADDR | tail 
 export UTXO_TXIX=$(cardano-cli query utxo $NETWORK_ID --address $PAYMENT_ADDR | tail -n1 | awk '{print $2;}')
 </code></pre>
 <p>Then we create and submit the burn transaction, note that we
-don\'t output any assets in the transaction (as we want to
+don't output any assets in the transaction (as we want to
 destroy them), and we set the mint field to a negative amount
 (the amount of tokens we want to burn), so that the transaction
 balances.</p>
@@ -457,9 +454,9 @@ cardano-cli query utxo \
 </li>
 <li>
 <p>Returning faucet funds</p>
-<p>If you\'ve obtained funds from the testnet faucet and would like
+<p>If you've obtained funds from the testnet faucet and would like
 to return them, you can do the following. Be very careful doing
-this, don\'t do this on mainnet, I don\'t want you sending your
+this, don't do this on mainnet, I don't want you sending your
 hard-earned mainnet funds anywhere!</p>
 <pre><code>export ADA_LEFT=$(cardano-cli query utxo $NETWORK_ID --address $PAYMENT_ADDR | tail -n1 | awk '{print $3;}')
 export UTXO=$(cardano-cli query utxo $NETWORK_ID --address $PAYMENT_ADDR | tail -n1 | awk '{print $1;}')
@@ -515,7 +512,7 @@ cardano-cli query utxo \
 </li>
 </ol>
 <h3 id="submitting-your-first-metadata-entry">Submitting your first metadata entry<a class="headerlink" href="#submitting-your-first-metadata-entry" title="Permanent link">&para;</a></h3>
-<p>We\'ve named our asset, but there is no name associated with our policy.
+<p>We've named our asset, but there is no name associated with our policy.
 To name your policy, the cardano-foundation provides an off-chain
 solution. You submit some metadata to the service and tools such as
 Daedalus can query this service to retrieve the metadata and provide a
@@ -572,11 +569,10 @@ echo "Subject is '$SUBJECT'"
     "description": null
 }
 </code></pre>
-<p>Each key in the JSON map (other than the \"subject\")
-corresponds to a \"property\". For a phase-1 monetary policy
-there are three required properties for asset metadata (the kind
-of metadata we are creating): \"name\", \"description\", and
-\"policy\".</p>
+<p>Each key in the JSON map (other than the "subject") corresponds
+to a "property". For a phase-1 monetary policy there are three
+required properties for asset metadata (the kind of metadata we
+are creating): "name", "description", and "policy".</p>
 <p>Phase-2 Plutus Smart-Contracts do not require a <code>--policy</code>
 field.</p>
 <p>We can provide these with the following command:</p>
@@ -603,8 +599,8 @@ field.</p>
     }
 }
 </code></pre>
-<p>We can see that it has populated the \"name\", \"description\",
-and \"policy\" properties.</p>
+<p>We can see that it has populated the "name", "description", and
+"policy" properties.</p>
 </li>
 <li>
 <p>Signing</p>
@@ -612,7 +608,7 @@ and \"policy\" properties.</p>
 we must sign the metadata with the keys used to define your
 asset policy.</p>
 <p>Each property may be attested to individually, but for now we
-can just attest to all properties at once using the \"-a\" flag:</p>
+can just attest to all properties at once using the "-a" flag:</p>
 <pre><code>token-metadata-creator entry $SUBJECT -a policy/policy.skey
 
 cat $SUBJECT.json.draft
@@ -643,16 +639,15 @@ cat $SUBJECT.json.draft
 }
 </code></pre>
 <p>You can see that annotated signatures have been added to each
-attestable property (\"name\" and \"description\"). No
-signatures have been attached to the \"policy\" property because
-it is known as a \"verifiable\" property: it\'s authenticity can
-be inferred from the existing data or verified in a different
-manner.</p>
+attestable property ("name" and "description"). No signatures
+have been attached to the "policy" property because it is known
+as a "verifiable" property: it's authenticity can be inferred
+from the existing data or verified in a different manner.</p>
 </li>
 <li>
 <p>Finalizing</p>
 <p>Finally, we can run the following command to perform some final
-checks on our draft and spit out a non-draft \".json\" file:</p>
+checks on our draft and spit out a non-draft ".json" file:</p>
 <pre><code>token-metadata-creator entry $SUBJECT --finalize
 
 cat $SUBJECT.json
@@ -663,22 +658,21 @@ cat $SUBJECT.json
 </li>
 <li>
 <p>Submission</p>
-<p>Once your metadata has been created, you\'ll need to submit it.
+<p>Once your metadata has been created, you'll need to submit it.
 Currently, this is done by submitting a PR to the
 <a href="https://github.com/cardano-foundation/cardano-token-registry">cardano-foundation/cardano-token-registry</a>
 repository.</p>
-<p>First you\'ll need to fork and clone the repository, then cd into
-it:</p>
+<p>First you'll need to fork and clone the repository, then cd into it:</p>
 <pre><code>cd cardano-token-registry
 git checkout -b $SUBJECT-metadata
 </code></pre>
-<p>Then we\'ll create a new mapping:</p>
+<p>Then we'll create a new mapping:</p>
 <pre><code>cp ../$SUBJECT.json ./mappings/
 git add mappings/$SUBJECT.json
 git commit -m "Add $SUBJECT metadata"
 git push -u origin $SUBJECT-metadata
 </code></pre>
-<p>You\'ll then need to submit a PR to the
+<p>You'll then need to submit a PR to the
 <a href="https://github.com/cardano-foundation/cardano-token-registry">cardano-foundation/cardano-token-registry</a>
 repository using the GitHub web UI.</p>
 <p>Once your PR has been approved and merged, your metadata can be
@@ -708,7 +702,7 @@ target="structure-diagram"}.</p>
 <li>
 <p>NixOS (recommended)</p>
 <p>Configuring a NixOS system to run the core services required for
-a metadata system is easy, as we\'ve done much of the work for
+a metadata system is easy, as we've done much of the work for
 you! The offchain-metadata-tools project provides a number of
 NixOS modules that setup the metadata system.</p>
 <ol>
@@ -721,7 +715,7 @@ set -euo pipefail
 </li>
 <li>
 <p>Configuration</p>
-<p>We\'ll presume you\'re configuring a fresh system. You might
+<p>We'll presume you're configuring a fresh system. You might
 want to alter these instructions for an existing system</p>
 <pre><code>export METADATA_DB="metadata"
 export METADATA_DB_USER="metadata_server"
@@ -735,7 +729,7 @@ export POSTGRES_PORT=5432
 </code></pre>
 <p>We need to make the offchain-metadata-tools project
 available to our NixOS configuration. There are many ways to
-do this, but we\'ll use a package called niv:</p>
+do this, but we'll use a package called niv:</p>
 <pre><code>cd /etc/nixos
 niv init
 niv add input-output-hk/metadata-server -b master
@@ -868,8 +862,8 @@ curl localhost:${METADATA_SERVER_PORT}/metadata/b377d03a568dde663534e040fc32a573
 <blockquote>
 <p><strong>To be updated.</strong> This section is written against PostgreSQL
 11 configuration internals, and its automated test is disabled
-in <code>nix/nixos/tests/default.nix</code>{.verbatim}. The NixOS section
-above is tested and current; prefer it where possible.</p>
+in <code>nix/nixos/tests/default.nix</code>. The NixOS section above is
+tested and current; prefer it where possible.</p>
 </blockquote>
 <ol>
 <li>
@@ -891,8 +885,8 @@ set -euo pipefail
 <p>The requirements for the Postgres DB are fairly simple: a
 single database containing a single table. The
 metadata-server tool itself will ensure that the table has
-the correct schema, so we don\'t even need to set that up.</p>
-<p>Let\'s first start with setting some variables, these may
+the correct schema, so we don't even need to set that up.</p>
+<p>Let's first start with setting some variables, these may
 need to be different on your system, but this is a good
 first start.</p>
 <pre><code>export METADATA_DB="metadata_db"
@@ -946,8 +940,8 @@ restart the postgres service. This exact command may vary
 system-to-system:</p>
 <pre><code>systemctl restart postgresql.service
 </code></pre>
-<p>Now that we\'ve configured our Postgres installation, we
-need to create our database and database user:</p>
+<p>Now that we've configured our Postgres installation, we need
+to create our database and database user:</p>
 <pre><code>echo "Creating database '${METADATA_DB}' and user '${METADATA_DB_USER}'..."
 export PSQL="sudo -u postgres psql --port=$POSTGRES_PORT"
 $PSQL -c "CREATE DATABASE "$METADATA_DB
@@ -961,8 +955,8 @@ $METADATA_PSQL -c "\echo hello"
 <p>If we were to investigate the tables in the database:</p>
 <pre><code>$METADATA_PSQL -c "\d"
 </code></pre>
-<p>It should return \"Did not find any relations\", because we
-haven\'t created any tables. We will let the metadata-server
+<p>It should return "Did not find any relations", because we
+haven't created any tables. We will let the metadata-server
 create the required table for us later on.</p>
 <p>This finishes our Postgres configuration. It gets easier
 from here!</p>
@@ -981,7 +975,7 @@ sleep 5
 </code></pre>
 <p>This command will start up the metadata server and create
 the metadata table for us in the database.</p>
-<p>Let\'s now insert a fake piece of metadata into the postgres
+<p>Let's now insert a fake piece of metadata into the postgres
 DB we set up so we have some metadata to view.</p>
 <pre><code>$METADATA_PSQL \
   -c "INSERT INTO metadata (key, value) VALUES ('b377d03a568dde663534e040fc32a57323ec00970df0e863eba3f098717569640a', '{ \"subject\": \"b377d03a568dde663534e040fc32a57323ec00970df0e863eba3f098717569640a\",\"name\": { \"sequenceNumber\": 0,\"value\": \"Quid\",\"signatures\": [{ \"signature\": \"02f259151779aa00307c411a4816d7f8343ae842b74593608ebd2e2597bce33d31c7cf72a26f8771a2635d13b178c1bdd5e4f60884b06898760af40f09aa5402\",\"publicKey\": \"bc77b3196b9da1620f70d2f5095ba42fe6a4e3c03494062d2034cdab2a690d04\" }] },\"policy\": \"82008200581ce62601e8eeec975f3f124a288cd0ecb2973f5fc225629f1401a79b16\",\"description\": { \"sequenceNumber\": 1,\"value\": \"The un-offical currency of Great Britain 2.\",\"signatures\": [{ \"signature\": \"48d45b0f6317a49d4da9c331d4757352795ebb36ea21cf7341595801c0f8fbf7f02bc50eea29372cc591cbe8285b3ea28481b8c71ca9e755ad6890e670387c0e\",\"publicKey\": \"bc77b3196b9da1620f70d2f5095ba42fe6a4e3c03494062d2034cdab2a690d04\" }] } }') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;"
@@ -1032,7 +1026,7 @@ sudo -u "${METADATA_LINUX_USER}" metadata-webhook \
   --port "${METADATA_WEBHOOK_PORT}" &amp;
 sleep 5
 </code></pre>
-<p>To test the webhook locally, we\'re going to use a tool
+<p>To test the webhook locally, we're going to use a tool
 called ngrok to provide us with a public url to our local
 service:</p>
 <pre><code>ngrok http ${METADATA_WEBHOOK_PORT} &amp;
@@ -1040,7 +1034,7 @@ sleep 5
 export WEBHOOK_PUBLIC_URL="$(curl http://127.0.0.1:4040/api/tunnels | jq '.tunnels[] | select(.proto == "https") | .public_url')/webhook"
 </code></pre>
 <p>Please note that this URL will expire after about an hour.
-You\'ll have to repeat the above two commands to get a new
+You'll have to repeat the above two commands to get a new
 URL.</p>
 <p>We can now send GitHub payloads to this URL and our
 metadata-webhook will receive them. To test that this
@@ -1060,23 +1054,23 @@ manage asset metadata.</p>
 <p>Next, from the GitHub web UI, set up a webhook by heading to
 Settings &gt; Webhooks &gt; Add webhook.</p>
 <p><img alt="" src="01-settings-webhook.png" /></p>
-<p>Next, copy in your webhook URL to the \"Payload URL\" field:</p>
+<p>Next, copy in your webhook URL to the "Payload URL" field:</p>
 <pre><code>echo "Webhook Public URL is: ${WEBHOOK_PUBLIC_URL}"
 </code></pre>
 <p>Make sure to:</p>
 <ol>
-<li>set \"Content type\" to \"application/json\"</li>
-<li>set \"Secret\" to \"secret\" (you can use anything here, but
+<li>set "Content type" to "application/json"</li>
+<li>set "Secret" to "secret" (you can use anything here, but
     make sure metadata-webhook is launched with the same secret)</li>
-<li>click \"Add webhook\":</li>
+<li>click "Add webhook":</li>
 </ol>
 <p><img alt="" src="02-webhook-creation.png" /></p>
-<p>GitHub will send a \"ping\" payload to the webhook and it will
-fail, as the metadata-webhook doesn\'t accept any payload other
-than \"push\" payloads. You can safely ignore this error.</p>
-<p>To truly test our metadata-webhook we\'ll need to push some
+<p>GitHub will send a "ping" payload to the webhook and it will
+fail, as the metadata-webhook doesn't accept any payload other
+than "push" payloads. You can safely ignore this error.</p>
+<p>To truly test our metadata-webhook we'll need to push some
 metadata to the repository.</p>
-<p>Somewhere in the repository create a file called \"test.json\"
+<p>Somewhere in the repository create a file called "test.json"
 with the following contents:</p>
 <pre><code>{
   "subject": "test"
@@ -1121,9 +1115,9 @@ target="<em>metadata-validator-github"} and
 target="</em>token-metadata-creator"} tools and run them on every PR
 to your repository.</p>
 <p>By default, the validation script ensures that metadata files
-are written to the \"mappings\" directory, so when adding
-metadata from now on, make sure to add it to the \"mappings\"
-directory. See [<em>here</em>]{.spurious-link
+are written to the "mappings" directory, so when adding metadata
+from now on, make sure to add it to the "mappings" directory.
+See [<em>here</em>]{.spurious-link
 target="* Why are metadata entries kept in a separate directory (e.g. \"mappings\")?"}
 for an explanation of why this is.</p>
 <p>Congratulations on setting up your own metadata system!</p>
@@ -1133,11 +1127,10 @@ for an explanation of why this is.</p>
 </ul>
 <h2 id="how-to">How-to<a class="headerlink" href="#how-to" title="Permanent link">&para;</a></h2>
 <h3 id="set-up-the-nix-cache">Set up the Nix cache<a class="headerlink" href="#set-up-the-nix-cache" title="Permanent link">&para;</a></h3>
-<p>For both building with <code>nix build</code>{.verbatim} and using
-<code>nix develop</code>{.verbatim}, it might take a very long time if you do not
-have the Cardano binary cache set up. Adding the IOG binary cache to
-your Nix configuration will speed up builds a lot, since many things
-will have been built already by our CI.</p>
+<p>For both building with <code>nix build</code> and using <code>nix develop</code>, it might
+take a very long time if you do not have the Cardano binary cache set
+up. Adding the IOG binary cache to your Nix configuration will speed up
+builds a lot, since many things will have been built already by our CI.</p>
 <p>If you find you are building packages that are not defined in this
 repository, or if the build seems to take a very long time then you may
 not have this set up properly.</p>
@@ -1162,23 +1155,22 @@ trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=
 <ol>
 <li>
 <p>Using Nix</p>
-<p>From the root directory of the project, <code>nix build</code>{.verbatim}
-builds the default package, <code>metadata-server</code>{.verbatim}. To build a
-particular executable, say <code>token-metadata-creator</code>{.verbatim}, use
-<code>nix build .#token-metadata-creator</code>{.verbatim}.</p>
-<p>The executables provided are <code>metadata-server</code>{.verbatim},
-<code>metadata-sync</code>{.verbatim}, <code>metadata-validator-github</code>{.verbatim},
-<code>metadata-webhook</code>{.verbatim} and
-<code>token-metadata-creator</code>{.verbatim}.</p>
+<p>From the root directory of the project, <code>nix build</code> builds the
+default package, <code>metadata-server</code>. To build a particular
+executable, say <code>token-metadata-creator</code>, use
+<code>nix build .#token-metadata-creator</code>.</p>
+<p>The executables provided are <code>metadata-server</code>, <code>metadata-sync</code>,
+<code>metadata-validator-github</code>, <code>metadata-webhook</code> and
+<code>token-metadata-creator</code>.</p>
 <p>To build everything CI builds, including the test suites, NixOS
 tests and static tarballs, use
-<code>nix build .#hydraJobs.x86_64-linux.required</code>{.verbatim}.</p>
-<p>To enter a development shell, use <code>nix develop</code>{.verbatim}. This
-will enter a development shell for which
+<code>nix build .#hydraJobs.x86_64-linux.required</code>.</p>
+<p>To enter a development shell, use <code>nix develop</code>. This will enter a
+development shell for which
 <a href="https://github.com/input-output-hk/haskell.nix/">haskell.nix</a>
-provides all dependencies, and in which <code>cabal build</code>{.verbatim}
-works directly. Use <code>nix develop .#profiled</code>{.verbatim} for the same
-shell with library profiling enabled.</p>
+provides all dependencies, and in which <code>cabal build</code> works
+directly. Use <code>nix develop .#profiled</code> for the same shell with
+library profiling enabled.</p>
 </li>
 </ol>
 <h3 id="make-a-release">Make a release<a class="headerlink" href="#make-a-release" title="Permanent link">&para;</a></h3>
@@ -1207,9 +1199,9 @@ shell with library profiling enabled.</p>
   so that the release notes can be reviewed.</li>
 <li>[ ] Include CHANGELOG updates in the release notes.</li>
 <li>[ ] Check that the release job has attached the static tarballs
-    and their sha256sums file to the draft. Pushing a
-    <code>vN.N.N.N</code>{.verbatim} tag runs it; it can be re-run from the
-    Actions tab with workflow~dispatch~.</li>
+    and their sha256sums file to the draft. Pushing a <code>vN.N.N.N</code> tag
+    runs it; it can be re-run from the Actions tab with
+    workflow~dispatch~.</li>
 </ul>
 </li>
 <li>
@@ -1224,7 +1216,7 @@ can be executed./</p>
 </li>
 <li>
 <p>[ ] Download release artifacts from the release page and make them
-  available on <code>$PATH</code>{.verbatim}.</p>
+  available on <code>$PATH</code>.</p>
 </li>
 <li>
 <p>[ ] Go over e2e acceptance tests -&gt;
@@ -1259,7 +1251,7 @@ can be executed./</p>
 <p>metadata-lib</p>
 <p>metadata-lib is a Haskell library that provides a core set of tools
 for writing metadata-related services.</p>
-<p>It\'s structure is as follows:</p>
+<p>It's structure is as follows:</p>
 <ol>
 <li>
 <p>Cardano.Metadata.Server.API</p>
@@ -1420,7 +1412,7 @@ system" src="structure-diagram.svg" />{#structure-diagram}</p>
 <h2 id="explanation">Explanation<a class="headerlink" href="#explanation" title="Permanent link">&para;</a></h2>
 <h3 id="why-is-metadata-store-postgres-packaged-as-a-separate-library">Why is metadata-store-postgres packaged as a separate library?<a class="headerlink" href="#why-is-metadata-store-postgres-packaged-as-a-separate-library" title="Permanent link">&para;</a></h3>
 <p>Our haskell.nix Nix infrastructure used to have issues with postgres,
-namely it couldn\'t provide us with a static musl binary if postgres was
+namely it couldn't provide us with a static musl binary if postgres was
 in the dependency tree somewhere. To be able to provide a static binary
 for the token-metadata-creator tool, we removed the
 metadata-store-postgres library from the core metadata-lib library and
@@ -1429,23 +1421,21 @@ packaged it separately.</p>
 was made to keep metadata-store-postgres as a separate library, as it
 provides a helpful example for those wishing to implement their own
 metadata storage layer.</p>
-<h3 id="why-are-metadata-entries-kept-in-a-separate-directory-eg-mappings">Why are metadata entries kept in a separate directory (e.g. \"mappings\")?<a class="headerlink" href="#why-are-metadata-entries-kept-in-a-separate-directory-eg-mappings" title="Permanent link">&para;</a></h3>
+<h3 id="why-are-metadata-entries-kept-in-a-separate-directory-eg-mappings">Why are metadata entries kept in a separate directory (e.g. "mappings")?<a class="headerlink" href="#why-are-metadata-entries-kept-in-a-separate-directory-eg-mappings" title="Permanent link">&para;</a></h3>
 <p>Metadata entries on our GitHub repository are kept in a non-root level
 directory to ensure that our GitHub page loads quickly even if we have
 thousands of metadata entries.</p>
 <h3 id="how-do-we-test-the-tutorials">How do we test the tutorials?<a class="headerlink" href="#how-do-we-test-the-tutorials" title="Permanent link">&para;</a></h3>
 <p>The tutorials are written in the <a href="https://orgmode.org/">Org format</a>.
 org-babel is an emacs package that allows us to extract the source
-blocks from the documentation in a process known as \"tangling\". We
-write commands to be executed in source blocks with the following
-format:</p>
+blocks from the documentation in a process known as "tangling". We write
+commands to be executed in source blocks with the following format:</p>
 <pre><code>​#+BEGIN_SRC shell :tangle no-nix-setup.sh :tangle-mode (identity #o755)
 ​#+END_SRC
 </code></pre>
-<p>This introduces a source code block (of type \"shell\" or \"bash\") that
-when tangled, is written out to a file called
-<code>no-nix-setup.sh</code>{.verbatim} with 0755 permissions
-(<code>rwx/r-x/r-x</code>{.verbatim}).</p>
+<p>This introduces a source code block (of type "shell" or "bash") that
+when tangled, is written out to a file called <code>no-nix-setup.sh</code> with
+0755 permissions (<code>rwx/r-x/r-x</code>).</p>
 <p>A <a href="default.nix">Nix derivation</a> calls emacs and tangles this
 documentation file, producing various scripts specified by the source
 code blocks. These are our documentation scripts.</p>
@@ -1455,7 +1445,7 @@ to run the scripts in a minimal environment and ensure that they pass.</p>
 with (from the root directory of this project):</p>
 <pre><code>nix build .#docScripts
 </code></pre>
-<p>and find them in <code>./result/bin/*</code>{.verbatim}.</p></div>
+<p>and find them in <code>./result/bin/*</code>.</p></div>
             </div>
         </div>
 
